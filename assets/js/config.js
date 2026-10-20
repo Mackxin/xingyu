@@ -40,7 +40,8 @@
       accent: 'aurora',        // 预设色板 id；'custom' = 用下面的 accentColor
       accentColor: '#7c9cff',  // 自定义主色（只在 accent==='custom' 时生效）
       glow: 'normal',          // strong | normal | off —— 背景极光强度
-      radius: 'normal'         // small | normal | large —— 圆角大小
+      radius: 'normal',        // small | normal | large —— 圆角大小
+      presets: []              // [{ id, name, color }] —— 自己存的配色，最多 MAX_PRESETS 套
     },
 
     /* ---------- 阅读体验（文章页） ---------- */
@@ -86,6 +87,7 @@
   var MAX_ENTRIES = 8;
   var MAX_IMG_CHARS = 2200000;   // 图片 data URL 上限（约 1.6MB 二进制）
   var ACCENTS = ['aurora', 'ocean', 'sunset', 'forest', 'grape', 'sakura', 'ink', 'custom'];
+  var MAX_PRESETS = 8;             // 自己存的配色（「我的配色 A/B/C…」）最多几套
 
   /* ---------- 小工具 ---------- */
   function clone(o) { return JSON.parse(JSON.stringify(o)); }
@@ -250,7 +252,37 @@
     };
   }
 
-  /* 主题外观：色板 / 自定义主色 / 背景光晕 / 圆角 */
+  /* 自己存的配色：「我的配色 A/B/C…」，每套就是名字 + 一个主色 */
+  /* 自动起名：挑第一个还没用过的字母，删掉 A 再存也不会撞成两个 C */
+  function nextPresetName(list) {
+    var used = {};
+    (list || []).forEach(function (p) { if (p && p.name) used[p.name] = 1; });
+    for (var i = 0; i < MAX_PRESETS; i++) {
+      var n = '配色 ' + String.fromCharCode(65 + i);
+      if (!used[n]) return n;
+    }
+    return '配色 ' + ((list || []).length + 1);
+  }
+
+  function normPresets(list) {
+    if (!Array.isArray(list)) return [];
+    var out = [], seenColor = {}, seenId = {};
+    list.forEach(function (p) {
+      if (!p || typeof p !== 'object') return;
+      var color = String(p.color == null ? '' : p.color).trim().toLowerCase();
+      if (!/^#[0-9a-f]{6}$/.test(color)) return;   // 颜色非法直接丢掉
+      if (seenColor[color]) return;                // 同一个颜色只留一套
+      var id = String(p.id == null ? '' : p.id).replace(/[^a-z0-9_-]/gi, '').slice(0, 28);
+      if (!id || seenId[id]) id = 'c' + color.substr(1) + '-' + out.length;
+      seenColor[color] = 1;
+      seenId[id] = 1;
+      var name = String(p.name == null ? '' : p.name).replace(/[\r\n\t]/g, ' ').trim().slice(0, 12);
+      out.push({ id: id, name: name || ('配色 ' + String.fromCharCode(65 + out.length)), color: color });
+    });
+    return out.slice(0, MAX_PRESETS);
+  }
+
+  /* 主题外观：色板 / 自定义主色 / 背景光晕 / 圆角 / 自己的配色 */
   function normTheme(src) {
     src = (src && typeof src === 'object') ? src : {};
     var d = DEFAULTS.theme;
@@ -260,7 +292,8 @@
       accent: ACCENTS.indexOf(src.accent) > -1 ? src.accent : d.accent,
       accentColor: hex,
       glow: ['strong', 'normal', 'off'].indexOf(src.glow) > -1 ? src.glow : d.glow,
-      radius: ['small', 'normal', 'large'].indexOf(src.radius) > -1 ? src.radius : d.radius
+      radius: ['small', 'normal', 'large'].indexOf(src.radius) > -1 ? src.radius : d.radius,
+      presets: normPresets(src.presets)
     };
   }
 
@@ -330,6 +363,58 @@
       return cfg.theme;
     },
     theme: function () { return Store.get().theme; },
+
+    /* ---------- 我的配色（自己存的几套主色） ---------- */
+    MAX_PRESETS: MAX_PRESETS,
+    presets: function () { return (Store.theme().presets || []).slice(); },
+    presetById: function (id) {
+      var list = Store.presets();
+      for (var i = 0; i < list.length; i++) if (list[i].id === id) return list[i];
+      return null;
+    },
+    /* 按颜色找：调色盘选了已存过的颜色时，界面上要能高亮那一套 */
+    presetByColor: function (color) {
+      var hex = String(color == null ? '' : color).trim().toLowerCase();
+      var list = Store.presets();
+      for (var i = 0; i < list.length; i++) if (list[i].color === hex) return list[i];
+      return null;
+    },
+    /* 存一套。颜色重复 / 超过上限就拒绝，交给界面提示 */
+    addPreset: function (name, color) {
+      var hex = String(color == null ? '' : color).trim().toLowerCase();
+      if (!/^#[0-9a-f]{6}$/.test(hex)) return { ok: false, code: 'bad' };
+      if (Store.presetByColor(hex)) return { ok: false, code: 'dup', preset: Store.presetByColor(hex) };
+      var list = Store.presets();
+      if (list.length >= MAX_PRESETS) return { ok: false, code: 'full' };
+      var preset = {
+        id: 'c' + hex.substr(1) + '-' + Date.now().toString(36),
+        name: String(name == null ? '' : name).trim().slice(0, 12) || nextPresetName(list),
+        color: hex
+      };
+      list.push(preset);
+      Store.setTheme({ presets: list });
+      return { ok: true, preset: Store.presetByColor(hex) || preset };
+    },
+    renamePreset: function (id, name) {
+      var list = Store.presets(), hit = null;
+      for (var i = 0; i < list.length; i++) if (list[i].id === id) { hit = list[i]; break; }
+      if (!hit) return null;
+      var n = String(name == null ? '' : name).replace(/[\r\n\t]/g, ' ').trim().slice(0, 12);
+      if (n) hit.name = n;                 // 清空就当没改，不会变成无名配色
+      Store.setTheme({ presets: list });
+      return Store.presetById(id);
+    },
+    removePreset: function (id) {
+      var list = Store.presets().filter(function (p) { return p.id !== id; });
+      Store.setTheme({ presets: list });
+      return list;
+    },
+    /* 应用一套：切到 custom + 那个主色（另外两色由前台按色相推） */
+    applyPreset: function (id) {
+      var p = Store.presetById(id);
+      if (!p) return null;
+      return Store.setTheme({ accent: 'custom', accentColor: p.color });
+    },
 
     /* 阅读体验：只传要改的字段，其余保持原样 */
     setRead: function (patch) {

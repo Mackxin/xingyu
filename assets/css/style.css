@@ -2209,6 +2209,84 @@ html[data-toc="off"] .post-toc{ display:none; }
   margin-left:auto; flex:0 0 auto; font-size:12px; color:var(--text-dim);
   font-family:ui-monospace, SFMono-Regular, Menlo, monospace;
 }
+/* 自定义主色右侧：色值 + 「存为配色」 */
+.look-color__side{
+  margin-left:auto; flex:0 0 auto;
+  display:flex; align-items:center; gap:10px;
+}
+.look-color__side code{ margin-left:0; }
+.look-color__side .look-save{
+  height:32px; padding:0 12px; border-radius:9px; font-size:12px; font-weight:600;
+}
+.look-color__side .look-save:hover{ transform:none; }
+.look-color__side .look-save[disabled]{
+  opacity:.45; cursor:not-allowed; transform:none;
+}
+/* 窄屏：色值 + 按钮换到第二行，别把「自定义主色」挤成竖条 */
+@media (max-width:640px){
+  .look-color{ flex-wrap:wrap; row-gap:12px; }
+  .look-color__txt{ flex:1 1 auto; }
+  .look-color__side{ margin-left:0; width:100%; justify-content:space-between; }
+}
+
+/* 我的配色（可以自己存几套） */
+.look-sub{
+  display:flex; align-items:baseline; gap:10px; flex-wrap:wrap;
+  margin:18px 0 8px; padding-top:15px; border-top:1px dashed var(--border);
+}
+.look-sub b{ font-size:13px; font-weight:600; color:var(--text); }
+.look-sub em{ font-style:normal; font-size:11.5px; color:var(--text-mute); }
+
+.look-presets{ display:flex; flex-wrap:wrap; gap:9px; }
+.look-presets.is-empty{ display:block; }
+.look-empty{
+  margin:0; padding:13px 15px; border-radius:11px;
+  border:1px dashed var(--border-strong);
+  font-size:12.5px; color:var(--text-mute);
+}
+.look-preset{
+  display:flex; align-items:center; gap:2px; padding:4px 6px 4px 4px;
+  flex:0 0 auto; max-width:100%;
+  border-radius:12px; background:var(--glass); border:1px solid var(--border);
+  transition:transform .22s var(--ease), border-color .22s var(--ease), background .22s var(--ease);
+}
+.look-preset:hover{ transform:translateY(-1px); border-color:var(--border-strong); }
+.look-preset.is-active{
+  border-color:color-mix(in srgb, var(--a1) 60%, transparent);
+  background:color-mix(in srgb, var(--a1) 14%, transparent);
+}
+.look-preset__main{
+  display:flex; align-items:center; gap:8px;
+  padding:5px 8px 5px 5px; border-radius:9px;
+  font-size:12.5px; color:var(--text-dim); white-space:nowrap;
+}
+.look-preset.is-active .look-preset__main,
+.look-preset__main:hover{ color:var(--text); }
+.look-preset__dot{
+  width:20px; height:20px; border-radius:7px; flex:0 0 auto;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.18);
+}
+.look-preset__name{ max-width:96px; overflow:hidden; text-overflow:ellipsis; }
+.look-preset code{
+  font-size:11px; color:var(--text-mute);
+  font-family:ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.look-preset__act{
+  width:22px; height:22px; flex:0 0 auto; border-radius:7px;
+  display:grid; place-items:center;
+  font-size:12px; line-height:1; color:var(--text-mute);
+  opacity:.7; transition:opacity .2s var(--ease), background .2s var(--ease), color .2s var(--ease);
+}
+.look-preset:hover .look-preset__act{ opacity:1; }
+.look-preset__act:hover{ background:var(--glass-hi); color:var(--text); }
+.look-preset__act--del:hover{ background:rgba(255,110,110,.18); color:#ffbdbd; }
+.look-preset.is-editing{ padding:4px 8px 4px 4px; border-color:color-mix(in srgb, var(--a1) 55%, transparent); }
+.look-preset__input{
+  width:104px; height:26px; padding:0 8px; border-radius:8px;
+  background:var(--glass-hi); border:1px solid var(--border);
+  font-size:12.5px; color:var(--text);
+}
+.look-preset__input:focus{ outline:none; border-color:color-mix(in srgb, var(--a1) 60%, transparent); }
 
 /* 字号滑杆：别继承 .admin-field input 的 42px 高度和描边 */
 .admin-field input[type="range"]{

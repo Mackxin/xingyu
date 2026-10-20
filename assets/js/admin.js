@@ -31,6 +31,7 @@
   var feedQuery = '';       // 分享搜索词
   var feedEditing = null;   // 正在编辑的分享：{ idx, isNew }
   var armed = null;         // 两步删除的“已待确认”状态
+  var presetRenaming = '';  // 正在改名的配色预设 id（空 = 没在改名）
 
   /* ---------- 小工具 ---------- */
   function esc(s) {
@@ -1151,6 +1152,23 @@
   var READ_LINES = [[1.6, '紧凑 · 1.6'], [1.75, '标准 · 1.75'], [1.95, '舒展 · 1.95'], [2.1, '宽松 · 2.1']];
   var READ_WIDTHS = [[680, '窄 · 680'], [760, '偏窄 · 760'], [820, '标准 · 820'], [900, '偏宽 · 900'], [980, '宽 · 980']];
 
+  /* 当前配色叫什么：预设色板 → 名字；自定义 → 命中「我的配色」就显示那套的名字 */
+  function accentDisplayName(t) {
+    t = t || {};
+    if (t.accent !== 'custom') return ACCENT_LABELS[t.accent] || t.accent || '自定义';
+    var list = Store.presets();
+    for (var i = 0; i < list.length; i++) if (list[i].color === t.accentColor) return list[i].name;
+    return '自定义';
+  }
+  /* 一个主色 → 三色渐变（借前台那套色相推算，保证小圆点和真实配色一致） */
+  function presetTrio(color) {
+    var fn = app().trioFor;
+    if (typeof fn === 'function') {
+      try { return fn({ accent: 'custom', accentColor: color }); } catch (e) {}
+    }
+    return [color, color, color];
+  }
+
   function lookPanel() {
     var c = Store.get();
     var t = c.theme, r = c.read;
@@ -1166,21 +1184,66 @@
         '</button>';
     }).join('');
 
+    /* 我的配色：自己存过的几套，点一下就切回去 */
+    var presets = Store.presets();
+    var isCustom = t.accent === 'custom';
+    var curColor = String(t.accentColor || '').toLowerCase();
+
+    var presetHtml = presets.map(function (p) {
+      var trio = presetTrio(p.color);
+      var on = isCustom && p.color === curColor;
+      if (presetRenaming === p.id) {
+        return '<div class="look-preset is-editing">' +
+            '<span class="look-preset__dot" style="background:linear-gradient(135deg,' + trio.join(',') + ')"></span>' +
+            '<input class="look-preset__input" type="text" maxlength="12" value="' + esc(p.name) + '"' +
+              ' data-ren-input="' + esc(p.id) + '" aria-label="配色名称" />' +
+          '</div>';
+      }
+      return '<div class="look-preset' + (on ? ' is-active' : '') + '" data-preset="' + esc(p.id) + '">' +
+          '<button class="look-preset__main" type="button" data-apply="' + esc(p.id) + '"' +
+            ' title="切到「' + esc(p.name) + '」 ' + esc(p.color) + '">' +
+            '<span class="look-preset__dot" style="background:linear-gradient(135deg,' + trio.join(',') + ')"></span>' +
+            '<span class="look-preset__name">' + esc(p.name) + '</span>' +
+            '<code>' + esc(p.color) + '</code>' +
+          '</button>' +
+          '<button class="look-preset__act" type="button" data-ren="' + esc(p.id) + '" title="改名" aria-label="改名">✎</button>' +
+          '<button class="look-preset__act look-preset__act--del" type="button" data-del="' + esc(p.id) + '" title="删除" aria-label="删除">×</button>' +
+        '</div>';
+    }).join('');
+
+    var full = presets.length >= (Store.MAX_PRESETS || 8);
+
+    var presetBox = '<div class="look-sub">' +
+        '<b>我的配色</b><em>' +
+          (presets.length ? '点一下就切回去 · ✎ 改名 · × 删除（最多 ' + (Store.MAX_PRESETS || 8) + ' 套）'
+                          : '调好上面的颜色，点「＋ 存为配色」就会存在这里')
+        + '</em></div>' +
+      (presets.length
+        ? '<div class="look-presets" id="lookPresets">' + presetHtml + '</div>'
+        : '<div class="look-presets is-empty" id="lookPresets"><p class="look-empty">还没有存过配色。</p></div>');
+
     var sizeOpts = [14, 15, 16, 17, 18, 20];
 
     return '<div class="admin-card">' +
         '<div class="admin-card__head">' +
           '<div><h2>配色主题</h2>' +
             '<p>换一组强调色，全站的渐变、按钮、高光、背景极光会一起变，改完立刻生效。</p></div>' +
-          '<span class="admin-count" id="lookAccentName">' + esc(ACCENT_LABELS[t.accent] || '自定义') + '</span>' +
+          '<span class="admin-count" id="lookAccentName">' + esc(accentDisplayName(t)) + '</span>' +
         '</div>' +
         '<div class="look-swatches" id="lookSwatches">' + swatches + '</div>' +
-        '<div class="look-color' + (t.accent === 'custom' ? ' is-active' : '') + '">' +
+        '<div class="look-color' + (isCustom ? ' is-active' : '') + '">' +
           '<input type="color" data-theme-f="accentColor" value="' + esc(t.accentColor) + '" aria-label="自定义主色" />' +
           '<div class="look-color__txt"><b>自定义主色</b>' +
             '<em>从调色盘里挑一个，另外两个渐变色会自动配出来</em></div>' +
-          '<code id="lookHex">' + esc(t.accentColor) + '</code>' +
+          '<div class="look-color__side">' +
+            '<code id="lookHex">' + esc(t.accentColor) + '</code>' +
+            '<button class="btn btn--ghost look-save" type="button" id="lookSavePreset"' +
+              (full ? ' disabled title="已经存满 ' + (Store.MAX_PRESETS || 8) + ' 套了，先删一套再存"'
+                    : ' title="把这个颜色存进「我的配色」"') +
+              '>＋ 存为配色</button>' +
+          '</div>' +
         '</div>' +
+        presetBox +
         '<div class="admin-grid2">' +
           '<label class="admin-field"><span class="admin-field__label">背景极光<em>页面上那几团光晕</em></span>' +
             '<select data-theme-f="glow">' +
@@ -1261,8 +1324,7 @@
     function paintAccentName() {
       var el = body.querySelector('#lookAccentName');
       if (!el) return;
-      var t = Store.theme();
-      el.textContent = ACCENT_LABELS[t.accent] || '自定义';
+      el.textContent = accentDisplayName(Store.theme());
     }
     function paintReadBadge() {
       var el = body.querySelector('#lookReadBadge');
@@ -1270,13 +1332,25 @@
       var r = Store.read();
       el.textContent = r.size + 'px · ' + (r.font === 'serif' ? '衬线' : '无衬线');
     }
+    /* 选中的颜色如果正好是存过的某套，把那一套高亮起来 */
+    function paintPresetActive(color) {
+      var hit = Store.presetByColor(color);
+      body.querySelectorAll('.look-preset').forEach(function (x) { x.classList.remove('is-active'); });
+      if (!hit) return;
+      var chip = body.querySelector('.look-preset[data-preset="' + hit.id + '"]');
+      if (chip) chip.classList.add('is-active');
+    }
 
     var sw = body.querySelector('#lookSwatches');
     if (sw) sw.addEventListener('click', function (e) {
       var b = e.target.closest('[data-accent]');
       if (!b) return;
       var id = b.getAttribute('data-accent');
-      Store.setTheme({ accent: id });
+      /* 顺手把「自定义主色」同步成这个色板的主色：
+         这样紧接着点「存为配色」，存下的就是你眼下看到的颜色，不会存成上一次的旧色 */
+      var main = (app().accents || {})[id];
+      main = (main && main[0]) || Store.theme().accentColor;
+      Store.setTheme({ accent: id, accentColor: main });
       toast('已切到「' + (ACCENT_LABELS[id] || id) + '」配色');
       refreshBody(root);
     });
@@ -1290,9 +1364,87 @@
         body.querySelectorAll('.look-swatch').forEach(function (x) { x.classList.remove('is-active'); });
         var row = color.closest('.look-color');
         if (row) row.classList.add('is-active');
+        paintPresetActive(color.value);
         paintAccentName();
       }, 140);
       color.addEventListener('input', onColor);
+    }
+
+    /* ---------- 我的配色 ---------- */
+    var sv = body.querySelector('#lookSavePreset');
+    if (sv) sv.addEventListener('click', function () {
+      var hex = Store.theme().accentColor;
+      var res = Store.addPreset('', hex);
+      if (!res.ok) {
+        if (res.code === 'dup') toast('这个颜色已经存过了：「' + res.preset.name + '」');
+        else if (res.code === 'full') toast('最多存 ' + (Store.MAX_PRESETS || 8) + ' 套，先删一套再存');
+        else toast('这个颜色存不了，换一个试试');
+        return;
+      }
+      presetRenaming = '';
+      toast('已存为「' + res.preset.name + '」 ' + res.preset.color);
+      refreshBody(root);
+    });
+
+    var pbox = body.querySelector('#lookPresets');
+    if (pbox) pbox.addEventListener('click', function (e) {
+      /* 切到某一套 */
+      var ap = e.target.closest('[data-apply]');
+      if (ap) {
+        var id = ap.getAttribute('data-apply');
+        var after = Store.applyPreset(id);
+        var one = Store.presetById(id);
+        if (after && one) toast('已切到「' + one.name + '」 ' + one.color);
+        refreshBody(root);
+        return;
+      }
+      /* 改名：把名字变成一个输入框 */
+      var rn = e.target.closest('[data-ren]');
+      if (rn) {
+        presetRenaming = rn.getAttribute('data-ren');
+        refreshBody(root);
+        return;
+      }
+      /* 删除（走确认框，删的只是这套配色，当前页面不会变色） */
+      var dl = e.target.closest('[data-del]');
+      if (dl) {
+        var pid = dl.getAttribute('data-del');
+        var p = Store.presetById(pid);
+        if (!p) return;
+        askConfirm({
+          icon: '🗑️',
+          title: '删掉「' + p.name + '」？',
+          desc: '只是把这套颜色从「我的配色」里移走，<b>当前页面的颜色不会变</b>。',
+          ok: '删除'
+        }, function () {
+          Store.removePreset(pid);
+          if (presetRenaming === pid) presetRenaming = '';
+          toast('已删除「' + p.name + '」');
+          refreshBody(root);
+        });
+        return;
+      }
+    });
+
+    /* 改名输入框：回车 / 失焦保存，Esc 放弃 */
+    var ren = body.querySelector('[data-ren-input]');
+    if (ren) {
+      var renId = ren.getAttribute('data-ren-input');
+      var done = false;
+      function commitRename(keep) {
+        if (done) return;
+        done = true;
+        var v = ren.value;
+        presetRenaming = '';
+        if (keep) Store.renamePreset(renId, v);
+        refreshBody(root);
+      }
+      ren.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') { e.preventDefault(); commitRename(true); }
+        else if (e.key === 'Escape') { e.preventDefault(); commitRename(false); }
+      });
+      ren.addEventListener('blur', function () { commitRename(true); });
+      setTimeout(function () { try { ren.focus(); ren.select(); } catch (e) {} }, 20);
     }
 
     body.querySelectorAll('select[data-theme-f]').forEach(function (el) {
@@ -1331,9 +1483,12 @@
 
     var rt = body.querySelector('#lookResetTheme');
     if (rt) rt.addEventListener('click', function () {
-      Store.setTheme(Store.DEFAULTS.theme);
+      /* 只把「当前用的外观」回默认；「我的配色」是存货，不跟着清掉 */
+      var d = Store.DEFAULTS.theme;
+      Store.setTheme({ accent: d.accent, accentColor: d.accentColor, glow: d.glow, radius: d.radius });
       Store.set({ themeDefault: Store.DEFAULTS.themeDefault, cardDensity: Store.DEFAULTS.cardDensity });
-      toast('已恢复默认外观');
+      presetRenaming = '';
+      toast(Store.presets().length ? '已恢复默认外观（我的配色还留着）' : '已恢复默认外观');
       refreshBody(root);
     });
 
@@ -1568,11 +1723,13 @@
     var lc = Store.allLinks().length;
     var pc = Store.postsAll().length;
     var fc = Store.feedAll().length;
+    var prc = Store.presets().length;
     return '<div class="admin-card">' +
         '<h2>备份到文件</h2>' +
         '<p>把 <b>站点数据</b>（' + d.cats + ' 个分类 · ' + d.links + ' 个站点）、' +
         '<b>分享</b>（' + fc + ' 条）、<b>文章</b>（' + pc + ' 篇）和 <b>站点设置</b>' +
-        (lc ? '（含 ' + lc + ' 个自定义链接）' : '') + ' 打包成一个文件下载。</p>' +
+        (lc ? '（含 ' + lc + ' 个自定义链接' + (prc ? '、' + prc + ' 套我的配色' : '') + '）'
+            : (prc ? '（含 ' + prc + ' 套我的配色）' : '')) + ' 打包成一个文件下载。</p>' +
         '<div class="admin-actions">' +
           '<button class="btn btn--primary" type="button" id="bkDownload">⬇ 下载备份文件</button>' +
         '</div>' +

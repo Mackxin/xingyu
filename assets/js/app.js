@@ -2006,6 +2006,8 @@
     applyFeed: refreshFeed,
     applyLook: applyLook,
     accents: ACCENT_PRESETS,
+    /* 给后台画「我的配色」小圆点用：一个主色 → 三色渐变 */
+    trioFor: accentTrio,
     hostOf: hostOf,
     homeCfg: homeCfg,
     toast: toast,
