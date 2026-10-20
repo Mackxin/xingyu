@@ -113,34 +113,50 @@ git checkout -- . # 放弃还没提交的改动
 
 `index.html` 的 `<head>` 里已经备好一整套分享卡片标签（Open Graph + Twitter Card）：
 
+> ✅ **线上地址：<https://mackxin.github.io/xingyu/>**（GitHub Pages，推 `main` 即自动发布）
+
 | 文件 | 用在哪 |
 | --- | --- |
 | `assets/og-cover.png` | 1200×630 的分享封面，微信 / 微博 / iMessage / Slack 转发时显示的图 |
 | `assets/icon-180.png` | iOS「添加到主屏幕」的图标 |
 
-> ⚠️ **上线后必做一步**：`og:image` 写的是相对路径 `/assets/og-cover.png`，
-> 但大多数平台只接受**完整网址**。把 `index.html` 里三处（`og:image`、`twitter:image`）
-> 改成 `https://你的域名/assets/og-cover.png`，分享卡片才会出图。
+> ⚠️ **换域名必做**：`og:image` / `twitter:image` / `apple-touch-icon` 写的是**完整网址**
+> （大多数平台只吃绝对路径），现在是 `https://mackxin.github.io/xingyu/...`。
+> 换成自己的域名后，把 `index.html` 里这几处前缀一并替换，分享卡片才会出图。
 >
 > 想换封面：直接替换 `assets/og-cover.png` 这张图（保持 1200×630）即可。
 
 ## 部署到自己的域名
 
-纯静态站点，任何静态托管都能放（不需要 Node、不需要构建）。推荐 **GitHub Pages**：
+纯静态站点，任何静态托管都能放（不需要 Node、不需要构建）。
+
+**当前状态：已部署在 GitHub Pages** —— 仓库 <https://github.com/Mackxin/xingyu>，
+Pages 源是 `main` 分支根目录，推上去等几十秒自动更新。
+
+```bash
+# 日常更新只做这两步
+git add -A && git commit -m "说明这次改了什么"
+git push          # 推完约 30 秒线上就变了
+```
+
+从零再建一个同样的站（换号 / 换项目时参考）：
 
 ```bash
 # 0. 前提：装好 gh（本机在 ~/.local/bin/gh）并已登录
 export PATH="$HOME/.local/bin:$PATH"
 
-# 1. 建仓库并推上去（星屿是公开的个人站，公开仓库即可）
+# 1. 建仓库并推上去
 gh repo create xingyu --public --source=. --remote=origin --push
 
-# 2. 打开 Pages：仓库 → Settings → Pages → Source 选 `main` / `root` → Save
-#    几十秒后 https://<用户名>.github.io/xingyu/ 就能访问
+# 2. 开 Pages：仓库 → Settings → Pages → Source 选 `main` / `root` → Save
+#    或用命令行一次搞定：
+gh api -X POST repos/<用户名>/xingyu/pages \
+  -f "source[branch]=main" -f "source[path]=/"
 ```
 
 > 用自定义域名（如 `xingyu.yourdomain.xyz`）时，在仓库根目录加一个 `CNAME` 文件，
 > 内容就写域名本身；再去域名商那里加一条 `CNAME` 解析指向 `<用户名>.github.io`。
+> 记得同时改掉 `index.html` 里写死的分享图网址。
 >
 > **注意**：因为用的是 `#/xxx` 形式的 hash 路由，服务器不需要任何 rewrite 规则，
 > 刷新任意页面都不会 404 —— 这是静态托管最省心的那种。
