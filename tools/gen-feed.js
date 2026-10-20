@@ -1,0 +1,113 @@
+#!/usr/bin/env node
+/* =========================================================================
+   星屿 · 生成 RSS 订阅源
+   -------------------------------------------------------------------------
+   用法：
+     node tools/gen-feed.js                       # 用默认线上地址
+     node tools/gen-feed.js https://xingyu.xyz/   # 指定站点地址
+
+   做的事情：读 assets/js/data.js 里的 feed（分享条目），按日期倒序取最新 20 条，
+   生成根目录的 feed.xml。纯静态站点没有后端，所以订阅源需要「改完内容后重新生成」。
+
+   ⚠️ 新增/修改分享后记得再跑一次，否则订阅里看不到新内容。
+   ========================================================================= */
+'use strict';
+
+var fs = require('fs');
+var path = require('path');
+var vm = require('vm');
+
+var ROOT = path.join(__dirname, '..');
+var BASE = (process.argv[2] || 'https://mackxin.github.io/xingyu/').replace(/\/?$/, '/');
+var LIMIT = 20;
+
+/* ---------- 读数据：把两个前端文件丢进沙箱跑一遍 ---------- */
+function loadData() {
+  var sandbox = { window: {} };
+  sandbox.window.window = sandbox.window;
+  vm.createContext(sandbox);
+  ['assets/js/data.js', 'assets/js/config.js'].forEach(function (rel) {
+    var code = fs.readFileSync(path.join(ROOT, rel), 'utf8');
+    vm.runInContext(code, sandbox, { filename: rel });
+  });
+  var w = sandbox.window;
+  return {
+    data: w.SITE_DATA || { feed: [] },
+    cfg: (w.XYStore && w.XYStore.DEFAULTS) || {}
+  };
+}
+
+/* ---------- 小工具 ---------- */
+function xml(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&apos;');
+}
+function abs(u) {
+  u = String(u || '').trim();
+  if (!u) return BASE;
+  if (/^https?:/i.test(u)) return u;
+  if (u.charAt(0) === '#') return BASE + u;
+  return BASE + u.replace(/^\.?\//, '');
+}
+function rfc822(dateStr) {
+  var p = String(dateStr || '').split('-');
+  if (p.length !== 3) return '';
+  var d = new Date(+p[0], +p[1] - 1, +p[2], 9, 0, 0);
+  if (isNaN(d.getTime())) return '';
+  return d.toUTCString();
+}
+
+/* ---------- 生成 ---------- */
+var loaded = loadData();
+var feed = (loaded.data.feed || []).slice();
+
+feed = feed.filter(function (f) { return f && f.title && rfc822(f.date); });
+feed.sort(function (a, b) { return String(b.date).localeCompare(String(a.date)); });
+feed = feed.slice(0, LIMIT);
+
+var siteName = loaded.cfg.siteName || '星屿';
+var latin = loaded.cfg.siteLatin || 'XINGYU';
+var tagline = loaded.cfg.tagline || '以星为图，以屿为家';
+
+var items = feed.map(function (f) {
+  var tags = (f.tags || []).map(function (t) { return '    <category>' + xml(t) + '</category>'; }).join('\n');
+  var link = abs(f.url);
+  return [
+    '  <item>',
+    '    <title>' + xml(f.title) + '</title>',
+    '    <link>' + xml(link) + '</link>',
+    '    <guid isPermaLink="true">' + xml(link) + '</guid>',
+    '    <pubDate>' + rfc822(f.date) + '</pubDate>',
+    '    <description>' + xml(f.desc || '') + '</description>',
+    tags,
+    '  </item>'
+  ].filter(Boolean).join('\n');
+}).join('\n');
+
+var now = new Date().toUTCString();
+var out = [
+  '<?xml version="1.0" encoding="UTF-8"?>',
+  '<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">',
+  '  <channel>',
+  '    <title>' + xml(siteName + ' · 灵感分享') + '</title>',
+  '    <link>' + xml(BASE) + '</link>',
+  '    <description>' + xml(tagline + ' —— 每天一小条，记录遇见的工具、灵感与小发现。') + '</description>',
+  '    <language>zh-cn</language>',
+  '    <lastBuildDate>' + now + '</lastBuildDate>',
+  '    <generator>' + xml(latin + ' gen-feed') + '</generator>',
+  '    <atom:link href="' + xml(BASE + 'feed.xml') + '" rel="self" type="application/rss+xml" />',
+  items,
+  '  </channel>',
+  '</rss>',
+  ''
+].filter(Boolean).join('\n');
+
+var dest = path.join(ROOT, 'feed.xml');
+fs.writeFileSync(dest, out, 'utf8');
+
+console.log('✓ feed.xml 已生成');
+console.log('  站点：' + BASE);
+console.log('  条目：' + feed.length + ' 条（按日期倒序，最多 ' + LIMIT + ' 条）');
+console.log('  体积：' + (Buffer.byteLength(out, 'utf8') / 1024).toFixed(1) + ' KB');
+if (feed.length) console.log('  最新：' + feed[0].date + ' · ' + feed[0].title);

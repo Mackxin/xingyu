@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>星屿 · 灵感分享</title>
+    <link>https://mackxin.github.io/xingyu/</link>
+    <description>以星为图，以屿为家 —— 每天一小条，记录遇见的工具、灵感与小发现。</description>
+    <language>zh-cn</language>
+    <lastBuildDate>Tue, 20 Oct 2026 13:24:07 GMT</lastBuildDate>
+    <generator>XINGYU gen-feed</generator>
+    <atom:link href="https://mackxin.github.io/xingyu/feed.xml" rel="self" type="application/rss+xml" />
+  <item>
+    <title>星屿导航 · 新版上线</title>
+    <link>https://mackxin.github.io/xingyu/#/nav</link>
+    <guid isPermaLink="true">https://mackxin.github.io/xingyu/#/nav</guid>
+    <pubDate>Sat, 17 Oct 2026 01:00:00 GMT</pubDate>
+    <description>把散落在浏览器书签栏里的网址重新收拢成 12 个主题岛屿，支持拼音与关键词即时搜索、收藏置顶，以及 ⌘K 一键盘点所有站点。</description>
+    <category>本站</category>
+    <category>导航</category>
+  </item>
+  <item>
+    <title>暗色玻璃拟态设计规范</title>
+    <link>https://glassmorphism.com</link>
+    <guid isPermaLink="true">https://glassmorphism.com</guid>
+    <pubDate>Sat, 17 Oct 2026 01:00:00 GMT</pubDate>
+    <description>一层柔和的极光渐变，叠上半透明玻璃卡片与 1px 高光描边，就是这套界面的全部秘密。核心只有三件事：模糊、透明度、克制的发光。</description>
+    <category>设计</category>
+    <category>CSS</category>
+  </item>
+  <item>
+    <title>纯前端单页路由的极简写法</title>
+    <link>https://developer.mozilla.org/zh-CN/docs/Web/API/Window/hashchange</link>
+    <guid isPermaLink="true">https://developer.mozilla.org/zh-CN/docs/Web/API/Window/hashchange</guid>
+    <pubDate>Fri, 16 Oct 2026 01:00:00 GMT</pubDate>
+    <description>不引入任何框架，用 hashchange 事件配合模块化的 render 函数，就能让一个 html 文件拥有流畅的多页面体验，刷新还能停在原地。</description>
+    <category>前端</category>
+    <category>技巧</category>
+  </item>
+  <item>
+    <title>用色彩指纹代替加载图标</title>
+    <link>https://mackxin.github.io/xingyu/#/nav</link>
+    <guid isPermaLink="true">https://mackxin.github.io/xingyu/#/nav</guid>
+    <pubDate>Thu, 15 Oct 2026 01:00:00 GMT</pubDate>
+    <description>担心外链图标拖慢首屏？把站点名做一次哈希映射到固定色相，生成渐变字母徽标——零请求、不闪烁、永远在线，视觉上也更统一。</description>
+    <category>设计</category>
+    <category>性能</category>
+  </item>
+  <item>
+    <title>命令面板：让键盘成为第一入口</title>
+    <link>https://cmdk.paco.me</link>
+    <guid isPermaLink="true">https://cmdk.paco.me</guid>
+    <pubDate>Wed, 14 Oct 2026 01:00:00 GMT</pubDate>
+    <description>⌘K 唤起全局搜索后，可以跨页面、跨分类、跨站点直接跳转。一次输入，四条通路——页面、分类、站内收藏与分享条目全部命中。</description>
+    <category>交互</category>
+    <category>效率</category>
+  </item>
+  <item>
+    <title>Claude</title>
+    <link>https://claude.ai</link>
+    <guid isPermaLink="true">https://claude.ai</guid>
+    <pubDate>Tue, 13 Oct 2026 01:00:00 GMT</pubDate>
+    <description>长文档理解依旧是它最稳的能力，格式复杂的合同、论文丢进去，能给出条理清晰的结构化摘要，写作时的语气也拿捏得住。</description>
+    <category>AI</category>
+    <category>工具</category>
+  </item>
+  <item>
+    <title>小宇宙播客</title>
+    <link>https://www.xiaoyuzhoufm.com</link>
+    <guid isPermaLink="true">https://www.xiaoyuzhoufm.com</guid>
+    <pubDate>Sun, 11 Oct 2026 01:00:00 GMT</pubDate>
+    <description>中文播客里少见的「干净」体验：没有过度推荐，评论区气质友好，通勤路上挑一档聊技术或聊生活的节目，时间会过得很快。</description>
+    <category>播客</category>
+    <category>生活</category>
+  </item>
+  <item>
+    <title>Excalidraw</title>
+    <link>https://excalidraw.com</link>
+    <guid isPermaLink="true">https://excalidraw.com</guid>
+    <pubDate>Fri, 09 Oct 2026 01:00:00 GMT</pubDate>
+    <description>手绘风格的无限白板，画架构图、梳理思路都不必登录。最舒服的是它刻意&quot;画不直&quot;的线条，反而让人更愿意动笔。</description>
+    <category>工具</category>
+    <category>绘图</category>
+  </item>
+  <item>
+    <title>Project Gutenberg</title>
+    <link>https://www.gutenberg.org</link>
+    <guid isPermaLink="true">https://www.gutenberg.org</guid>
+    <pubDate>Wed, 07 Oct 2026 01:00:00 GMT</pubDate>
+    <description>七万余本版权过期的经典著作，纯文本即可下载。想安静读完一本英文原著，这里是几乎不会消失的入口。</description>
+    <category>阅读</category>
+    <category>资源</category>
+  </item>
+  <item>
+    <title>Radio Garden</title>
+    <link>https://radio.garden</link>
+    <guid isPermaLink="true">https://radio.garden</guid>
+    <pubDate>Mon, 05 Oct 2026 01:00:00 GMT</pubDate>
+    <description>拖动地球仪上的绿点，就能实时收听那个城市此刻在播的电台。换个坐标，像换一个世界的背景音。</description>
+    <category>音乐</category>
+    <category>有趣</category>
+  </item>
+  <item>
+    <title>今日热榜</title>
+    <link>https://tophub.today</link>
+    <guid isPermaLink="true">https://tophub.today</guid>
+    <pubDate>Fri, 02 Oct 2026 01:00:00 GMT</pubDate>
+    <description>把各大平台的热搜榜单聚合到一页，临时想看看&quot;今天大家在聊什么&quot;的时候很好用，省去反复切换 App 的功夫。</description>
+    <category>资讯</category>
+    <category>聚合</category>
+  </item>
+  <item>
+    <title>Anki</title>
+    <link>https://apps.ankiweb.net</link>
+    <guid isPermaLink="true">https://apps.ankiweb.net</guid>
+    <pubDate>Wed, 30 Sep 2026 01:00:00 GMT</pubDate>
+    <description>间隔重复的经典实现。把要背的东西做成卡片，系统会在你&quot;快忘但还没忘&quot;的时刻推给你——长期记忆这件事，它确实认真。</description>
+    <category>学习</category>
+    <category>工具</category>
+  </item>
+  <item>
+    <title>关于「专注」的一点记录</title>
+    <link>https://mackxin.github.io/xingyu/#/share</link>
+    <guid isPermaLink="true">https://mackxin.github.io/xingyu/#/share</guid>
+    <pubDate>Mon, 28 Sep 2026 01:00:00 GMT</pubDate>
+    <description>关掉通知、清空桌面、只留一个待办，效率反而更高。工具越多不代表越自由，把入口收窄，注意力才会重新聚拢。</description>
+    <category>随笔</category>
+    <category>思考</category>
+  </item>
+  <item>
+    <title>IT Tools</title>
+    <link>https://it-tools.tech</link>
+    <guid isPermaLink="true">https://it-tools.tech</guid>
+    <pubDate>Fri, 25 Sep 2026 01:00:00 GMT</pubDate>
+    <description>开发者常用小工具的合集站点：格式化、编码转换、哈希计算、时间戳互转……完全本地运行，用完即走。</description>
+    <category>开发</category>
+    <category>工具</category>
+  </item>
+  </channel>
+</rss>

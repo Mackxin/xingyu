@@ -42,6 +42,76 @@
     var t; return function () { var a = arguments, self = this; clearTimeout(t); t = setTimeout(function () { fn.apply(self, a); }, ms); };
   }
 
+  /* ---------- 拼音首字母（让中文站名也能用拼音打） ----------
+     原理：拿汉字和 23 个「拼音锚点汉字」做 zh-CN 排序比较，落在哪个区间就取那个首字母。
+     不引入任何字库，也不联网：知→z、哔→b、网→w、易→y。
+     这样输入「zh」能命中「知乎」，「txsp」能命中「腾讯视频」。 */
+  var PY_ANCHORS = [
+    ['a', '阿'], ['b', '八'], ['c', '嚓'], ['d', '咑'], ['e', '妸'], ['f', '发'],
+    ['g', '旮'], ['h', '哈'], ['j', '讥'], ['k', '咔'], ['l', '垃'], ['m', '妈'],
+    ['n', '拿'], ['o', '噢'], ['p', '妑'], ['q', '七'], ['r', '呥'], ['s', '仨'],
+    ['t', '他'], ['w', '屲'], ['x', '夕'], ['y', '丫'], ['z', '帀']
+  ];
+  var PY_CACHE = {};
+  function pyOfChar(ch) {
+    if (PY_CACHE.hasOwnProperty(ch)) return PY_CACHE[ch];
+    var out = '';
+    if (/[a-z0-9]/i.test(ch)) out = ch.toLowerCase();
+    else if (/[\u4e00-\u9fa5]/.test(ch)) {
+      for (var i = PY_ANCHORS.length - 1; i >= 0; i--) {
+        if (ch.localeCompare(PY_ANCHORS[i][1], 'zh-CN') >= 0) { out = PY_ANCHORS[i][0]; break; }
+      }
+    }
+    PY_CACHE[ch] = out;
+    return out;
+  }
+  function pyInitials(str) {
+    var src = String(str || ''), out = '';
+    for (var i = 0; i < src.length; i++) out += pyOfChar(src.charAt(i));
+    return out;
+  }
+
+  /* ---------- 最近访问 / 最常去 ---------- */
+  var VISIT_KEY = 'xingyu.visit.v1';
+  var VISIT_MAX = 300;
+  var visits = loadVisits();
+  function loadVisits() {
+    try { return JSON.parse(localStorage.getItem(VISIT_KEY)) || {}; } catch (e) { return {}; }
+  }
+  function saveVisits() {
+    try { localStorage.setItem(VISIT_KEY, JSON.stringify(visits)); } catch (e) {}
+  }
+  /* 点一次站点就记一次：次数用来排「最常去」，时间戳用来排「最近」 */
+  function recordVisit(it) {
+    if (!it || !it.u || String(it.u).charAt(0) === '#') return;
+    var v = visits[it.u] || { n: it.n, u: it.u, d: it.d || '', c: 0, t: 0 };
+    v.n = it.n || v.n;
+    v.d = it.d || v.d;
+    v.c = (v.c || 0) + 1;
+    v.t = Date.now();
+    visits[it.u] = v;
+    // 只留最近的 VISIT_MAX 条，防止 localStorage 无限膨胀
+    var keys = Object.keys(visits);
+    if (keys.length > VISIT_MAX) {
+      keys.sort(function (a, b) { return (visits[a].t || 0) - (visits[b].t || 0); })
+        .slice(0, keys.length - VISIT_MAX)
+        .forEach(function (k) { delete visits[k]; });
+    }
+    saveVisits();
+  }
+  function visitList(kind, n) {
+    var arr = Object.keys(visits).map(function (k) { return visits[k]; })
+      .filter(function (v) { return v && v.u && v.n; });
+    arr.sort(kind === 'top'
+      ? function (a, b) { return (b.c || 0) - (a.c || 0) || (b.t || 0) - (a.t || 0); }
+      : function (a, b) { return (b.t || 0) - (a.t || 0); });
+    return arr.slice(0, n);
+  }
+  function clearVisits() {
+    visits = {};
+    saveVisits();
+  }
+
   /* ---------- 图标 ---------- */
   var I = {
     star: '<svg viewBox="0 0 24 24"><path d="M12 3.6l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.5 9.8l5.9-.9z"/></svg>',
@@ -63,6 +133,7 @@
     favOnly: false,
     feedTag: 'all',
     catFilter: '',      // 分类栏筛选词
+    recentMode: 'recent', // recent | top —— 最近访问榜的排序方式
     fav: loadFav()
   };
   var FAV_KEY = 'xingyu.fav.v1';
@@ -89,7 +160,7 @@
     allLinks = [];
     CATS.forEach(function (c) {
       c.links.forEach(function (l) {
-        allLinks.push({ n: l.n, u: l.u, d: l.d, cat: c.name, catId: c.id, icon: c.icon });
+        allLinks.push({ n: l.n, u: l.u, d: l.d, cat: c.name, catId: c.id, icon: c.icon, pin: !!l.pin, py: pyInitials(l.n) });
       });
     });
     totalLinks = allLinks.length;
@@ -106,7 +177,9 @@
   function matchLink(l, q) {
     if (!q) return true;
     var hay = norm(l.n + l.d + l.cat + l.u);
-    return hay.indexOf(q) > -1;
+    if (hay.indexOf(q) > -1) return true;
+    // 纯字母 / 数字的查询：再按拼音首字母试一次（zh → 知乎，txsp → 腾讯视频）
+    return /^[a-z0-9]+$/.test(q) && !!l.py && l.py.indexOf(q) > -1;
   }
   function searchLinks(q) {
     var n = norm(q);
@@ -268,12 +341,18 @@
   }
 
   /* ---------- 渲染：导航 ---------- */
+  /* 置顶的排在前面（稳定排序，其余保持原顺序） */
+  function sortPinned(list) {
+    return list.slice().sort(function (a, b) { return (b.pin ? 1 : 0) - (a.pin ? 1 : 0); });
+  }
+
   function linkCard(l) {
     var fav = isFav(l.u);
-    return '<a class="link-card" href="' + esc(l.u) + '" target="_blank" rel="noopener">' +
+    return '<a class="link-card' + (l.pin ? ' is-pinned' : '') + '" href="' + esc(l.u) + '" target="_blank" rel="noopener"' +
+      ' data-n="' + esc(l.n) + '" data-u="' + esc(l.u) + '" data-d="' + esc(l.d || '') + '">' +
       glyph(l.n, 'sm') +
       '<span class="link-card__body">' +
-        '<span class="link-card__name">' + esc(l.n) + '</span>' +
+        '<span class="link-card__name">' + esc(l.n) + (l.pin ? '<i class="pin" aria-label="置顶" title="置顶">📌</i>' : '') + '</span>' +
         '<span class="link-card__desc">' + esc(l.d || hostOf(l.u)) + '</span>' +
       '</span>' +
       '<span class="link-card__act">' +
@@ -283,11 +362,37 @@
       '</a>';
   }
 
+  /* 最近访问 / 最常去 —— 有记录才出现 */
+  function recentBlockHtml() {
+    var list = visitList(state.recentMode === 'top' ? 'top' : 'recent', 10);
+    if (!list.length) return '';
+    var chips = list.map(function (v) {
+      var badge = state.recentMode === 'top' && v.c > 1 ? '<i class="recent-chip__n">' + v.c + '</i>' : '';
+      return '<a class="recent-chip" href="' + esc(v.u) + '" target="_blank" rel="noopener"' +
+        ' data-n="' + esc(v.n) + '" data-u="' + esc(v.u) + '" data-d="' + esc(v.d || '') + '"' +
+        ' title="' + esc(v.n + (v.d ? ' · ' + v.d : '')) + '">' +
+        '<span class="recent-chip__name">' + esc(v.n) + '</span>' + badge + '</a>';
+    }).join('');
+    var isTop = state.recentMode === 'top';
+    return '<div class="recent">' +
+        '<div class="recent__head">' +
+          '<h2>' + (isTop ? '最常去' : '最近访问') + '</h2>' +
+          '<span class="count">' + (isTop ? '按点击次数排' : '按最近的顺序排') + '</span>' +
+          '<span class="recent__ops">' +
+            '<button class="pill pill--btn" type="button" id="recentModeBtn">' +
+              (isTop ? '↺ 看最近的' : '🔥 看最常去') + '</button>' +
+            '<button class="recent__clear" type="button" id="recentClear" title="清空访问记录">清空</button>' +
+          '</span>' +
+        '</div>' +
+        '<div class="recent__rail">' + chips + '</div>' +
+      '</div>';
+  }
+
   function renderNav() {
     var q = state.query;
     var searching = !!norm(q) || state.favOnly;
     var results = searching
-      ? searchLinks(q).filter(function (l) { return !state.favOnly || isFav(l.u); })
+      ? sortPinned(searchLinks(q).filter(function (l) { return !state.favOnly || isFav(l.u); }))
       : [];
 
     var meta = searching
@@ -349,14 +454,16 @@
       return '<div class="cat-block" id="cat-' + esc(c.id) + '" data-cat-block="' + esc(c.id) + '">' +
         '<div class="cat-block__head"><h2>' + esc(c.icon) + ' ' + esc(c.name) + '</h2>' +
           '<span class="count">' + c.links.length + ' 个站点 · ' + esc(c.desc) + '</span></div>' +
-        '<div class="link-grid">' + c.links.map(function (l) {
-          return linkCard({ n: l.n, u: l.u, d: l.d });
+        '<div class="link-grid">' + sortPinned(c.links).map(function (l) {
+          return linkCard({ n: l.n, u: l.u, d: l.d, pin: l.pin });
         }).join('') + '</div>' +
         '</div>';
     }).join('');
 
     return '<section class="page">' + head +
-      '<div class="nav-layout">' + rail + '<div class="nav-body">' + blocks + '</div></div></section>';
+      '<div class="nav-layout">' + rail +
+        '<div class="nav-body">' + recentBlockHtml() + blocks + '</div>' +
+      '</div></section>';
   }
 
   function navHead(meta) {
@@ -590,6 +697,19 @@
     syncCatBtn(null);   // 进入导航页先归位，滚动后由下方 spy 联动
     var favBtn = $('#favToggle');
     if (favBtn) favBtn.addEventListener('click', function () { state.favOnly = !state.favOnly; softRender(); });
+
+    // 「最近访问 / 最常去」切换 + 清空
+    var modeBtn = $('#recentModeBtn');
+    if (modeBtn) modeBtn.addEventListener('click', function () {
+      state.recentMode = state.recentMode === 'top' ? 'recent' : 'top';
+      softRender();
+    });
+    var clrBtn = $('#recentClear');
+    if (clrBtn) clrBtn.addEventListener('click', function () {
+      clearVisits();
+      toast('已清空访问记录');
+      softRender();
+    });
 
     var railList = $('#catRailList');
     if (railList) {
@@ -894,6 +1014,8 @@
     FEED.forEach(function (f) {
       list.push({ type: '分享', name: f.title, sub: f.date + ' · ' + (f.tags || []).join(' '), url: f.url, icon: f.icon, external: f.url.charAt(0) !== '#' });
     });
+    // 拼音索引：输入 zh / txsp 也能命中
+    list.forEach(function (it) { it.py = pyInitials(it.name); });
     return list;
   }
   var PALETTE_INDEX = buildPaletteIndex();
@@ -960,7 +1082,10 @@
   function paletteRender(q) {
     var n = norm(q);
     var hits = n
-      ? PALETTE_INDEX.filter(function (it) { return norm(it.name + it.sub + it.type).indexOf(n) > -1; })
+      ? PALETTE_INDEX.filter(function (it) {
+          if (norm(it.name + it.sub + it.type).indexOf(n) > -1) return true;
+          return /^[a-z0-9]+$/.test(n) && !!it.py && it.py.indexOf(n) > -1;
+        })
       : PALETTE_INDEX.slice(0, 12);
     palette.items = hits.slice(0, 40);
     if (palette.sel >= palette.items.length) palette.sel = 0;
@@ -999,7 +1124,9 @@
   function paletteActivate() {
     var it = palette.items[palette.sel];
     if (!it) return;
-    go(it.url, !!it.external || it.url.charAt(0) !== '#');
+    var ext = !!it.external || it.url.charAt(0) !== '#';
+    if (ext) recordVisit({ n: it.name, u: it.url, d: it.sub });
+    go(it.url, ext);
   }
   function go(url, external) {
     paletteClose();
@@ -1097,6 +1224,8 @@
     if (sw) sw.hidden = !c.showSearch;
     // 链接卡片左侧图标（后台可关，只影响电脑端）
     document.documentElement.setAttribute('data-icons', c.showIcons === false ? 'off' : 'on');
+    // 卡片密度：compact | normal | comfy
+    document.documentElement.setAttribute('data-density', c.cardDensity || 'normal');
   }
 
   /* ---------- Toast ---------- */
@@ -1299,6 +1428,15 @@
       }
       var rand = e.target.closest('#heroRandom');
       if (rand) { randomLink(); return; }
+      // 点了站点卡片 / 最近记录 → 记一次访问（收藏、复制按钮已在上面 return 掉）
+      var visitEl = e.target.closest('.link-card, .recent-chip');
+      if (visitEl) {
+        recordVisit({
+          n: visitEl.getAttribute('data-n'),
+          u: visitEl.getAttribute('data-u'),
+          d: visitEl.getAttribute('data-d')
+        });
+      }
     });
 
     window.addEventListener('resize', debounce(function () { updateGlider(); syncHeaderVar(); }, 150));
@@ -1444,6 +1582,14 @@
     if (document.fonts && document.fonts.ready && document.fonts.ready.then) {
       document.fonts.ready.then(function () { updateGlider(); });
     }
+
+    /* PWA：注册 Service Worker —— 注册成功后可以「添加到主屏幕」并离线打开。
+       file:// 直接双击打开时不支持 SW，会自动跳过，不影响其它功能。 */
+    if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+      window.addEventListener('load', function () {
+        try { navigator.serviceWorker.register('sw.js').catch(function () {}); } catch (e) {}
+      });
+    }
   }
 
   /* ---------- 供后台面板（admin.js）调用 ---------- */
@@ -1456,7 +1602,16 @@
     toast: toast,
     esc: esc,
     rerender: function () { render({ animate: false, resetScroll: false }); },
-    go: navigate
+    go: navigate,
+    /* 云备份用：把「最近访问 / 收藏」也一起带走 */
+    visits: {
+      get: function () { return visits; },
+      set: function (v) { visits = (v && typeof v === 'object') ? v : {}; saveVisits(); }
+    },
+    fav: {
+      get: function () { return state.fav; },
+      set: function (v) { state.fav = Array.isArray(v) ? v : []; saveFav(); }
+    }
   };
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);

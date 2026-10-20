@@ -159,10 +159,12 @@
             '<input type="search" id="adminSiteSearch" placeholder="搜索站点名 / 网址 / 描述 / 分类…" value="' + esc(siteQuery) + '" autocomplete="off" aria-label="搜索站点数据" />' +
           '</div>' +
           '<button class="btn btn--primary" type="button" id="adminAddCat">＋ 新增分类</button>' +
+          '<button class="btn btn--ghost" type="button" id="adminImportBm">📥 导入书签</button>' +
           '<button class="btn btn--ghost" type="button" id="adminExpandAll">展开全部</button>' +
           '<button class="btn btn--ghost" type="button" id="adminCollapseAll">收起全部</button>' +
           '<button class="btn btn--danger" type="button" id="adminResetData"' + (Store.dataIsCustom() ? '' : ' disabled') + '>恢复默认数据</button>' +
         '</div>' +
+        '<input type="file" id="bmFile" accept=".html,.htm,text/html" hidden />' +
         '<p class="admin-tip">数据来自 <code>assets/js/data.js</code>；在这里改动会覆盖它（只影响本机）。点「恢复默认数据」即可还原。展开分类后会<b>独占一整行</b>，站点很多时列表内部滚动，不会把页面撑长。</p>' +
       '</div>' +
       '<div class="admin-cats" id="adminCats" data-drag-box="cat" data-drag-grid="1">' + catsListHtml() + '</div>';
@@ -239,9 +241,152 @@
         '<input data-link-f="u" value="' + esc(l.u) + '" placeholder="https://…" spellcheck="false" aria-label="站点链接" />' +
         '<input data-link-f="d" value="' + esc(l.d) + '" placeholder="一句话描述" aria-label="站点描述" />' +
         '<span class="admin-link__ops">' +
+          '<button type="button" data-link-op="pin" data-li="' + li + '"' +
+            ' class="alink__pin' + (l.pin ? ' is-on' : '') + '"' +
+            ' aria-pressed="' + (!!l.pin) + '" title="置顶（排在分类最前面）" aria-label="置顶">📌</button>' +
           '<button type="button" data-link-op="del" data-li="' + li + '" class="is-danger" title="删除">✕</button>' +
         '</span>' +
       '</div>';
+  }
+
+  /* ======================= 浏览器书签导入 ======================= */
+  /* Chrome / Edge / Firefox / Safari 导出的都是 Netscape Bookmark 格式的 HTML，
+     纯前端用 DOMParser 就能拆成一棵 DL/DT 树，不需要任何后端。 */
+
+  var BM_ROOT_NAMES = ['书签栏', '书签工具栏', '其他书签', '收藏夹', '收藏夹栏', '其他收藏',
+                       'Bookmarks bar', 'Bookmarks Toolbar', 'Other bookmarks', 'Bookmarks Menu'];
+
+  /* 一个链接归到哪个分类：找它所在 DL 的「文件夹名」，找不到就往上找一层 */
+  function bmFolderOf(a) {
+    var dl = a.closest ? a.closest('dl') : null;
+    var guard = 0;
+    while (dl && guard++ < 20) {
+      var h = null, p = dl.parentElement;
+      if (p && p.tagName === 'DT') h = p.querySelector('h3');
+      if (!h) {
+        var s = dl.previousElementSibling;
+        while (s && !h) {
+          if (s.tagName === 'DT') h = s.querySelector('h3');
+          else if (s.tagName === 'H3') h = s;
+          s = s.previousElementSibling;
+        }
+      }
+      var name = h ? String(h.textContent || '').trim() : '';
+      if (name) return name;
+      dl = p && p.closest ? p.closest('dl') : null;
+    }
+    return '';
+  }
+
+  function bmKey(u) { return String(u || '').trim().replace(/\/+$/, '').toLowerCase(); }
+
+  /* 解析书签 HTML → { groups: [{name, links:[{n,u,d}]}], total, skipped } */
+  function parseBookmarks(html) {
+    var doc;
+    try { doc = new DOMParser().parseFromString(html, 'text/html'); } catch (e) { return null; }
+    if (!doc) return null;
+
+    var existing = {};
+    cats().forEach(function (c) {
+      (c.links || []).forEach(function (l) { if (l.u) existing[bmKey(l.u)] = true; });
+    });
+
+    var seen = {}, groups = {}, order = [], total = 0, skipped = 0;
+
+    Array.prototype.forEach.call(doc.querySelectorAll('a[href]'), function (a) {
+      var u = String(a.getAttribute('href') || '').trim();
+      if (!u) { skipped++; return; }
+      // 跳过脚本伪协议 / 站内锚点 / 空地址
+      if (/^(javascript:|data:|place:|about:)/i.test(u) || u.charAt(0) === '#' || !/^[a-z]+:/i.test(u)) { skipped++; return; }
+      var k = bmKey(u);
+      if (existing[k] || seen[k]) { skipped++; return; }
+      seen[k] = true;
+
+      var name = String(a.textContent || '').trim().slice(0, 20) || hostOfJs(u);
+      var folder = bmFolderOf(a);
+      if (!folder || BM_ROOT_NAMES.indexOf(folder) > -1) folder = '未分类';
+      folder = folder.slice(0, 16);
+
+      if (!groups[folder]) { groups[folder] = []; order.push(folder); }
+      groups[folder].push({ n: name, u: u, d: '' });
+      total++;
+    });
+
+    if (!total) return { groups: [], total: 0, skipped: skipped };
+    return {
+      groups: order.map(function (name) { return { name: name, links: groups[name] }; }),
+      total: total,
+      skipped: skipped
+    };
+  }
+
+  function hostOfJs(u) {
+    try { return new URL(u).hostname.replace(/^www\./, ''); } catch (e) { return '未命名'; }
+  }
+
+  function bindBookmarkImport(root, body) {
+    var btn = body.querySelector('#adminImportBm');
+    var file = body.querySelector('#bmFile');
+    if (!btn || !file) return;
+
+    btn.addEventListener('click', function () { file.click(); });
+
+    file.addEventListener('change', function () {
+      var f = file.files && file.files[0];
+      if (!f) return;
+      var reader = new FileReader();
+      reader.onload = function () {
+        var res = null;
+        try { res = parseBookmarks(String(reader.result || '')); } catch (e) { res = null; }
+        if (!res) { toast('这个文件读不出来，请确认是浏览器导出的书签 HTML'); return; }
+        if (!res.total) {
+          askConfirm({
+            icon: '📭',
+            title: '没有可以导入的站点',
+            desc: '文件里' + (res.skipped ? '的 ' + res.skipped + ' 个链接都是重复或无效的' : '没找到任何书签链接') + '。<br>' +
+                  '请确认导出的是<b>书签 HTML 文件</b>（Chrome：书签管理器 → ⋮ → 导出书签）。',
+            ok: '知道了', cancel: '关闭', safe: true
+          }, function () {});
+          return;
+        }
+        var catCount = res.groups.length;
+        var sample = res.groups.slice(0, 6).map(function (g) {
+          return '<b>' + esc(g.name) + '</b>（' + g.links.length + '）';
+        }).join('、') + (catCount > 6 ? ' 等 ' + catCount + ' 个分类' : '');
+
+        askConfirm({
+          icon: '📥',
+          title: '导入 ' + res.total + ' 个站点？',
+          desc: '会把书签按文件夹分成 <b>' + catCount + ' 个分类</b>，追加到现有站点后面（<b>不会覆盖</b>你现在的内容）。<br>' +
+                sample + '。' +
+                (res.skipped ? '<br>已自动跳过 <b>' + res.skipped + '</b> 个重复 / 无效链接。' : '') +
+                '<br><span style="color:var(--text-mute)">同名分类会自动合并；导入后可以随时拖动排序或删除。</span>',
+          ok: '确认导入',
+          safe: true
+        }, function () {
+          var addedCats = 0;
+          mutate(function (list) {
+            res.groups.forEach(function (g) {
+              var hit = null;
+              for (var i = 0; i < list.length; i++) if (list[i].name === g.name) { hit = list[i]; break; }
+              if (hit) {
+                hit.links = (hit.links || []).concat(g.links);
+              } else {
+                list.push({ id: newCatId(), name: g.name, icon: '📁', desc: '从浏览器书签导入', links: g.links });
+                addedCats++;
+              }
+            });
+          });
+          siteQuery = '';
+          var s = root.querySelector('#adminSiteSearch'); if (s) s.value = '';
+          refreshBody(root);
+          toast('已导入 ' + res.total + ' 个站点' + (addedCats ? '，新增 ' + addedCats + ' 个分类' : ''));
+        });
+      };
+      reader.onerror = function () { toast('读取文件失败'); };
+      reader.readAsText(f, 'utf-8');
+      file.value = '';
+    });
   }
 
   /* ======================= 自定义链接 ======================= */
@@ -327,6 +472,12 @@
           '<select data-site="themeDefault">' +
             '<option value="dark"' + (c.themeDefault === 'dark' ? ' selected' : '') + '>暗色</option>' +
             '<option value="light"' + (c.themeDefault === 'light' ? ' selected' : '') + '>明亮</option>' +
+          '</select></label>' +
+        '<label class="admin-field"><span class="admin-field__label">卡片密度<em>导航页一行放几个站点</em></span>' +
+          '<select data-site="cardDensity">' +
+            '<option value="compact"' + (c.cardDensity === 'compact' ? ' selected' : '') + '>紧凑 · 一屏装最多</option>' +
+            '<option value="normal"' + (c.cardDensity !== 'compact' && c.cardDensity !== 'comfy' ? ' selected' : '') + '>标准</option>' +
+            '<option value="comfy"' + (c.cardDensity === 'comfy' ? ' selected' : '') + '>宽松 · 描述更舒展</option>' +
           '</select></label>' +
         '<label class="admin-switch"><input type="checkbox" data-site="showSearch"' + (c.showSearch ? ' checked' : '') + ' />' +
           '<span class="admin-switch__track"><span class="admin-switch__dot"></span></span>' +
@@ -541,6 +692,25 @@
         '<input type="file" id="bkFile" accept=".json,application/json" hidden />' +
       '</div>' +
 
+      '<div class="admin-card">' +
+        '<div class="admin-card__head">' +
+          '<div><h2>云备份 · GitHub Gist</h2>' +
+            '<p>存进你自己 GitHub 账号下的一个<b>私有 Gist</b>，换电脑、换浏览器都能一键拿回来。</p></div>' +
+          '<span class="admin-count" id="gistBadge">未连接</span>' +
+        '</div>' +
+        '<label class="admin-field"><span class="admin-field__label">GitHub Token<em>需要 gist 权限（classic token 勾 gist 即可）</em></span>' +
+          '<input type="password" id="gistToken" placeholder="ghp_… 或 github_pat_…" autocomplete="off" spellcheck="false" />' +
+        '</label>' +
+        '<div class="admin-actions">' +
+          '<button class="btn btn--primary" type="button" id="gistUp">⬆ 上传到云端</button>' +
+          '<button class="btn btn--ghost" type="button" id="gistDown">⬇ 从云端恢复</button>' +
+          '<button class="btn btn--ghost" type="button" id="gistForget">断开</button>' +
+        '</div>' +
+        '<p class="admin-tip" id="gistStatus">还没连过。第一次点「上传到云端」会自动新建一个私有 Gist；之后再传会更新同一个。</p>' +
+        '<p class="admin-tip"><b>关于 Token 安全：</b>Token 只存在你这台浏览器的 localStorage 里，' +
+          '只会发往 <code>api.github.com</code>，不会经过任何第三方服务器。公用电脑上用完记得点「断开」。</p>' +
+      '</div>' +
+
       '<div class="admin-card admin-card--danger">' +
         '<h2>恢复默认</h2>' +
         '<p>清掉本机保存的后台改动，回到 <code>data.js</code> / <code>config.js</code> 里的出厂状态。' +
@@ -606,6 +776,192 @@
     var d = new Date();
     function p(n) { return (n < 10 ? '0' : '') + n; }
     return d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + '-' + p(d.getHours()) + p(d.getMinutes());
+  }
+
+  /* ======================= 云备份：GitHub Gist ======================= */
+  var GIST_KEY = 'xingyu.gist.v1';
+  var GIST_FILE = 'xingyu-backup.json';
+
+  function gistCfg() {
+    try { return JSON.parse(localStorage.getItem(GIST_KEY)) || {}; } catch (e) { return {}; }
+  }
+  function gistSaveCfg(o) {
+    try { localStorage.setItem(GIST_KEY, JSON.stringify(o || {})); } catch (e) {}
+  }
+  function gistApi(path, token, opts) {
+    opts = opts || {};
+    return fetch('https://api.github.com' + path, {
+      method: opts.method || 'GET',
+      headers: {
+        'Authorization': 'Bearer ' + token,
+        'Accept': 'application/vnd.github+json',
+        'Content-Type': 'application/json'
+      },
+      body: opts.body ? JSON.stringify(opts.body) : undefined
+    }).then(function (r) {
+      return r.text().then(function (txt) {
+        var j = null;
+        try { j = JSON.parse(txt); } catch (e) {}
+        if (!r.ok) {
+          var msg = (j && j.message) || ('HTTP ' + r.status);
+          if (r.status === 401) msg = 'Token 不对或已过期';
+          else if (r.status === 403) msg = 'Token 没有 gist 权限';
+          else if (r.status === 404) msg = '找不到这个 Gist（可能被删了）';
+          throw new Error(msg);
+        }
+        return j;
+      });
+    });
+  }
+
+  /* 云端包：站点数据 + 设置 + 收藏 + 最近访问 */
+  function cloudPayload() {
+    var a = app();
+    return {
+      app: 'xingyu',
+      version: 2,
+      exportedAt: new Date().toISOString(),
+      config: Store.get(),
+      data: Store.dataAll(),
+      fav: (a.fav && a.fav.get) ? a.fav.get() : [],
+      visits: (a.visits && a.visits.get) ? a.visits.get() : {}
+    };
+  }
+
+  function gistForget(root) {
+    gistSaveCfg({});
+    var t = root.querySelector('#gistToken'); if (t) t.value = '';
+    gistPaint(root);
+    toast('已断开云端连接');
+  }
+
+  function gistPaint(root) {
+    var c = gistCfg();
+    var badge = root.querySelector('#gistBadge');
+    var st = root.querySelector('#gistStatus');
+    var tok = root.querySelector('#gistToken');
+    if (tok && c.token && !tok.value) tok.value = c.token;
+    if (badge) {
+      badge.textContent = c.id ? '已连接' : '未连接';
+      badge.classList.toggle('is-full', !!c.id);
+    }
+    if (st) {
+      if (c.id) {
+        st.innerHTML = '已连接 Gist <code>' + esc(String(c.id).slice(0, 10)) + '…</code>' +
+          (c.at ? ' · 上次同步 ' + esc(c.at) : '') +
+          ' · <a href="https://gist.github.com/' + esc(c.id) + '" target="_blank" rel="noopener" style="text-decoration:underline">在 GitHub 打开</a>';
+        st.style.color = '';
+      }
+    }
+  }
+
+  function bindGist(root, body) {
+    var upBtn = body.querySelector('#gistUp');
+    if (!upBtn) return;
+    var tokEl = body.querySelector('#gistToken');
+    var downBtn = body.querySelector('#gistDown');
+    var forgetBtn = body.querySelector('#gistForget');
+    gistPaint(root);
+
+    function token() {
+      var t = tokEl ? String(tokEl.value || '').trim() : '';
+      if (!t) {
+        var saved = gistCfg().token;
+        if (saved) return saved;
+        toast('先填一个 GitHub Token');
+        return '';
+      }
+      return t;
+    }
+    function setStatus(html, isErr) {
+      var st = root.querySelector('#gistStatus');
+      if (!st) return;
+      st.innerHTML = html;
+      st.style.color = isErr ? 'var(--text-danger, #e2675c)' : '';
+    }
+
+    upBtn.addEventListener('click', function () {
+      var t = token();
+      if (!t) return;
+      var id = gistCfg().id;
+      var payload = cloudPayload();
+      var body2 = {
+        description: '星屿 XingYu · 自动备份',
+        public: false,
+        files: {}
+      };
+      body2.files[GIST_FILE] = { content: JSON.stringify(payload, null, 2) };
+      upBtn.disabled = true;
+      setStatus('正在上传…');
+      gistApi(id ? '/gists/' + id : '/gists', t, { method: id ? 'PATCH' : 'POST', body: body2 })
+        .then(function (j) {
+          gistSaveCfg({ token: t, id: j.id, at: new Date().toLocaleString('zh-CN') });
+          gistPaint(root);
+          setStatus('已上传 ✓ ' + new Date().toLocaleTimeString('zh-CN'));
+          toast('☁️ 已备份到 Gist');
+        })
+        .catch(function (e) {
+          setStatus('上传失败：' + esc(e.message), true);
+          toast('上传失败：' + e.message);
+        })
+        .then(function () { upBtn.disabled = false; });
+    });
+
+    if (downBtn) downBtn.addEventListener('click', function () {
+      var t = token();
+      if (!t) return;
+      var id = gistCfg().id;
+      if (!id) { toast('还没有云端备份，先点「上传到云端」'); return; }
+      downBtn.disabled = true;
+      setStatus('正在读取…');
+      gistApi('/gists/' + id, t)
+        .then(function (j) {
+          var f = j.files && j.files[GIST_FILE];
+          if (!f) throw new Error('这个 Gist 里没有备份文件');
+          if (f.truncated && f.raw_url) {
+            return fetch(f.raw_url).then(function (r) { return r.text(); });
+          }
+          return f.content;
+        })
+        .then(function (txt) {
+          var obj = null;
+          try { obj = JSON.parse(txt); } catch (e) {}
+          var info = describeBackup(obj);
+          if (!info) throw new Error('备份内容无法识别');
+          var extra = [];
+          if (obj.fav) extra.push((obj.fav.length || 0) + ' 个收藏');
+          if (obj.visits) extra.push(Object.keys(obj.visits).length + ' 条访问记录');
+          downBtn.disabled = false;
+          setStatus('云端有一份备份');
+          askConfirm({
+            icon: '☁️',
+            title: '用云端备份覆盖本机？',
+            desc: '云端这份包含 ' + info + (extra.length ? '，' + extra.join('、') : '') + '。<br>' +
+                  '恢复后本机当前的内容会被覆盖，<b>无法撤销</b>。',
+            ok: '确认恢复'
+          }, function () {
+            applyBackup(obj);
+            if (obj.fav && app().fav && app().fav.set) app().fav.set(obj.fav);
+            if (obj.visits && app().visits && app().visits.set) app().visits.set(obj.visits);
+            toast('云端备份已恢复 ✦');
+            syncAfterRestore(true);
+          });
+        })
+        .catch(function (e) {
+          downBtn.disabled = false;
+          setStatus('读取失败：' + esc(e.message), true);
+          toast('读取失败：' + e.message);
+        });
+    });
+
+    if (forgetBtn) forgetBtn.addEventListener('click', function () {
+      askConfirm({
+        icon: '🔌',
+        title: '断开云端连接？',
+        desc: '只是清掉本机保存的 Token 和 Gist 编号，<b>云端那份备份还在</b>，下次重新填 Token 就能继续用。',
+        ok: '断开', cancel: '算了', safe: true
+      }, function () { gistForget(root); });
+    });
   }
 
   /* ======================= 口令 ======================= */
@@ -782,7 +1138,20 @@
         if (!btn || !catsWrap.contains(btn)) return;
         var ci = +btn.closest('.acat').getAttribute('data-ci');
         var li = +btn.getAttribute('data-li');
-        if (btn.getAttribute('data-link-op') !== 'del') return;
+        var op = btn.getAttribute('data-link-op');
+        if (op === 'pin') {
+          var nowOn = false;
+          mutate(function (list) {
+            var it = list[ci].links[li];
+            it.pin = !it.pin;
+            if (!it.pin) delete it.pin;
+            nowOn = !!it.pin;
+          });
+          refreshCats(root);
+          toast(nowOn ? '已置顶，会排在分类最前面' : '已取消置顶');
+          return;
+        }
+        if (op !== 'del') return;
         mutate(function (list) { list[ci].links.splice(li, 1); });
         refreshCats(root);
         toast('已删除站点');
@@ -815,12 +1184,13 @@
     if (expAll) expAll.addEventListener('click', function () {
       cats().forEach(function (c) { openCats[c.id] = true; });
       refreshCats(root);
-    });
-    var colAll = body.querySelector('#adminCollapseAll');
+    });    var colAll = body.querySelector('#adminCollapseAll');
     if (colAll) colAll.addEventListener('click', function () {
       openCats = {};
       refreshCats(root);
     });
+
+    bindBookmarkImport(root, body);
 
     var resetData = body.querySelector('#adminResetData');
     if (resetData) resetData.addEventListener('click', function () {
@@ -1094,6 +1464,8 @@
         reader.readAsText(f);
       });
     }
+
+    bindGist(root, body);
 
     /* 恢复默认（都先确认） */
     var bkResetCfg = body.querySelector('#bkResetCfg');

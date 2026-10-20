@@ -27,6 +27,7 @@
     themeDefault: 'dark',      // dark | light
     showSearch: true,          // 顶栏是否显示搜索框
     showIcons: true,           // 站点卡片左侧图标（后台可关；只影响电脑端，手机端本来就不显示）
+    cardDensity: 'normal',     // compact | normal | comfy —— 导航页卡片密度
     logoImage: '',             // 顶栏 Logo 图片（data URL 或网址）；空 = 内置星形 SVG
     favicon: '',               // 浏览器标签图标；空 = 内置 SVG
     startDate: '2024-01-01',   // 建站日期（YYYY-MM-DD）—— 首页「成长天数」从这里算
@@ -170,6 +171,8 @@
       target.home = normHome(target.home);
     }
     target.startDate = normDate(target.startDate, DEFAULTS.startDate);
+    target.cardDensity = ['compact', 'normal', 'comfy'].indexOf(target.cardDensity) > -1
+      ? target.cardDensity : DEFAULTS.cardDensity;
     if (!Array.isArray(target.customLinks)) target.customLinks = [];
     target.customLinks = target.customLinks.slice(0, MAX_LINKS).map(normLink);
     return target;
