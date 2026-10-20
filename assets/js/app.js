@@ -174,16 +174,41 @@
   }
 
   /* ---------- 索引 / 搜索 ---------- */
+  /* 字母按顺序出现即算命中：gh → GitHub，mdn → MDN（只用于 2–5 位的短查询） */
+  function isSubseq(q, s) {
+    var i = 0, j = 0;
+    while (i < q.length && j < s.length) { if (q.charAt(i) === s.charAt(j)) i++; j++; }
+    return i === q.length;
+  }
+  function skeletonHit(q, l) {
+    if (q.length < 2 || q.length > 5 || !/^[a-z0-9]+$/.test(q)) return false;
+    return isSubseq(q, norm(l.n));
+  }
+
   function matchLink(l, q) {
     if (!q) return true;
     var hay = norm(l.n + l.d + l.cat + l.u);
     if (hay.indexOf(q) > -1) return true;
     // 纯字母 / 数字的查询：再按拼音首字母试一次（zh → 知乎，txsp → 腾讯视频）
-    return /^[a-z0-9]+$/.test(q) && !!l.py && l.py.indexOf(q) > -1;
+    if (/^[a-z0-9]+$/.test(q) && !!l.py && l.py.indexOf(q) > -1) return true;
+    return skeletonHit(q, l);
   }
   function searchLinks(q) {
     var n = norm(q);
-    return allLinks.filter(function (l) { return matchLink(l, n); });
+    var hits = allLinks.filter(function (l) { return matchLink(l, n); });
+    if (!n) return hits;
+    // 排序：站名命中 > 拼音前缀 > 拼音包含 > 描述/网址命中
+    // 否则搜「zh」时 Convertio 会因为网址里有 /zh/ 抢在「知乎」前面
+    var score = function (l) {
+      if (norm(l.n).indexOf(n) > -1) return 0;
+      if (!/^[a-z0-9]+$/.test(n) || !l.py) return skeletonHit(n, l) ? 4 : 3;
+      if (l.py.indexOf(n) === 0) return 1;
+      if (l.py.indexOf(n) > -1) return 2;
+      return skeletonHit(n, l) ? 4 : 3;
+    };
+    return hits.map(function (l) { return { l: l, s: score(l) }; })
+      .sort(function (a, b) { return a.s - b.s; })
+      .map(function (x) { return x.l; });
   }
 
   /* ---------- 渲染：首页 ---------- */
