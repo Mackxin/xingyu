@@ -16,6 +16,7 @@
   var CFG_KEY = 'xingyu.config.v1';
   var DATA_KEY = 'xingyu.data.v1';
   var POSTS_KEY = 'xingyu.posts.v1';
+  var FEED_KEY = 'xingyu.feed.v1';
   var PASS_KEY = 'xingyu.pass.v1';
   var OPEN_KEY = 'xingyu.unlocked.v1';
 
@@ -207,6 +208,25 @@
       body: String(p.body == null ? '' : p.body).slice(0, 400000),
       pin: !!p.pin,
       draft: !!p.draft
+    };
+  }
+
+  /* 一条分享：日期、图标、标题、链接、描述、标签 */
+  function normFeed(f) {
+    f = f || {};
+    var tags = Array.isArray(f.tags) ? f.tags : [];
+    tags = tags.map(function (t) { return String(t == null ? '' : t).trim().slice(0, 16); })
+      .filter(Boolean).filter(function (t, k, a) { return a.indexOf(t) === k; }).slice(0, 6);
+    var url = String(f.url == null ? '' : f.url).trim().slice(0, 500);
+    /* 链接会直接进 href：javascript: / data: 这类协议一律清掉 */
+    if (/^(javascript|data|vbscript|file):/i.test(url)) url = '';
+    return {
+      date: normDate(f.date, '') || '',
+      icon: String(f.icon == null ? '' : f.icon).slice(0, 4).trim() || '✨',
+      title: String(f.title == null ? '' : f.title).slice(0, 120).trim() || '未命名分享',
+      url: url,
+      desc: String(f.desc == null ? '' : f.desc).slice(0, 800),
+      tags: tags
     };
   }
 
@@ -403,6 +423,53 @@
       try { v = JSON.parse(str); } catch (e) { return false; }
       if (!Array.isArray(v)) return false;
       return Store.setPosts(v) !== false;
+    },
+
+    /* ---------- 分享条目（#/share 时间线） ---------- */
+    /* 后台用：始终返回独立副本（已按日期倒序，和前台分组顺序一致） */
+    feedAll: function () {
+      var raw = null;
+      try { raw = localStorage.getItem(FEED_KEY); } catch (e) {}
+      if (raw) {
+        try { var v = JSON.parse(raw); if (Array.isArray(v)) return clone(v); } catch (e) {}
+      }
+      return clone((window.SITE_DATA && window.SITE_DATA.feed) || []);
+    },
+    /* 前台只读：没有本地覆盖时直接返回原数组引用，零开销 */
+    feed: function () {
+      var raw = null;
+      try { raw = localStorage.getItem(FEED_KEY); } catch (e) {}
+      if (raw) {
+        try { var v = JSON.parse(raw); if (Array.isArray(v)) return v; } catch (e) {}
+      }
+      return (window.SITE_DATA && window.SITE_DATA.feed) || [];
+    },
+    feedIsCustom: function () {
+      try { return !!localStorage.getItem(FEED_KEY); } catch (e) { return false; }
+    },
+    setFeed: function (list) {
+      var arr = (Array.isArray(list) ? list : []).map(normFeed);
+      /* 存的时候就排好：日期倒序、同一天保持你排的顺序（Array.sort 是稳定排序） */
+      arr.sort(function (a, b) { return String(b.date || '').localeCompare(String(a.date || '')); });
+      try { localStorage.setItem(FEED_KEY, JSON.stringify(arr)); }
+      catch (e) {
+        Store.saveFailed = true;
+        return false;
+      }
+      Store.saveFailed = false;
+      document.dispatchEvent(new CustomEvent('xy:feed', { detail: arr }));
+      return arr;
+    },
+    resetFeed: function () {
+      try { localStorage.removeItem(FEED_KEY); } catch (e) {}
+      document.dispatchEvent(new CustomEvent('xy:feed', { detail: Store.feed() }));
+    },
+    exportFeedJSON: function () { return JSON.stringify(Store.feedAll(), null, 2); },
+    importFeedJSON: function (str) {
+      var v;
+      try { v = JSON.parse(str); } catch (e) { return false; }
+      if (!Array.isArray(v)) return false;
+      return Store.setFeed(v) !== false;
     },
 
     /* ---------- 口令 ---------- */

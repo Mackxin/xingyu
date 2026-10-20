@@ -6,7 +6,7 @@
   'use strict';
 
   var DATA = window.SITE_DATA || { categories: [], feed: [], entries: [], posts: [] };
-  var CATS = DATA.categories, FEED = DATA.feed, ENTRIES = DATA.entries;
+  var CATS = DATA.categories, FEED = DATA.feed || [], ENTRIES = DATA.entries;
   var POSTS = DATA.posts || [];
   var MD = window.XYMarkdown || { render: escRaw, plain: escRaw, headings: function () { return []; },
     stats: function () { return { chars: 0, minutes: 1 }; }, fmtChars: function (n) { return n + ' 字'; } };
@@ -181,6 +181,14 @@
   /* 后台改过文章后调用 */
   function refreshPosts() {
     POSTS = (window.XYStore && window.XYStore.posts) ? window.XYStore.posts() : (DATA.posts || []);
+    PALETTE_INDEX = buildPaletteIndex();
+  }
+  /* 后台改过分享条目后调用：取最新数据并按日期倒序（同一天保持你排的顺序） */
+  function refreshFeed() {
+    var list = (window.XYStore && window.XYStore.feed) ? window.XYStore.feed() : (DATA.feed || []);
+    FEED = list.slice().sort(function (a, b) {
+      return String(b.date || '').localeCompare(String(a.date || ''));
+    });
     PALETTE_INDEX = buildPaletteIndex();
   }
 
@@ -1595,6 +1603,8 @@
     document.addEventListener('xy:data', function () { refreshData(); });
     // 后台文章变化 → 刷新列表数据
     document.addEventListener('xy:posts', function () { refreshPosts(); });
+    // 后台分享条目变化 → 刷新时间线数据
+    document.addEventListener('xy:feed', function () { refreshFeed(); });
 
     // 入场动画一结束就把 animation 摘掉：万一浏览器把收尾的 transform 留在 .page 上，
     // 它会成为 position:fixed 后代的包含块（确认弹窗、表情挑选器、分类面板都会错位）
@@ -1866,6 +1876,7 @@
     initTheme();
     refreshData();
     refreshPosts();
+    refreshFeed();
     applyChrome();
     header = $('#header'); progress = $('#scrollProgress'); cursorGlow = $('#cursorGlow');
 
@@ -1915,6 +1926,7 @@
     applyTheme: applyTheme,
     applyData: refreshData,
     applyPosts: refreshPosts,
+    applyFeed: refreshFeed,
     hostOf: hostOf,
     homeCfg: homeCfg,
     toast: toast,

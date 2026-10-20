@@ -11,6 +11,7 @@
   var MAX = Store.MAX_LINKS;
   var TABS = [
     { id: 'sites',    label: '站点数据', icon: '🗂', badge: 'adminTabSitesN' },
+    { id: 'feed',     label: '分享',     icon: '📰', badge: 'adminTabFeedN' },
     { id: 'posts',    label: '文章',     icon: '✍️', badge: 'adminTabPostsN' },
     { id: 'home',     label: '首页内容', icon: '🏠' },
     { id: 'links',    label: '自定义链接', icon: '🔗', badge: 'adminTabLinksN' },
@@ -25,6 +26,8 @@
   var siteQuery = '';       // 站点数据搜索词
   var postQuery = '';       // 文章搜索词
   var editing = null;       // 正在编辑的文章：{ id, isNew }
+  var feedQuery = '';       // 分享搜索词
+  var feedEditing = null;   // 正在编辑的分享：{ idx, isNew }
   var armed = null;         // 两步删除的“已待确认”状态
 
   /* ---------- 小工具 ---------- */
@@ -119,6 +122,7 @@
     if (id === 'adminTabSitesN') return String(counts().links);
     if (id === 'adminTabLinksN') return Store.allLinks().length + '/' + MAX;
     if (id === 'adminTabPostsN') return String(Store.postsAll().length);
+    if (id === 'adminTabFeedN') return String(Store.feedAll().length);
     return '';
   }
   /* 保持侧栏角标与数据同步 */
@@ -133,6 +137,8 @@
     if (b) b.textContent = Store.allLinks().length + '/' + MAX;
     var c = root.querySelector('#adminTabPostsN');
     if (c) c.textContent = Store.postsAll().length;
+    var f = root.querySelector('#adminTabFeedN');
+    if (f) f.textContent = Store.feedAll().length;
   }
 
   function lockHtml() {
@@ -153,6 +159,7 @@
 
   function panelHtml() {
     if (tab === 'home') return homePanel();
+    if (tab === 'feed') return feedPanel();
     if (tab === 'posts') return postsPanel();
     if (tab === 'links') return linksPanel();
     if (tab === 'site') return sitePanel();
@@ -863,6 +870,263 @@
     });
   }
 
+  /* ======================= 分享条目 ======================= */
+  /* 列表直接按 Store 里排好的顺序（日期倒序），下标即真实下标，改完回写不会错位 */
+  function feedRowHtml(f, i) {
+    var isEditing = !!(feedEditing && !feedEditing.isNew && feedEditing.idx === i);
+    var tags = (f.tags || []).map(function (t) { return '#' + t; }).join(' ');
+    var inner = f.url.charAt(0) === '#';
+    return '<div class="post-admin-row' + (isEditing ? ' is-editing' : '') + '" data-fidx="' + i + '">' +
+        '<div class="post-admin-row__main">' +
+          '<div class="post-admin-row__title">' +
+            '<i>' + esc(f.icon || '✨') + '</i>' +
+            '<span>' + esc(f.title) + '</span>' +
+            (inner ? '<span class="post-admin-row__badge">站内</span>' : '') +
+          '</div>' +
+          '<div class="post-admin-row__meta">' + esc(f.date || '未标日期') +
+            (tags ? ' · ' + esc(tags) : '') +
+            (f.desc ? ' · ' + esc(f.desc.slice(0, 42)) + (f.desc.length > 42 ? '…' : '') : '') +
+          '</div>' +
+        '</div>' +
+        '<div class="post-admin-row__ops">' +
+          '<button type="button" data-feed-op="edit">编辑</button>' +
+          '<button type="button" data-feed-op="view">查看</button>' +
+          '<button type="button" data-feed-op="del" class="is-danger">删除</button>' +
+        '</div>' +
+      '</div>';
+  }
+
+  function feedListHtml() {
+    var list = Store.feedAll();
+    if (!list.length) {
+      return '<p class="admin-empty">还没有分享条目。点上面的「＋ 新增分享」，或者到「备份」页恢复默认数据。</p>';
+    }
+    var q = norm(feedQuery);
+    var rows = q ? list.map(function (f, i) {
+      var hay = norm(f.title + f.desc + f.url + (f.tags || []).join(''));
+      return hay.indexOf(q) > -1 ? feedRowHtml(f, i) : '';
+    }).join('') : list.map(feedRowHtml).join('');
+    if (q && !rows) return '<p class="admin-empty">没有匹配「' + esc(feedQuery) + '」的分享。</p>';
+    return '<div class="post-admin-list">' + rows + '</div>';
+  }
+
+  /* 预览用的是一张真卡片（和前台同一套 .feed-card 样式，只是换成 div 防止误点跳走） */
+  function feedPreviewHtml(f) {
+    var inner = String(f.url || '').charAt(0) === '#';
+    var tags = (f.tags || []).map(function (t) {
+      return '<span class="tag">#' + esc(t) + '</span>';
+    }).join('');
+    return '<div class="feed-card">' +
+        '<span class="feed-card__icon">' + esc(f.icon || '✨') + '</span>' +
+        '<span>' +
+          '<span class="feed-card__title">' + esc(f.title || '标题会显示在这里') +
+            (inner || !f.url ? '' : ' ↗') + '</span>' +
+          '<p class="feed-card__desc">' + esc(f.desc || '描述会显示在这里，写一两句就够了。') + '</p>' +
+          '<span class="feed-card__tags">' + tags + '</span>' +
+        '</span>' +
+      '</div>';
+  }
+
+  function feedEditorHtml() {
+    var isNew = !feedEditing || feedEditing.isNew;
+    var list = Store.feedAll();
+    var f = isNew
+      ? { date: todayStr(), icon: '✨', title: '', url: '', desc: '', tags: [] }
+      : list[feedEditing.idx];
+    if (!f) { feedEditing = null; return ''; }
+    return '<div class="admin-card">' +
+        '<div class="admin-card__head">' +
+          '<div><h2>' + (isNew ? '新增分享' : '编辑分享') + '</h2>' +
+            '<p>填完保存就会出现在 <code>#/share</code> 的时间线里；同一天的几条会并排成一行。</p></div>' +
+          '<span class="admin-count">' + esc(f.date || '') + '</span>' +
+        '</div>' +
+        '<div class="post-editor">' +
+          '<div class="post-editor__grid">' +
+            '<div>' +
+              '<label class="admin-field"><span class="admin-field__label">标题</span>' +
+                '<input type="text" data-ff="title" value="' + esc(f.title) + '" ' +
+                  'placeholder="这条分享讲什么，一句话" maxlength="120" /></label>' +
+              '<label class="admin-field"><span class="admin-field__label">链接<em>站内页面写 #/nav 这种</em></span>' +
+                '<input type="text" data-ff="url" value="' + esc(f.url) + '" spellcheck="false" ' +
+                  'placeholder="https://example.com 或 #/nav" /></label>' +
+              '<label class="admin-field"><span class="admin-field__label">描述<em>一两句话</em></span>' +
+                '<textarea data-ff="desc" rows="4" placeholder="它是什么、好在哪，随手写两句">' + esc(f.desc) + '</textarea></label>' +
+            '</div>' +
+            '<div>' +
+              '<label class="admin-field"><span class="admin-field__label">日期</span>' +
+                '<input type="date" data-ff="date" value="' + esc(f.date) + '" /></label>' +
+              '<label class="admin-field"><span class="admin-field__label">图标</span>' +
+                '<span class="alink-icon">' +
+                  '<input data-ff="icon" value="' + esc(f.icon) + '" maxlength="4" placeholder="✨" aria-label="图标" />' +
+                  '<button class="alink-icon__pick" type="button" id="feedEmoji" title="挑一个 emoji" aria-label="挑选图标">🙂</button>' +
+                '</span></label>' +
+              '<label class="admin-field"><span class="admin-field__label">标签<em>逗号分隔</em></span>' +
+                '<input type="text" data-ff="tags" value="' + esc((f.tags || []).join(', ')) +
+                  '" placeholder="工具, 设计" /></label>' +
+            '</div>' +
+          '</div>' +
+          '<div class="post-editor__bar">' +
+            '<button class="btn btn--primary" type="button" id="feedSave">💾 保存</button>' +
+            '<button class="btn btn--ghost" type="button" id="feedCancel">取消</button>' +
+            '<span class="post-editor__count">前台卡片效果 ↓</span>' +
+          '</div>' +
+          '<div class="post-editor__preview feed-preview" id="feedPreview">' + feedPreviewHtml(f) + '</div>' +
+        '</div>' +
+      '</div>';
+  }
+
+  function feedPanel() {
+    var list = Store.feedAll();
+    var days = {};
+    list.forEach(function (f) { if (f.date) days[f.date] = 1; });
+    return (feedEditing ? feedEditorHtml() : '') +
+      '<div class="admin-card">' +
+        '<div class="admin-card__head">' +
+          '<div><h2>分享</h2>' +
+            '<p>前台「分享」页的时间线内容，按日期倒序分组显示。改完立刻生效。</p></div>' +
+          '<span class="admin-count">' + list.length + ' 条 · ' + Object.keys(days).length + ' 个记录日</span>' +
+        '</div>' +
+        '<div class="admin-toolbar">' +
+          '<button class="btn btn--primary" type="button" id="feedNew">＋ 新增分享</button>' +
+          '<div class="admin-search">' +
+            '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M16.5 16.5L21 21"/></svg>' +
+            '<input type="search" id="feedSearch" placeholder="搜标题 / 描述 / 标签 / 链接…" value="' + esc(feedQuery) + '" autocomplete="off" aria-label="搜索分享" />' +
+          '</div>' +
+        '</div>' +
+        '<div id="feedListBox">' + feedListHtml() + '</div>' +
+        '<p class="admin-tip">' +
+          '<b>链接</b>可以填站外网址，也可以填站内页面（<code>#/nav</code>、<code>#/post</code>、<code>#/post/文章id</code>）；' +
+          '站内链接不会新开窗口。<b>标签</b>用逗号分隔，会变成分享页顶部的筛选胶囊。' +
+        '</p>' +
+        '<p class="admin-tip">分享条目和别的后台数据一样只存在<b>这台浏览器</b>里。想让所有访客都看到，' +
+          '到「备份」页导出，或者把内容写进 <code>assets/js/data.js</code> 的 <code>feed</code>。</p>' +
+      '</div>';
+  }
+
+  function collectFeedForm(body) {
+    var g = function (k) {
+      var el = body.querySelector('[data-ff="' + k + '"]');
+      return el ? el.value : '';
+    };
+    var tags = g('tags').split(/[,，、;；\s]+/)
+      .map(function (t) { return t.trim().replace(/^#/, ''); })
+      .filter(Boolean);
+    return {
+      date: g('date') || todayStr(),
+      icon: g('icon').trim().slice(0, 4) || '✨',
+      title: g('title').trim(),
+      url: g('url').trim(),
+      desc: g('desc').trim(),
+      tags: tags.filter(function (t, i, a) { return a.indexOf(t) === i; }).slice(0, 6)
+    };
+  }
+
+  function saveFeed(root, body) {
+    var data = collectFeedForm(body);
+    if (!data.title) { toast('先写个标题吧'); return; }
+    if (!data.url) { toast('还差一个链接（站内可以写 #/nav）'); return; }
+    var list = Store.feedAll();
+    if (feedEditing && !feedEditing.isNew && list[feedEditing.idx]) list[feedEditing.idx] = data;
+    else list.unshift(data);
+    if (Store.setFeed(list) === false) {
+      toast('浏览器存不下了（localStorage 满了），先导出备份再删点旧内容');
+      return;
+    }
+    feedEditing = null;
+    toast('已保存 ✦ 前台「分享」页马上能看到');
+    refreshBody(root);
+  }
+
+  function refreshFeedList(root) {
+    var box = root.querySelector('#feedListBox');
+    if (box) box.innerHTML = feedListHtml();
+    syncSide(root);
+  }
+
+  function bindFeed(root, body) {
+    var newBtn = body.querySelector('#feedNew');
+    if (newBtn) newBtn.addEventListener('click', function () {
+      feedEditing = { idx: -1, isNew: true };
+      feedQuery = '';
+      refreshBody(root);
+      var t = root.querySelector('[data-ff="title"]');
+      if (t) t.focus();
+    });
+
+    var search = body.querySelector('#feedSearch');
+    if (search) search.addEventListener('input', function () {
+      feedQuery = search.value;
+      refreshFeedList(root);
+    });
+
+    var listBox = body.querySelector('#feedListBox');
+    if (listBox) listBox.addEventListener('click', function (e) {
+      var btn = e.target.closest('[data-feed-op]');
+      if (!btn) return;
+      var row = btn.closest('[data-fidx]');
+      var idx = row ? +row.getAttribute('data-fidx') : -1;
+      var op = btn.getAttribute('data-feed-op');
+      if (idx < 0) return;
+
+      if (op === 'edit') {
+        feedEditing = { idx: idx, isNew: false };
+        refreshBody(root);
+        var t = root.querySelector('[data-ff="title"]');
+        if (t) t.focus();
+        return;
+      }
+      if (op === 'view') {
+        if (app().go) app().go('share');
+        return;
+      }
+      if (op === 'del') {
+        if (!armedNow('feed', idx, -1)) {
+          arm('feed', idx, -1);
+          toast('再点一次确认删除');
+          btn.textContent = '确认删除？';
+          return;
+        }
+        armed = null;
+        var list = Store.feedAll();
+        list.splice(idx, 1);
+        Store.setFeed(list);
+        if (feedEditing && feedEditing.idx === idx) feedEditing = null;
+        toast('已删除');
+        refreshBody(root);
+      }
+    });
+
+    var saveBtn = body.querySelector('#feedSave');
+    if (!saveBtn) return;
+    var pvBox = body.querySelector('#feedPreview');
+    var iconInput = body.querySelector('[data-ff="icon"]');
+    var pickBtn = body.querySelector('#feedEmoji');
+
+    /* 边打字边更新预览 */
+    var repaint = debounce(function () {
+      if (pvBox) pvBox.innerHTML = feedPreviewHtml(collectFeedForm(body));
+    }, 180);
+    body.querySelectorAll('[data-ff]').forEach(function (el) {
+      el.addEventListener('input', repaint);
+      el.addEventListener('change', repaint);
+    });
+
+    if (pickBtn && iconInput) pickBtn.addEventListener('click', function () {
+      openEmoji(pickBtn, function (em) {
+        iconInput.value = em;
+        repaint();
+      });
+    });
+
+    saveBtn.addEventListener('click', function () { saveFeed(root, body); });
+
+    var cancelBtn = body.querySelector('#feedCancel');
+    if (cancelBtn) cancelBtn.addEventListener('click', function () {
+      feedEditing = null;
+      refreshBody(root);
+    });
+  }
+
   /* ======================= 站点信息 ======================= */
   function sitePanel() {
     var c = Store.get();
@@ -1096,10 +1360,11 @@
     var d = counts();
     var lc = Store.allLinks().length;
     var pc = Store.postsAll().length;
+    var fc = Store.feedAll().length;
     return '<div class="admin-card">' +
         '<h2>备份到文件</h2>' +
         '<p>把 <b>站点数据</b>（' + d.cats + ' 个分类 · ' + d.links + ' 个站点）、' +
-        '<b>文章</b>（' + pc + ' 篇）和 <b>站点设置</b>' +
+        '<b>分享</b>（' + fc + ' 条）、<b>文章</b>（' + pc + ' 篇）和 <b>站点设置</b>' +
         (lc ? '（含 ' + lc + ' 个自定义链接）' : '') + ' 打包成一个文件下载。</p>' +
         '<div class="admin-actions">' +
           '<button class="btn btn--primary" type="button" id="bkDownload">⬇ 下载备份文件</button>' +
@@ -1143,6 +1408,7 @@
         '<div class="admin-actions">' +
           '<button class="btn btn--danger" type="button" id="bkResetCfg">恢复默认设置</button>' +
           '<button class="btn btn--danger" type="button" id="bkResetData">恢复默认数据</button>' +
+          '<button class="btn btn--danger" type="button" id="bkResetFeed">恢复默认分享</button>' +
           '<button class="btn btn--danger" type="button" id="bkResetPosts">恢复默认文章</button>' +
         '</div>' +
       '</div>' +
@@ -1164,10 +1430,11 @@
   function backupObject() {
     return {
       app: 'xingyu',
-      version: 3,
+      version: 4,
       exportedAt: new Date().toISOString(),
       config: Store.get(),
       data: Store.dataAll(),
+      feed: Store.feedAll(),
       posts: Store.postsAll()
     };
   }
@@ -1186,6 +1453,7 @@
       obj.data.forEach(function (c) { m += ((c && c.links) || []).length; });
       parts.push(obj.data.length + ' 个分类 · ' + m + ' 个站点');
     }
+    if (Array.isArray(obj.feed)) parts.push(obj.feed.length + ' 条分享');
     if (Array.isArray(obj.posts)) parts.push(obj.posts.length + ' 篇文章');
     if (obj.config && typeof obj.config === 'object') {
       var cn = (obj.config.customLinks || []).length;
@@ -1198,6 +1466,7 @@
     if (Array.isArray(obj)) { Store.setData(obj); return; }
     if (obj.config && typeof obj.config === 'object') Store.save(obj.config);
     if (Array.isArray(obj.data)) Store.setData(obj.data);
+    if (Array.isArray(obj.feed)) Store.setFeed(obj.feed);
     if (Array.isArray(obj.posts)) Store.setPosts(obj.posts);
   }
 
@@ -1248,10 +1517,11 @@
     var a = app();
     return {
       app: 'xingyu',
-      version: 3,
+      version: 4,
       exportedAt: new Date().toISOString(),
       config: Store.get(),
       data: Store.dataAll(),
+      feed: Store.feedAll(),
       posts: Store.postsAll(),
       fav: (a.fav && a.fav.get) ? a.fav.get() : [],
       visits: (a.visits && a.visits.get) ? a.visits.get() : {}
@@ -1426,7 +1696,9 @@
         tab = b.getAttribute('data-tab');
         siteQuery = '';
         postQuery = '';
+        feedQuery = '';
         editing = null;
+        feedEditing = null;
         armed = null;
         root.querySelectorAll('.admin-tab').forEach(function (x) {
           x.classList.toggle('is-active', x === b);
@@ -1516,6 +1788,7 @@
     if (!body) return;
 
     bindPosts(root, body);
+    bindFeed(root, body);
 
     /* ---------- 站点数据 ---------- */
     var catsWrap = body.querySelector('#adminCats');
@@ -1852,6 +2125,7 @@
       applyChrome();
       if (app().applyTheme) app().applyTheme(Store.get().themeDefault);
       if (app().applyPosts) app().applyPosts();
+      if (app().applyFeed) app().applyFeed();
       if (withData) { openCats = {}; firstRun = true; }
       refreshBody(root);
     }
@@ -1925,6 +2199,21 @@
       }, function () {
         Store.resetData();
         toast('已恢复默认站点数据');
+        syncAfterRestore(true);
+      });
+    });
+
+    var bkResetFeed = body.querySelector('#bkResetFeed');
+    if (bkResetFeed) bkResetFeed.addEventListener('click', function () {
+      askConfirm({
+        title: '恢复默认分享？',
+        desc: '所有<b>分享条目</b>都会回到 <code>data.js</code> 里的出厂内容，你在后台加的会丢失。<br>这个操作<b>无法撤销</b>，建议先下载一份备份。',
+        ok: '确认恢复'
+      }, function () {
+        Store.resetFeed();
+        feedEditing = null;
+        feedQuery = '';
+        toast('已恢复默认分享');
         syncAfterRestore(true);
       });
     });

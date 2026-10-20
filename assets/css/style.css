@@ -2118,3 +2118,13 @@ html[data-theme="light"] .admin-card--danger{ border-color:rgba(210,60,55,.26); 
   .post-admin-row{ grid-template-columns:minmax(0,1fr); }
   .post-admin-row__ops{ flex-wrap:wrap; }
 }
+
+/* =========================================================
+   后台 · 分享条目（列表行复用 .post-admin-row）
+   ========================================================= */
+.feed-preview{ padding:16px 18px; }
+.feed-preview .feed-card{ transform:none; cursor:default; }
+.feed-preview .feed-card:hover{
+  transform:none; box-shadow:none; border-color:var(--border);
+}
+.feed-preview .feed-card__title{ font-size:15.5px; }
