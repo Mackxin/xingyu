@@ -1,0 +1,11 @@
+# macOS AppleDouble（exFAT 卷副产物）
+._*
+.DS_Store
+
+# 本地工具数据
+.workbuddy/
+
+# 系统/编辑器
+*.swp
+.idea/
+.vscode/
