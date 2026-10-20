@@ -543,10 +543,21 @@
       if (f.date) dateSet[f.date] = 1;
     });
 
+    var items = FEED.filter(function (f) {
+      return state.feedTag === 'all' || (f.tags || []).indexOf(state.feedTag) > -1;
+    });
+
     var chipHtml = tags.map(function (t) {
       var label = t === 'all' ? '全部' : t;
       return '<button class="tag' + (state.feedTag === t ? ' is-active' : '') + '" type="button" data-tag="' + esc(t) + '">' + esc(label) + '</button>';
     }).join('');
+
+    /* 筛选条右侧的实时计数：点了标签立刻知道筛出多少条 */
+    var statHtml = '<span class="tag-bar__stat">' +
+        (state.feedTag === 'all'
+          ? '共 <b>' + FEED.length + '</b> 条'
+          : '<b>#' + esc(state.feedTag) + '</b> · <b>' + items.length + '</b> 条') +
+      '</span>';
 
     /* 宽屏直接铺在标题下；窄屏（≤960）变成顶栏「标签」按钮 + 底部面板 */
     var tagBar = '<div class="tag-rail" id="tagRail">' +
@@ -560,13 +571,13 @@
               '<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>' +
             '</button>' +
           '</div>' +
-          '<div class="tag-bar" id="tagBar">' + chipHtml + '</div>' +
+          '<div class="tag-bar" id="tagBar">' +
+            '<span class="tag-bar__lead" aria-hidden="true">标签</span>' +
+            '<div class="tag-bar__chips">' + chipHtml + '</div>' +
+            statHtml +
+          '</div>' +
         '</div>' +
       '</div>';
-
-    var items = FEED.filter(function (f) {
-      return state.feedTag === 'all' || (f.tags || []).indexOf(state.feedTag) > -1;
-    });
 
     /* 标题右侧的概览数字，把整行撑满 */
     var statsHtml = '<div class="head-stats">' +
