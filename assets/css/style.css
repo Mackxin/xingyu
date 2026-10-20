@@ -1844,6 +1844,18 @@ html[data-theme="light"] .admin-card--danger{ border-color:rgba(210,60,55,.26); 
 .post-year span{ font-size:12px; color:var(--text-mute); letter-spacing:.06em; }
 .post-list{ display:grid; grid-template-columns:minmax(0,1fr); gap:10px; }
 
+/* 大屏：一行最多三篇（1180 起两列，1560 起三列，再宽也不加列） */
+@media (min-width:1180px){
+  .post-list{ grid-template-columns:repeat(2, minmax(0,1fr)); gap:12px; }
+  .post-card{ grid-template-columns:52px minmax(0,1fr) 24px; gap:14px; padding:16px 18px; }
+  .post-card__date b{ font-size:17px; }
+  .post-card__title{ font-size:15.5px; }
+  .post-card__desc{ font-size:13px; }
+}
+@media (min-width:1560px){
+  .post-list{ grid-template-columns:repeat(3, minmax(0,1fr)); }
+}
+
 .post-card{
   display:grid; grid-template-columns:62px minmax(0,1fr) 30px; gap:18px; align-items:center;
   padding:18px 20px; border-radius:var(--r);
