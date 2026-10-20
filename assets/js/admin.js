@@ -27,6 +27,7 @@
   var siteQuery = '';       // 站点数据搜索词
   var postQuery = '';       // 文章搜索词
   var editing = null;       // 正在编辑的文章：{ id, isNew }
+  var savedId = '';         // 刚保存完的文章，列表里高亮一下
   var feedQuery = '';       // 分享搜索词
   var feedEditing = null;   // 正在编辑的分享：{ idx, isNew }
   var armed = null;         // 两步删除的“已待确认”状态
@@ -498,8 +499,10 @@
   function postRowHtml(p) {
     var st = mdStats(p.body);
     var isEditing = !!(editing && !editing.isNew && editing.id === p.id);
+    var isSaved = !!(savedId && savedId === p.id);
     var tags = (p.tags || []).map(function (t) { return '#' + t; }).join(' ');
-    return '<div class="post-admin-row' + (isEditing ? ' is-editing' : '') + '" data-pid="' + esc(p.id) + '">' +
+    return '<div class="post-admin-row' + (isEditing ? ' is-editing' : '') + (isSaved ? ' is-saved' : '') +
+        '" data-pid="' + esc(p.id) + '">' +
         '<div class="post-admin-row__main">' +
           '<div class="post-admin-row__title">' +
             (p.pin ? '<i title="已置顶">📌</i>' : '') +
@@ -640,22 +643,31 @@
     var data = collectEditor(body);
     if (!data.body.trim() && !data.title.trim()) { toast('标题和正文都还空着'); return; }
     var list = Store.postsAll();
+    var key;
     if (editing.isNew) {
-      data.id = newPostId();
+      key = newPostId();
+      data.id = key;
       list.unshift(data);
-      editing = { id: data.id, isNew: false };
     } else {
+      key = editing.id;
       var idx = -1;
-      for (var i = 0; i < list.length; i++) if (list[i].id === editing.id) { idx = i; break; }
-      if (idx < 0) { list.unshift(Object.assign({ id: editing.id }, data)); }
-      else list[idx] = Object.assign({}, list[idx], data, { id: editing.id });
+      for (var i = 0; i < list.length; i++) if (list[i].id === key) { idx = i; break; }
+      if (idx < 0) { list.unshift(Object.assign({ id: key }, data)); }
+      else list[idx] = Object.assign({}, list[idx], data, { id: key });
     }
     if (Store.setPosts(list) === false) {
       toast('浏览器存不下了（localStorage 满了），先导出备份再删点旧文章');
       return;
     }
-    toast('已保存 ✦ 前台马上能看到');
+    /* 存完就退出编辑器，回到列表（不然会以为没保存上） */
+    editing = null;
+    savedId = key;
+    toast(data.draft ? '已存草稿 ✦ 前台暂时看不到' : '已保存 ✦ 前台马上能看到');
     refreshBody(root);
+    var row = root.querySelector('.post-admin-row.is-saved');
+    if (row) {
+      try { row.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch (e) {}
+    }
   }
 
   /* ---- 导入 .md ---- */
@@ -763,6 +775,7 @@
     var newBtn = body.querySelector('#postNew');
     if (newBtn) newBtn.addEventListener('click', function () {
       editing = { id: '', isNew: true };
+      savedId = '';
       postQuery = '';
       refreshBody(root);
       var t = root.querySelector('[data-pf="title"]');
@@ -797,6 +810,7 @@
 
       if (op === 'edit') {
         editing = { id: pid, isNew: false };
+        savedId = '';
         refreshBody(root);
         var ta = root.querySelector('#postBody');
         if (ta) { try { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); } catch (e1) {} }
@@ -1892,6 +1906,7 @@
         feedQuery = '';
         editing = null;
         feedEditing = null;
+        savedId = '';
         armed = null;
         root.querySelectorAll('.admin-tab').forEach(function (x) {
           x.classList.toggle('is-active', x === b);

@@ -2084,7 +2084,14 @@ html[data-toc="off"] .post-toc{ display:none; }
   transition:border-color .25s var(--ease);
 }
 .post-admin-row:hover{ border-color:var(--border-strong); }
-.post-admin-row.is-editing{ border-color:rgba(124,156,255,.6); box-shadow:0 0 0 3px rgba(124,156,255,.12); }
+.post-admin-row.is-editing{ border-color:color-mix(in srgb, var(--a1) 60%, transparent); box-shadow:0 0 0 3px color-mix(in srgb, var(--a1) 12%, transparent); }
+/* 刚保存完的那一行闪一下，让人一眼看到「存到哪去了」 */
+.post-admin-row.is-saved{ border-color:color-mix(in srgb, var(--a1) 58%, transparent); }
+@keyframes savedFlash{
+  0%{ box-shadow:0 0 0 0 color-mix(in srgb, var(--a1) 42%, transparent); }
+  100%{ box-shadow:0 0 0 12px transparent; }
+}
+.post-admin-row.is-saved{ animation:savedFlash .95s var(--ease); }
 .post-admin-row__main{ min-width:0; }
 .post-admin-row__title{
   display:flex; align-items:center; gap:7px;
