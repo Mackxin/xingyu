@@ -14,6 +14,7 @@
     { id: 'feed',     label: '分享',     icon: '📰', badge: 'adminTabFeedN' },
     { id: 'posts',    label: '文章',     icon: '✍️', badge: 'adminTabPostsN' },
     { id: 'home',     label: '首页内容', icon: '🏠' },
+    { id: 'look',     label: '主题',     icon: '🎨' },
     { id: 'links',    label: '自定义链接', icon: '🔗', badge: 'adminTabLinksN' },
     { id: 'site',     label: '站点信息', icon: '🌌' },
     { id: 'backup',   label: '备份',     icon: '💾' },
@@ -159,6 +160,7 @@
 
   function panelHtml() {
     if (tab === 'home') return homePanel();
+    if (tab === 'look') return lookPanel();
     if (tab === 'feed') return feedPanel();
     if (tab === 'posts') return postsPanel();
     if (tab === 'links') return linksPanel();
@@ -1127,6 +1129,208 @@
     });
   }
 
+  /* ======================= 主题 & 阅读 ======================= */
+  var ACCENT_LABELS = {
+    aurora: '极光', ocean: '海洋', sunset: '落日', forest: '森林',
+    grape: '葡萄', sakura: '樱粉', ink: '墨灰'
+  };
+  var READ_LINES = [[1.6, '紧凑 · 1.6'], [1.75, '标准 · 1.75'], [1.95, '舒展 · 1.95'], [2.1, '宽松 · 2.1']];
+  var READ_WIDTHS = [[680, '窄 · 680'], [760, '偏窄 · 760'], [820, '标准 · 820'], [900, '偏宽 · 900'], [980, '宽 · 980']];
+
+  function lookPanel() {
+    var c = Store.get();
+    var t = c.theme, r = c.read;
+    var accents = app().accents || {};
+    var ids = (Store.ACCENTS || Object.keys(ACCENT_LABELS)).filter(function (id) { return id !== 'custom'; });
+
+    var swatches = ids.map(function (id) {
+      var trio = accents[id] || ['#7c9cff', '#b47cff', '#4fe3d0'];
+      return '<button class="look-swatch' + (t.accent === id ? ' is-active' : '') + '" type="button"' +
+          ' data-accent="' + id + '" title="' + esc(ACCENT_LABELS[id] || id) + '">' +
+          '<span class="look-swatch__dot" style="background:linear-gradient(135deg,' + trio.join(',') + ')"></span>' +
+          '<span class="look-swatch__name">' + esc(ACCENT_LABELS[id] || id) + '</span>' +
+        '</button>';
+    }).join('');
+
+    var sizeOpts = [14, 15, 16, 17, 18, 20];
+
+    return '<div class="admin-card">' +
+        '<div class="admin-card__head">' +
+          '<div><h2>配色主题</h2>' +
+            '<p>换一组强调色，全站的渐变、按钮、高光、背景极光会一起变，改完立刻生效。</p></div>' +
+          '<span class="admin-count" id="lookAccentName">' + esc(ACCENT_LABELS[t.accent] || '自定义') + '</span>' +
+        '</div>' +
+        '<div class="look-swatches" id="lookSwatches">' + swatches + '</div>' +
+        '<div class="look-color' + (t.accent === 'custom' ? ' is-active' : '') + '">' +
+          '<input type="color" data-theme-f="accentColor" value="' + esc(t.accentColor) + '" aria-label="自定义主色" />' +
+          '<div class="look-color__txt"><b>自定义主色</b>' +
+            '<em>从调色盘里挑一个，另外两个渐变色会自动配出来</em></div>' +
+          '<code id="lookHex">' + esc(t.accentColor) + '</code>' +
+        '</div>' +
+        '<div class="admin-grid2">' +
+          '<label class="admin-field"><span class="admin-field__label">背景极光<em>页面上那几团光晕</em></span>' +
+            '<select data-theme-f="glow">' +
+              '<option value="strong"' + (t.glow === 'strong' ? ' selected' : '') + '>强 · 气氛更足</option>' +
+              '<option value="normal"' + (t.glow === 'normal' ? ' selected' : '') + '>标准</option>' +
+              '<option value="off"' + (t.glow === 'off' ? ' selected' : '') + '>关掉 · 更干净</option>' +
+            '</select></label>' +
+          '<label class="admin-field"><span class="admin-field__label">圆角<em>卡片、按钮、输入框</em></span>' +
+            '<select data-theme-f="radius">' +
+              '<option value="small"' + (t.radius === 'small' ? ' selected' : '') + '>小 · 干练</option>' +
+              '<option value="normal"' + (t.radius === 'normal' ? ' selected' : '') + '>标准</option>' +
+              '<option value="large"' + (t.radius === 'large' ? ' selected' : '') + '>大 · 圆润</option>' +
+            '</select></label>' +
+        '</div>' +
+        '<div class="admin-grid2">' +
+          '<label class="admin-field"><span class="admin-field__label">默认主题<em>新访客进站时用哪个</em></span>' +
+            '<select data-site="themeDefault">' +
+              '<option value="dark"' + (c.themeDefault === 'dark' ? ' selected' : '') + '>暗色</option>' +
+              '<option value="light"' + (c.themeDefault === 'light' ? ' selected' : '') + '>明亮</option>' +
+            '</select></label>' +
+          '<label class="admin-field"><span class="admin-field__label">卡片密度<em>导航页一行放几个站点</em></span>' +
+            '<select data-site="cardDensity">' +
+              '<option value="compact"' + (c.cardDensity === 'compact' ? ' selected' : '') + '>紧凑 · 一屏装最多</option>' +
+              '<option value="normal"' + (c.cardDensity !== 'compact' && c.cardDensity !== 'comfy' ? ' selected' : '') + '>标准</option>' +
+              '<option value="comfy"' + (c.cardDensity === 'comfy' ? ' selected' : '') + '>宽松 · 描述更舒展</option>' +
+            '</select></label>' +
+        '</div>' +
+        '<div class="admin-actions"><button class="btn btn--ghost" type="button" id="lookResetTheme">↺ 恢复默认外观</button></div>' +
+      '</div>' +
+
+      '<div class="admin-card">' +
+        '<div class="admin-card__head">' +
+          '<div><h2>阅读体验</h2>' +
+            '<p>只影响文章正文（<code>#/post/…</code>）。字号、行高、字体、宽度都可以按你写的东西来调。</p></div>' +
+          '<span class="admin-count" id="lookReadBadge">' + r.size + 'px · ' + (r.font === 'serif' ? '衬线' : '无衬线') + '</span>' +
+        '</div>' +
+        '<label class="admin-field"><span class="admin-field__label">正文字号<em>手机上会自动小半号</em>' +
+          '<b class="look-num" id="lookSizeOut">' + r.size + ' px</b></span>' +
+          '<input type="range" data-read-f="size" min="14" max="20" step="1" value="' + r.size + '" />' +
+          '<span class="look-scale">' + sizeOpts.map(function (n) { return '<i>' + n + '</i>'; }).join('') + '</span>' +
+        '</label>' +
+        '<div class="admin-grid2">' +
+          '<label class="admin-field"><span class="admin-field__label">行高<em>正文行与行的距离</em></span>' +
+            '<select data-read-f="line">' + READ_LINES.map(function (p) {
+              return '<option value="' + p[0] + '"' + (Math.abs(+r.line - p[0]) < 0.01 ? ' selected' : '') + '>' + p[1] + '</option>';
+            }).join('') + '</select></label>' +
+          '<label class="admin-field"><span class="admin-field__label">字体</span>' +
+            '<select data-read-f="font">' +
+              '<option value="sans"' + (r.font !== 'serif' ? ' selected' : '') + '>系统无衬线 · 清晰</option>' +
+              '<option value="serif"' + (r.font === 'serif' ? ' selected' : '') + '>衬线 · 更像纸书</option>' +
+            '</select></label>' +
+        '</div>' +
+        '<div class="admin-grid2">' +
+          '<label class="admin-field"><span class="admin-field__label">正文宽度<em>一行的长短</em></span>' +
+            '<select data-read-f="width">' + READ_WIDTHS.map(function (p) {
+              return '<option value="' + p[0] + '"' + (+r.width === p[0] ? ' selected' : '') + '>' + p[1] + '</option>';
+            }).join('') + '</select></label>' +
+          '<div class="admin-field"><span class="admin-field__label">右侧目录<em>宽屏才显示</em></span>' +
+            '<label class="admin-switch"><input type="checkbox" data-read-f="toc"' + (r.toc !== false ? ' checked' : '') + ' />' +
+              '<span class="admin-switch__track"><span class="admin-switch__dot"></span></span>' +
+              '<span class="admin-switch__text">显示本文目录（标题 ≥3 个时）</span></label></div>' +
+        '</div>' +
+        '<div class="look-preview">' +
+          '<div class="look-paper">' +
+            '<span class="look-paper__eyebrow">阅读效果预览</span>' +
+            '<h3>星屿是怎么搭起来的</h3>' +
+            '<p>这是一段示例正文。字号、行高、字体和宽度都会立刻反映在这里——上面调一下，下面马上变，不用保存也不用刷新。</p>' +
+            '<p>写长文的时候，<b>行高</b>比字号更影响读起来累不累：中文大概 1.8–2.0 最舒服；<b>正文宽度</b>太宽眼睛要来回扫，太窄又频繁换行。</p>' +
+            '<p><span class="tag">#随笔</span> <span class="tag">#建站</span></p>' +
+          '</div>' +
+        '</div>' +
+        '<div class="admin-actions"><button class="btn btn--ghost" type="button" id="lookResetRead">↺ 恢复默认阅读设置</button></div>' +
+      '</div>';
+  }
+
+  function bindLook(root, body) {
+    /* 面板右上角那两个小标签跟着设置实时变，不用整块重绘 */
+    function paintAccentName() {
+      var el = body.querySelector('#lookAccentName');
+      if (!el) return;
+      var t = Store.theme();
+      el.textContent = ACCENT_LABELS[t.accent] || '自定义';
+    }
+    function paintReadBadge() {
+      var el = body.querySelector('#lookReadBadge');
+      if (!el) return;
+      var r = Store.read();
+      el.textContent = r.size + 'px · ' + (r.font === 'serif' ? '衬线' : '无衬线');
+    }
+
+    var sw = body.querySelector('#lookSwatches');
+    if (sw) sw.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-accent]');
+      if (!b) return;
+      var id = b.getAttribute('data-accent');
+      Store.setTheme({ accent: id });
+      toast('已切到「' + (ACCENT_LABELS[id] || id) + '」配色');
+      refreshBody(root);
+    });
+
+    var color = body.querySelector('[data-theme-f="accentColor"]');
+    if (color) {
+      var onColor = debounce(function () {
+        Store.setTheme({ accent: 'custom', accentColor: color.value });
+        var hex = body.querySelector('#lookHex');
+        if (hex) hex.textContent = color.value;
+        body.querySelectorAll('.look-swatch').forEach(function (x) { x.classList.remove('is-active'); });
+        var row = color.closest('.look-color');
+        if (row) row.classList.add('is-active');
+        paintAccentName();
+      }, 140);
+      color.addEventListener('input', onColor);
+    }
+
+    body.querySelectorAll('select[data-theme-f]').forEach(function (el) {
+      el.addEventListener('change', function () {
+        var patch = {};
+        patch[el.getAttribute('data-theme-f')] = el.value;
+        Store.setTheme(patch);
+      });
+    });
+
+    var sizeEl = body.querySelector('[data-read-f="size"]');
+    var sizeOut = body.querySelector('#lookSizeOut');
+    if (sizeEl) {
+      var onSize = debounce(function () {
+        Store.setRead({ size: +sizeEl.value });
+        if (sizeOut) sizeOut.textContent = sizeEl.value + ' px';
+        paintReadBadge();
+      }, 120);
+      sizeEl.addEventListener('input', onSize);
+    }
+
+    body.querySelectorAll('select[data-read-f]').forEach(function (el) {
+      el.addEventListener('change', function () {
+        var key = el.getAttribute('data-read-f');
+        var patch = {};
+        patch[key] = (key === 'line' || key === 'width') ? parseFloat(el.value) : el.value;
+        Store.setRead(patch);
+        paintReadBadge();
+      });
+    });
+
+    var tocEl = body.querySelector('input[data-read-f="toc"]');
+    if (tocEl) tocEl.addEventListener('change', function () {
+      Store.setRead({ toc: tocEl.checked });
+    });
+
+    var rt = body.querySelector('#lookResetTheme');
+    if (rt) rt.addEventListener('click', function () {
+      Store.setTheme(Store.DEFAULTS.theme);
+      Store.set({ themeDefault: Store.DEFAULTS.themeDefault, cardDensity: Store.DEFAULTS.cardDensity });
+      toast('已恢复默认外观');
+      refreshBody(root);
+    });
+
+    var rr = body.querySelector('#lookResetRead');
+    if (rr) rr.addEventListener('click', function () {
+      Store.setRead(Store.DEFAULTS.read);
+      toast('已恢复默认阅读设置');
+      refreshBody(root);
+    });
+  }
+
   /* ======================= 站点信息 ======================= */
   function sitePanel() {
     var c = Store.get();
@@ -1153,18 +1357,7 @@
         '<p class="admin-tip">换了之后如果标签页没变，是浏览器在缓存，关掉标签页重新打开就好。</p>' +
       '</div>' +
       '<div class="admin-card">' +
-        '<h2>外观</h2>' +
-        '<label class="admin-field"><span class="admin-field__label">默认主题<em>新访客进站时使用</em></span>' +
-          '<select data-site="themeDefault">' +
-            '<option value="dark"' + (c.themeDefault === 'dark' ? ' selected' : '') + '>暗色</option>' +
-            '<option value="light"' + (c.themeDefault === 'light' ? ' selected' : '') + '>明亮</option>' +
-          '</select></label>' +
-        '<label class="admin-field"><span class="admin-field__label">卡片密度<em>导航页一行放几个站点</em></span>' +
-          '<select data-site="cardDensity">' +
-            '<option value="compact"' + (c.cardDensity === 'compact' ? ' selected' : '') + '>紧凑 · 一屏装最多</option>' +
-            '<option value="normal"' + (c.cardDensity !== 'compact' && c.cardDensity !== 'comfy' ? ' selected' : '') + '>标准</option>' +
-            '<option value="comfy"' + (c.cardDensity === 'comfy' ? ' selected' : '') + '>宽松 · 描述更舒展</option>' +
-          '</select></label>' +
+        '<h2>显示项</h2>' +
         '<label class="admin-switch"><input type="checkbox" data-site="showSearch"' + (c.showSearch ? ' checked' : '') + ' />' +
           '<span class="admin-switch__track"><span class="admin-switch__dot"></span></span>' +
           '<span class="admin-switch__text">顶栏显示搜索框</span></label>' +
@@ -1789,6 +1982,7 @@
 
     bindPosts(root, body);
     bindFeed(root, body);
+    bindLook(root, body);
 
     /* ---------- 站点数据 ---------- */
     var catsWrap = body.querySelector('#adminCats');

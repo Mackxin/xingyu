@@ -793,7 +793,7 @@
         '</div>'
       : '';
 
-    var toc = heads.length >= 3
+    var toc = (heads.length >= 3 && READ_CFG.toc !== false)
       ? '<aside class="post-toc" aria-label="本文目录">' +
           '<div class="post-toc__title">本文目录</div>' +
           '<nav>' + heads.map(function (h) {
@@ -1439,6 +1439,81 @@
     toast(next === 'light' ? '☀️ 已切换到明亮模式' : '🌙 已切换到暗色模式');
   }
 
+  /* ---------- 主题外观 / 阅读体验（后台「主题」页可改） ---------- */
+  /* 预设色板：一组三色渐变（a1 主色、a2 、a3） */
+  var ACCENT_PRESETS = {
+    aurora: ['#7c9cff', '#b47cff', '#4fe3d0'],
+    ocean:  ['#4fa8ff', '#38cfe0', '#7bf0c4'],
+    sunset: ['#ff9364', '#ff6b93', '#ffc46b'],
+    forest: ['#6fdfa4', '#3fc9a9', '#b8e05c'],
+    grape:  ['#a78bfa', '#f472b6', '#6ea8ff'],
+    sakura: ['#ff9ec4', '#ffb0d6', '#c9a7ff'],
+    ink:    ['#9aa7bd', '#c3c9d6', '#7f8ea3']
+  };
+  var READ_CFG = { size: 16, line: 1.95, font: 'sans', width: 820, toc: true };
+
+  function hexToHsl(hex) {
+    var r = parseInt(hex.substr(1, 2), 16) / 255,
+        g = parseInt(hex.substr(3, 2), 16) / 255,
+        b = parseInt(hex.substr(5, 2), 16) / 255;
+    var max = Math.max(r, g, b), min = Math.min(r, g, b);
+    var l = (max + min) / 2, h = 0, s = 0;
+    if (max !== min) {
+      var d = max - min;
+      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+      if (max === r) h = (g - b) / d + (g < b ? 6 : 0);
+      else if (max === g) h = (b - r) / d + 2;
+      else h = (r - g) / d + 4;
+      h *= 60;
+    }
+    return { h: h, s: s * 100, l: l * 100 };
+  }
+  function hslCss(h, s, l) {
+    h = ((h % 360) + 360) % 360;
+    return 'hsl(' + Math.round(h) + ',' + Math.round(Math.min(100, Math.max(0, s))) + '%,' +
+      Math.round(Math.min(92, Math.max(8, l))) + '%)';
+  }
+  /* 一组三色：预设直接用，自定义就从主色推两个邻近色（色相 ±，明度略抬） */
+  function accentTrio(t) {
+    t = t || {};
+    if (t.accent !== 'custom' && ACCENT_PRESETS[t.accent]) return ACCENT_PRESETS[t.accent].slice();
+    var hex = /^#[0-9a-f]{6}$/i.test(String(t.accentColor || '')) ? t.accentColor : '#7c9cff';
+    var c = hexToHsl(hex);
+    return [hex, hslCss(c.h + 36, c.s + 4, c.l + 6), hslCss(c.h - 56, c.s + 2, c.l + 10)];
+  }
+  function mixCss(color, pct) {
+    return 'color-mix(in srgb, ' + color + ' ' + pct + '%, transparent)';
+  }
+
+  /* 把后台设置写成 CSS 变量 / data-* 属性：改完全站立刻变，不用刷新 */
+  function applyLook() {
+    if (!window.XYStore) return;
+    var c = window.XYStore.get();
+    var t = c.theme || {};
+    var r = c.read || {};
+    var trio = accentTrio(t);
+    var root = document.documentElement, st = root.style;
+
+    st.setProperty('--a1', trio[0]);
+    st.setProperty('--a2', trio[1]);
+    st.setProperty('--a3', trio[2]);
+    st.setProperty('--grad', 'linear-gradient(120deg, ' + trio[0] + ', ' + trio[1] + ' 52%, ' + trio[2] + ')');
+    st.setProperty('--grad-soft', 'linear-gradient(120deg, ' + mixCss(trio[0], 26) + ', ' +
+      mixCss(trio[1], 20) + ' 55%, ' + mixCss(trio[2], 18) + ')');
+    st.setProperty('--glow', '0 0 0 1px ' + mixCss(trio[0], 25) + ', 0 18px 50px -20px ' + mixCss(trio[0], 45));
+
+    root.setAttribute('data-glow', t.glow || 'normal');
+    root.setAttribute('data-radius', t.radius || 'normal');
+
+    /* 阅读排版 */
+    READ_CFG = r;
+    st.setProperty('--post-size', (r.size || 16) + 'px');
+    st.setProperty('--post-line', String(r.line || 1.95));
+    st.setProperty('--post-width', (r.width || 820) + 'px');
+    root.setAttribute('data-readfont', r.font === 'serif' ? 'serif' : 'sans');
+    root.setAttribute('data-toc', r.toc === false ? 'off' : 'on');
+  }
+
   /* ---------- 后台配置 → 界面 ---------- */
   var LOGO_HTML = '';
   var FAVICON_HTML = '';
@@ -1507,6 +1582,8 @@
     document.documentElement.setAttribute('data-icons', c.showIcons === false ? 'off' : 'on');
     // 卡片密度：compact | normal | comfy
     document.documentElement.setAttribute('data-density', c.cardDensity || 'normal');
+    // 主题配色 / 阅读排版（后台「主题」页）
+    applyLook();
   }
 
   /* ---------- Toast ---------- */
@@ -1927,6 +2004,8 @@
     applyData: refreshData,
     applyPosts: refreshPosts,
     applyFeed: refreshFeed,
+    applyLook: applyLook,
+    accents: ACCENT_PRESETS,
     hostOf: hostOf,
     homeCfg: homeCfg,
     toast: toast,

@@ -35,6 +35,23 @@
     startDate: '2024-01-01',   // 建站日期（YYYY-MM-DD）—— 首页「成长天数」从这里算
     customLinks: [],           // { icon, name, url } —— 最多 MAX_LINKS 个
 
+    /* ---------- 主题外观（后台「主题」页） ---------- */
+    theme: {
+      accent: 'aurora',        // 预设色板 id；'custom' = 用下面的 accentColor
+      accentColor: '#7c9cff',  // 自定义主色（只在 accent==='custom' 时生效）
+      glow: 'normal',          // strong | normal | off —— 背景极光强度
+      radius: 'normal'         // small | normal | large —— 圆角大小
+    },
+
+    /* ---------- 阅读体验（文章页） ---------- */
+    read: {
+      size: 16,                // 正文字号 px（14–20）
+      line: 1.95,              // 行高（1.6–2.2）
+      font: 'sans',            // sans | serif
+      width: 820,              // 正文最大宽度 px（640–1080）
+      toc: true                // 宽屏右侧目录
+    },
+
     /* ---------- 首页文案与内容 ---------- */
     home: {
       eyebrow: '探索 · 发现 · 记录',
@@ -68,6 +85,7 @@
   var MAX_STATS = 6;
   var MAX_ENTRIES = 8;
   var MAX_IMG_CHARS = 2200000;   // 图片 data URL 上限（约 1.6MB 二进制）
+  var ACCENTS = ['aurora', 'ocean', 'sunset', 'forest', 'grape', 'sakura', 'ink', 'custom'];
 
   /* ---------- 小工具 ---------- */
   function clone(o) { return JSON.parse(JSON.stringify(o)); }
@@ -173,6 +191,8 @@
       target.home = normHome(target.home);
     }
     target.startDate = normDate(target.startDate, DEFAULTS.startDate);
+    target.theme = normTheme(src && src.theme !== undefined ? src.theme : target.theme);
+    target.read = normRead(src && src.read !== undefined ? src.read : target.read);
     target.cardDensity = ['compact', 'normal', 'comfy'].indexOf(target.cardDensity) > -1
       ? target.cardDensity : DEFAULTS.cardDensity;
     if (!Array.isArray(target.customLinks)) target.customLinks = [];
@@ -230,6 +250,35 @@
     };
   }
 
+  /* 主题外观：色板 / 自定义主色 / 背景光晕 / 圆角 */
+  function normTheme(src) {
+    src = (src && typeof src === 'object') ? src : {};
+    var d = DEFAULTS.theme;
+    var hex = String(src.accentColor == null ? '' : src.accentColor).trim().toLowerCase();
+    if (!/^#[0-9a-f]{6}$/.test(hex)) hex = d.accentColor;
+    return {
+      accent: ACCENTS.indexOf(src.accent) > -1 ? src.accent : d.accent,
+      accentColor: hex,
+      glow: ['strong', 'normal', 'off'].indexOf(src.glow) > -1 ? src.glow : d.glow,
+      radius: ['small', 'normal', 'large'].indexOf(src.radius) > -1 ? src.radius : d.radius
+    };
+  }
+
+  /* 阅读体验：字号 / 行高 / 字体 / 正文宽度 / 目录 */
+  function normRead(src) {
+    src = (src && typeof src === 'object') ? src : {};
+    var d = DEFAULTS.read;
+    var line = parseFloat(src.line);
+    if (!isFinite(line)) line = d.line;
+    return {
+      size: intIn(src.size, 14, 20, d.size),
+      line: Math.min(2.2, Math.max(1.6, line)),
+      font: src.font === 'serif' ? 'serif' : 'sans',
+      width: intIn(src.width, 640, 1080, d.width),
+      toc: src.toc === undefined ? d.toc : !!src.toc
+    };
+  }
+
   function readLS() {
     try { return JSON.parse(localStorage.getItem(CFG_KEY)) || null; } catch (e) { return null; }
   }
@@ -241,6 +290,7 @@
     MAX_ENTRIES: MAX_ENTRIES,
     MAX_IMG_CHARS: MAX_IMG_CHARS,
     AUTO_KEYS: AUTO_KEYS,
+    ACCENTS: ACCENTS,
     DEFAULT_PASS: DEFAULT_PASS,
     DEFAULTS: clone(DEFAULTS),
     saveFailed: false,
@@ -268,6 +318,30 @@
       Store.save(cfg);
       return cfg.home;
     },
+
+    /* 主题外观：只传要改的字段，其余保持原样 */
+    setTheme: function (patch) {
+      var cfg = Store.get();
+      var next = {};
+      Object.keys(cfg.theme || {}).forEach(function (k) { next[k] = cfg.theme[k]; });
+      Object.keys(patch || {}).forEach(function (k) { next[k] = patch[k]; });
+      cfg.theme = normTheme(next);
+      Store.save(cfg);
+      return cfg.theme;
+    },
+    theme: function () { return Store.get().theme; },
+
+    /* 阅读体验：只传要改的字段，其余保持原样 */
+    setRead: function (patch) {
+      var cfg = Store.get();
+      var next = {};
+      Object.keys(cfg.read || {}).forEach(function (k) { next[k] = cfg.read[k]; });
+      Object.keys(patch || {}).forEach(function (k) { next[k] = patch[k]; });
+      cfg.read = normRead(next);
+      Store.save(cfg);
+      return cfg.read;
+    },
+    read: function () { return Store.get().read; },
 
     save: function (cfg) {
       cfg = pick(clone(DEFAULTS), cfg);
