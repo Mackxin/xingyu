@@ -304,6 +304,8 @@
         field('站点名称', 'siteName', c.siteName, '显示在顶栏 Logo 与页脚') +
         field('拉丁名', 'siteLatin', c.siteLatin, 'Logo 下方的小字') +
         field('标语', 'tagline', c.tagline, '页脚与页面描述') +
+        '<label class="admin-field"><span class="admin-field__label">建站日期<em>首页「成长天数」从这天开始数</em></span>' +
+          '<input type="date" data-site="startDate" value="' + esc(c.startDate) + '" /></label>' +
       '</div>' +
       '<div class="admin-card">' +
         '<h2>顶栏 Logo</h2>' +

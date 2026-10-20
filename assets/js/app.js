@@ -136,11 +136,27 @@
   /* 站外链接加 target=_blank；站内 #/ 原样 */
   function isInternal(u) { return String(u || '').charAt(0) === '#'; }
 
+  /* 建站日期 → 从那天到今天的天数（含今天，按本地时区算整天） */
+  function daysSinceStart() {
+    var fallback = new Date(2024, 0, 1);
+    var s = '';
+    try { if (window.XYStore) s = window.XYStore.get().startDate || ''; } catch (e) {}
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(s).trim());
+    var start = fallback;
+    if (m) {
+      var d = new Date(+m[1], +m[2] - 1, +m[3]);
+      if (!isNaN(d.getTime())) start = d;
+    }
+    var now = new Date();
+    var a = new Date(start.getFullYear(), start.getMonth(), start.getDate()).getTime();
+    var b = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    return Math.max(1, Math.floor((b - a) / 86400000) + 1);
+  }
+
   function renderHome() {
     var h = homeCfg();
     if (h.rotator && h.rotator.length) ROTATOR_WORDS = h.rotator.slice(0, 6);
-    var start = new Date(2024, 0, 1);
-    var days = Math.max(1, Math.floor((Date.now() - start.getTime()) / 86400000));
+    var days = daysSinceStart();
     var autoMap = { cats: CATS.length, links: totalLinks, feed: FEED.length, days: days };
 
     var statsHtml = (h.stats || []).map(function (t) {

@@ -29,6 +29,7 @@
     showIcons: true,           // 站点卡片左侧图标（后台可关；只影响电脑端，手机端本来就不显示）
     logoImage: '',             // 顶栏 Logo 图片（data URL 或网址）；空 = 内置星形 SVG
     favicon: '',               // 浏览器标签图标；空 = 内置 SVG
+    startDate: '2024-01-01',   // 建站日期（YYYY-MM-DD）—— 首页「成长天数」从这里算
     customLinks: [],           // { icon, name, url } —— 最多 MAX_LINKS 个
 
     /* ---------- 首页文案与内容 ---------- */
@@ -83,6 +84,15 @@
     var s = String(v == null ? '' : v).trim();
     if (s.length > MAX_IMG_CHARS) return '';
     return s;
+  }
+
+  /* 建站日期：必须是 YYYY-MM-DD，且真实存在的日期；否则回落默认 */
+  function normDate(v, def) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(v == null ? '' : v).trim());
+    if (!m) return def;
+    var d = new Date(+m[1], +m[2] - 1, +m[3]);
+    if (d.getFullYear() !== +m[1] || d.getMonth() !== +m[2] - 1 || d.getDate() !== +m[3]) return def;
+    return m[1] + '-' + m[2] + '-' + m[3];
   }
 
   function normStats(list, def) {
@@ -159,6 +169,7 @@
     } else {
       target.home = normHome(target.home);
     }
+    target.startDate = normDate(target.startDate, DEFAULTS.startDate);
     if (!Array.isArray(target.customLinks)) target.customLinks = [];
     target.customLinks = target.customLinks.slice(0, MAX_LINKS).map(normLink);
     return target;
