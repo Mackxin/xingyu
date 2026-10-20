@@ -7,9 +7,11 @@
   'use strict';
 
   var Store = window.XYStore;
+  var MD = window.XYMarkdown || null;
   var MAX = Store.MAX_LINKS;
   var TABS = [
     { id: 'sites',    label: '站点数据', icon: '🗂', badge: 'adminTabSitesN' },
+    { id: 'posts',    label: '文章',     icon: '✍️', badge: 'adminTabPostsN' },
     { id: 'home',     label: '首页内容', icon: '🏠' },
     { id: 'links',    label: '自定义链接', icon: '🔗', badge: 'adminTabLinksN' },
     { id: 'site',     label: '站点信息', icon: '🌌' },
@@ -21,6 +23,8 @@
   var openCats = {};        // 展开的分类（按 id 记）
   var firstRun = true;
   var siteQuery = '';       // 站点数据搜索词
+  var postQuery = '';       // 文章搜索词
+  var editing = null;       // 正在编辑的文章：{ id, isNew }
   var armed = null;         // 两步删除的“已待确认”状态
 
   /* ---------- 小工具 ---------- */
@@ -30,6 +34,14 @@
     });
   }
   function norm(s) { return String(s || '').toLowerCase().replace(/\s+/g, ''); }
+  function debounce(fn, ms) {
+    var t;
+    return function () {
+      var a = arguments, self = this;
+      clearTimeout(t);
+      t = setTimeout(function () { fn.apply(self, a); }, ms);
+    };
+  }
   function app() { return window.XY_APP || {}; }
   function toast(m) { if (app().toast) app().toast(m); }
   function applyChrome() { if (app().applyChrome) app().applyChrome(); }
@@ -106,6 +118,7 @@
   function badgeText(id) {
     if (id === 'adminTabSitesN') return String(counts().links);
     if (id === 'adminTabLinksN') return Store.allLinks().length + '/' + MAX;
+    if (id === 'adminTabPostsN') return String(Store.postsAll().length);
     return '';
   }
   /* 保持侧栏角标与数据同步 */
@@ -118,6 +131,8 @@
     }
     var b = root.querySelector('#adminTabLinksN');
     if (b) b.textContent = Store.allLinks().length + '/' + MAX;
+    var c = root.querySelector('#adminTabPostsN');
+    if (c) c.textContent = Store.postsAll().length;
   }
 
   function lockHtml() {
@@ -138,6 +153,7 @@
 
   function panelHtml() {
     if (tab === 'home') return homePanel();
+    if (tab === 'posts') return postsPanel();
     if (tab === 'links') return linksPanel();
     if (tab === 'site') return sitePanel();
     if (tab === 'backup') return backupPanel();
@@ -441,6 +457,412 @@
       '</div>';
   }
 
+  /* ======================= 文章 ======================= */
+  function todayStr() {
+    var d = new Date();
+    function p(n) { return (n < 10 ? '0' : '') + n; }
+    return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+  }
+  function newPostId() {
+    return 'p' + Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36);
+  }
+  function mdStats(body) {
+    return MD ? MD.stats(body || '') : { chars: String(body || '').length, minutes: 1 };
+  }
+  function fmtChars(n) { return MD ? MD.fmtChars(n) : n + ' 字'; }
+
+  /* 列表顺序和前台一致：置顶优先，再按日期倒序（草稿也列出来，方便接着写） */
+  function postsSorted() {
+    var list = Store.postsAll();
+    list.sort(function (a, b) {
+      return (b.pin ? 1 : 0) - (a.pin ? 1 : 0) ||
+        String(b.date || '').localeCompare(String(a.date || ''));
+    });
+    return list;
+  }
+  function findPostById(id) {
+    var list = Store.postsAll();
+    for (var i = 0; i < list.length; i++) if (list[i].id === id) return list[i];
+    return null;
+  }
+
+  function postRowHtml(p) {
+    var st = mdStats(p.body);
+    var isEditing = !!(editing && !editing.isNew && editing.id === p.id);
+    var tags = (p.tags || []).map(function (t) { return '#' + t; }).join(' ');
+    return '<div class="post-admin-row' + (isEditing ? ' is-editing' : '') + '" data-pid="' + esc(p.id) + '">' +
+        '<div class="post-admin-row__main">' +
+          '<div class="post-admin-row__title">' +
+            (p.pin ? '<i title="已置顶">📌</i>' : '') +
+            '<span>' + esc(p.title) + '</span>' +
+            (p.draft ? '<span class="post-admin-row__badge post-admin-row__badge--draft">草稿</span>' : '') +
+          '</div>' +
+          '<div class="post-admin-row__meta">' + esc(p.date || '未标日期') +
+            (tags ? ' · ' + esc(tags) : '') +
+            ' · ' + esc(fmtChars(st.chars)) + '</div>' +
+        '</div>' +
+        '<div class="post-admin-row__ops">' +
+          '<button type="button" data-post-op="edit">编辑</button>' +
+          '<button type="button" data-post-op="pin" class="' + (p.pin ? 'is-on' : '') +
+            '" title="置顶到列表最前">📌</button>' +
+          (!p.draft ? '<button type="button" data-post-op="view">查看</button>' : '') +
+          '<button type="button" data-post-op="del" class="is-danger">删除</button>' +
+        '</div>' +
+      '</div>';
+  }
+
+  function postListHtml() {
+    var list = postsSorted();
+    var q = norm(postQuery);
+    var hits = q ? list.filter(function (p) {
+      return norm(p.title + (p.tags || []).join('') + (p.body || '').slice(0, 4000)).indexOf(q) > -1;
+    }) : list;
+    if (!list.length) {
+      return '<p class="admin-empty">还没有文章。点上面的「新建文章」，或者直接导入你写好的 .md 文件。</p>';
+    }
+    if (!hits.length) return '<p class="admin-empty">没有匹配「' + esc(postQuery) + '」的文章。</p>';
+    return '<div class="post-admin-list">' + hits.map(postRowHtml).join('') + '</div>';
+  }
+
+  function postEditorHtml() {
+    var isNew = !editing || editing.isNew;
+    var p = isNew
+      ? { id: '', title: '', date: todayStr(), tags: [], excerpt: '', body: '', pin: false, draft: false }
+      : findPostById(editing.id);
+    if (!p) { editing = null; return ''; }
+    var st = mdStats(p.body);
+    return '<div class="admin-card">' +
+        '<div class="admin-card__head">' +
+          '<div><h2>' + (isNew ? '新建文章' : '编辑文章') + '</h2>' +
+            '<p>正文用 <b>Markdown</b> 写就行；标签用逗号分隔，前台可以按标签筛选。</p></div>' +
+          '<span class="admin-count" id="postEditorCount">' + esc(fmtChars(st.chars)) + '</span>' +
+        '</div>' +
+        '<div class="post-editor">' +
+          '<label class="admin-field"><span class="admin-field__label">标题</span>' +
+            '<input type="text" data-pf="title" value="' + esc(p.title) + '" ' +
+              'placeholder="给这篇文章起个名字" maxlength="120" /></label>' +
+          '<div class="post-editor__grid">' +
+            '<label class="admin-field"><span class="admin-field__label">正文<em>Markdown</em></span>' +
+              '<textarea id="postBody" data-pf="body" spellcheck="false" ' +
+                'placeholder="## 从一个小标题开始写&#10;&#10;正文……">' + esc(p.body) + '</textarea></label>' +
+            '<div>' +
+              '<label class="admin-field"><span class="admin-field__label">日期</span>' +
+                '<input type="date" data-pf="date" value="' + esc(p.date) + '" /></label>' +
+              '<label class="admin-field"><span class="admin-field__label">标签<em>逗号分隔</em></span>' +
+                '<input type="text" data-pf="tags" value="' + esc((p.tags || []).join(', ')) +
+                  '" placeholder="随笔, 建站" /></label>' +
+              '<label class="admin-field"><span class="admin-field__label">摘要<em>留空则取正文开头</em></span>' +
+                '<textarea data-pf="excerpt" rows="3" placeholder="一句话说清这篇写了什么">' + esc(p.excerpt || '') + '</textarea></label>' +
+              '<label class="admin-switch"><input type="checkbox" data-pf="pin"' + (p.pin ? ' checked' : '') + ' />' +
+                '<span class="admin-switch__track"><span class="admin-switch__dot"></span></span>' +
+                '<span class="admin-switch__text">置顶这篇</span></label>' +
+              '<label class="admin-switch"><input type="checkbox" data-pf="draft"' + (p.draft ? ' checked' : '') + ' />' +
+                '<span class="admin-switch__track"><span class="admin-switch__dot"></span></span>' +
+                '<span class="admin-switch__text">存为草稿（前台不显示）</span></label>' +
+            '</div>' +
+          '</div>' +
+          '<div class="post-editor__bar">' +
+            '<button class="btn btn--primary" type="button" id="postSave">💾 保存</button>' +
+            '<button class="btn btn--ghost" type="button" id="postPreview">👁 预览</button>' +
+            '<button class="btn btn--ghost" type="button" id="postCancel">取消</button>' +
+            '<span class="post-editor__count" id="postCount">' + esc(fmtChars(st.chars)) + ' · 约 ' + st.minutes + ' 分钟</span>' +
+          '</div>' +
+          '<div class="post-editor__preview" id="postPreviewBox" hidden></div>' +
+        '</div>' +
+      '</div>';
+  }
+
+  function postsPanel() {
+    var list = postsSorted();
+    var drafts = list.filter(function (p) { return p.draft; }).length;
+    return (editing ? postEditorHtml() : '') +
+      '<div class="admin-card">' +
+        '<div class="admin-card__head">' +
+          '<div><h2>文章</h2>' +
+            '<p>前台「文章」页的内容。写完立刻能在 <code>#/post</code> 看到（草稿除外）。</p></div>' +
+          '<span class="admin-count">' + list.length + ' 篇' + (drafts ? ' · ' + drafts + ' 草稿' : '') + '</span>' +
+        '</div>' +
+        '<div class="admin-toolbar">' +
+          '<button class="btn btn--primary" type="button" id="postNew">＋ 新建文章</button>' +
+          '<button class="btn btn--ghost" type="button" id="postImport">📥 导入 .md 文件</button>' +
+          '<div class="admin-search">' +
+            '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M16.5 16.5L21 21"/></svg>' +
+            '<input type="search" id="postSearch" placeholder="搜标题 / 标签 / 正文…" value="' + esc(postQuery) + '" autocomplete="off" aria-label="搜索文章" />' +
+          '</div>' +
+          '<input type="file" id="postFile" accept=".md,.markdown,.txt,text/markdown" multiple hidden />' +
+        '</div>' +
+        '<div id="postListBox">' + postListHtml() + '</div>' +
+        '<p class="admin-tip">' +
+          '<b>导入 .md</b>：可以一次选多篇。标题优先取文件里的 <code># 标题</code>（或 front-matter 的 <code>title</code>），' +
+          '否则用文件名；日期取文件修改时间，也可以用 front-matter 的 <code>date</code>；' +
+          '<code>tags</code> 支持 <code>[随笔, 建站]</code> 这种写法。' +
+        '</p>' +
+        '<p class="admin-tip">文章和别的后台数据一样只存在<b>这台浏览器</b>里。想让所有访客都看到，' +
+          '到「备份」页导出，或者把内容写进 <code>assets/js/data.js</code> 的 <code>posts</code>。</p>' +
+      '</div>';
+  }
+
+  /* ---- 编辑器读写 ---- */
+  function collectEditor(body) {
+    var g = function (k) {
+      var el = body.querySelector('[data-pf="' + k + '"]');
+      return el ? el.value : '';
+    };
+    var ck = function (k) {
+      var el = body.querySelector('[data-pf="' + k + '"]');
+      return !!(el && el.checked);
+    };
+    var tags = g('tags').split(/[,，、;；\s]+/)
+      .map(function (t) { return t.trim().replace(/^#/, ''); })
+      .filter(Boolean);
+    return {
+      title: g('title').trim() || '未命名文章',
+      date: g('date') || todayStr(),
+      tags: tags.filter(function (t, i, a) { return a.indexOf(t) === i; }).slice(0, 8),
+      excerpt: g('excerpt').trim(),
+      body: g('body'),
+      pin: ck('pin'),
+      draft: ck('draft')
+    };
+  }
+
+  function saveEditor(root, body) {
+    if (!editing) return;
+    var data = collectEditor(body);
+    if (!data.body.trim() && !data.title.trim()) { toast('标题和正文都还空着'); return; }
+    var list = Store.postsAll();
+    if (editing.isNew) {
+      data.id = newPostId();
+      list.unshift(data);
+      editing = { id: data.id, isNew: false };
+    } else {
+      var idx = -1;
+      for (var i = 0; i < list.length; i++) if (list[i].id === editing.id) { idx = i; break; }
+      if (idx < 0) { list.unshift(Object.assign({ id: editing.id }, data)); }
+      else list[idx] = Object.assign({}, list[idx], data, { id: editing.id });
+    }
+    if (Store.setPosts(list) === false) {
+      toast('浏览器存不下了（localStorage 满了），先导出备份再删点旧文章');
+      return;
+    }
+    toast('已保存 ✦ 前台马上能看到');
+    refreshBody(root);
+  }
+
+  /* ---- 导入 .md ---- */
+  /* 简单 front-matter：--- 之间的 title / date / tags / excerpt */
+  function parseFrontMatter(text) {
+    var m = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?/.exec(text);
+    if (!m) return { meta: {}, body: text };
+    var meta = {};
+    m[1].split(/\r?\n/).forEach(function (line) {
+      var kv = /^([A-Za-z_][\w-]*)\s*:\s*(.*)$/.exec(line.trim());
+      if (!kv) return;
+      var k = kv[1].toLowerCase();
+      var v = kv[2].trim().replace(/^["']|["']$/g, '');
+      if (k === 'tags' || k === 'tag') {
+        meta.tags = v.replace(/^\[|\]$/g, '').split(/[,，、]/)
+          .map(function (s) { return s.trim().replace(/^["'#]|["']$/g, ''); })
+          .filter(Boolean);
+      } else meta[k] = v;
+    });
+    return { meta: meta, body: text.slice(m[0].length) };
+  }
+
+  /* 文件名 → 标题 + 日期：2026-09-01-我的文章.md → 「我的文章」+ 2026-09-01 */
+  function infoFromFileName(name) {
+    var base = String(name || '').replace(/\.(md|markdown|txt)$/i, '').trim();
+    var out = { title: '', date: '' };
+    var md = /^(\d{4})[-_.](\d{1,2})[-_.](\d{1,2})[-_. ]*(.+)$/.exec(base);
+    if (md) {
+      function p2(n) { return (n.length < 2 ? '0' : '') + n; }
+      var mm = +md[2], dd = +md[3];
+      if (mm >= 1 && mm <= 12 && dd >= 1 && dd <= 31) out.date = md[1] + '-' + p2(md[2]) + '-' + p2(md[3]);
+      base = md[4];
+    }
+    base = base.replace(/^\d+[.\-_ ]+/, '').replace(/[-_]+/g, ' ').replace(/\s+/g, ' ').trim();
+    out.title = base;
+    return out;
+  }
+
+  function importMdFiles(root, files) {
+    var arr = Array.prototype.slice.call(files || []);
+    if (!arr.length) return;
+    var out = [];
+    var pending = arr.length;
+    arr.forEach(function (f) {
+      var fr = new FileReader();
+      fr.onerror = function () { done(); };
+      fr.onload = function () {
+        var raw = String(fr.result || '');
+        var fm = parseFrontMatter(raw);
+        var body = fm.body.replace(/^\s+/, '');
+        var fileInfo = infoFromFileName(f.name);
+        var title = fm.meta.title || '';
+        if (!title) {
+          var h1 = /^#[ \t]+(.+?)[ \t]*$/m.exec(body);
+          title = h1 ? h1[1].trim() : (fileInfo.title || '未命名文章');
+        }
+        var d = fm.meta.date ? String(fm.meta.date).slice(0, 10) : '';
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) {
+          if (fileInfo.date) d = fileInfo.date;
+          else {
+            var lm = f.lastModified ? new Date(f.lastModified) : new Date();
+            function p2(n) { return (n < 10 ? '0' : '') + n; }
+            d = lm.getFullYear() + '-' + p2(lm.getMonth() + 1) + '-' + p2(lm.getDate());
+          }
+        }
+        out.push({
+          id: newPostId(),
+          title: title.slice(0, 120),
+          date: d,
+          tags: Array.isArray(fm.meta.tags) ? fm.meta.tags : [],
+          excerpt: fm.meta.excerpt || '',
+          body: body,
+          pin: false,
+          draft: false
+        });
+        done();
+      };
+      fr.readAsText(f);
+    });
+
+    function done() {
+      pending--;
+      if (pending > 0) return;
+      if (!out.length) { toast('没读到内容，换个文件试试'); return; }
+      var list = Store.postsAll();
+      out.forEach(function (p) { list.unshift(p); });
+      if (Store.setPosts(list) === false) {
+        toast('浏览器存不下了，先清理一些旧文章再导入');
+        return;
+      }
+      toast('已导入 ' + out.length + ' 篇' + (out.length === 1 ? '，可以接着改' : ''));
+      if (out.length === 1) editing = { id: out[0].id, isNew: false };
+      refreshBody(root);
+    }
+  }
+
+  /* 只重绘文章列表（搜索时用，不动编辑器里正在写的内容） */
+  function refreshPostList(root) {
+    var box = root.querySelector('#postListBox');
+    if (box) box.innerHTML = postListHtml();
+    syncSide(root);
+  }
+
+  function bindPosts(root, body) {
+    var newBtn = body.querySelector('#postNew');
+    if (newBtn) newBtn.addEventListener('click', function () {
+      editing = { id: '', isNew: true };
+      postQuery = '';
+      refreshBody(root);
+      var t = root.querySelector('[data-pf="title"]');
+      if (t) t.focus();
+    });
+
+    var impBtn = body.querySelector('#postImport');
+    var impFile = body.querySelector('#postFile');
+    if (impBtn && impFile) {
+      impBtn.addEventListener('click', function () { impFile.click(); });
+      impFile.addEventListener('change', function () {
+        importMdFiles(root, impFile.files);
+        impFile.value = '';
+      });
+    }
+
+    var search = body.querySelector('#postSearch');
+    if (search) search.addEventListener('input', function () {
+      postQuery = search.value;
+      refreshPostList(root);
+    });
+
+    /* 列表里的行内操作 */
+    var listBox = body.querySelector('#postListBox');
+    if (listBox) listBox.addEventListener('click', function (e) {
+      var btn = e.target.closest('[data-post-op]');
+      if (!btn) return;
+      var row = btn.closest('.post-admin-row');
+      var pid = row && row.getAttribute('data-pid');
+      var op = btn.getAttribute('data-post-op');
+      if (!pid) return;
+
+      if (op === 'edit') {
+        editing = { id: pid, isNew: false };
+        refreshBody(root);
+        var ta = root.querySelector('#postBody');
+        if (ta) { try { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); } catch (e1) {} }
+        return;
+      }
+      if (op === 'view') {
+        var a = app();
+        if (a.openPost) a.openPost(pid);
+        return;
+      }
+      if (op === 'pin') {
+        var on = false;
+        Store.setPosts(Store.postsAll().map(function (p) {
+          if (p.id !== pid) return p;
+          p.pin = !p.pin;
+          on = p.pin;
+          return p;
+        }));
+        toast(on ? '已置顶' : '已取消置顶');
+        refreshBody(root);
+        return;
+      }
+      if (op === 'del') {
+        if (!armedNow('post', pid, -1)) {
+          arm('post', pid, -1);
+          toast('再点一次确认删除');
+          btn.classList.add('is-danger');
+          btn.textContent = '确认删除？';
+          return;
+        }
+        armed = null;
+        Store.setPosts(Store.postsAll().filter(function (p) { return p.id !== pid; }));
+        if (editing && editing.id === pid) editing = null;
+        toast('已删除');
+        refreshBody(root);
+      }
+    });
+
+    /* 编辑器 */
+    var saveBtn = body.querySelector('#postSave');
+    if (!saveBtn) return;
+    var bodyEl = body.querySelector('#postBody');
+    var countEl = body.querySelector('#postCount');
+    var pvBtn = body.querySelector('#postPreview');
+    var pvBox = body.querySelector('#postPreviewBox');
+
+    function syncCount() {
+      if (!bodyEl || !countEl) return;
+      var st = mdStats(bodyEl.value);
+      countEl.textContent = fmtChars(st.chars) + ' · 约 ' + st.minutes + ' 分钟';
+    }
+    if (bodyEl) {
+      bodyEl.addEventListener('input', debounce(function () {
+        syncCount();
+        if (pvBox && !pvBox.hidden) pvBox.innerHTML = '<div class="md">' + (MD ? MD.render(bodyEl.value) : '') + '</div>';
+      }, 220));
+    }
+
+    saveBtn.addEventListener('click', function () { saveEditor(root, body); });
+
+    var cancelBtn = body.querySelector('#postCancel');
+    if (cancelBtn) cancelBtn.addEventListener('click', function () {
+      editing = null;
+      refreshBody(root);
+    });
+
+    if (pvBtn && pvBox) pvBtn.addEventListener('click', function () {
+      if (!pvBox.hidden) { pvBox.hidden = true; pvBtn.textContent = '👁 预览'; return; }
+      pvBox.innerHTML = '<div class="md">' + (MD && bodyEl ? MD.render(bodyEl.value) : '') + '</div>';
+      pvBox.hidden = false;
+      pvBtn.textContent = '👁 收起预览';
+      try { pvBox.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch (e2) {}
+    });
+  }
+
   /* ======================= 站点信息 ======================= */
   function sitePanel() {
     var c = Store.get();
@@ -500,6 +922,7 @@
     ['cats',  '自动：分类数量'],
     ['links', '自动：站点数量'],
     ['feed',  '自动：分享条数'],
+    ['posts', '自动：文章篇数'],
     ['days',  '自动：成长天数']
   ];
 
@@ -672,9 +1095,11 @@
   function backupPanel() {
     var d = counts();
     var lc = Store.allLinks().length;
+    var pc = Store.postsAll().length;
     return '<div class="admin-card">' +
         '<h2>备份到文件</h2>' +
-        '<p>把 <b>站点数据</b>（' + d.cats + ' 个分类 · ' + d.links + ' 个站点）和 <b>站点设置</b>' +
+        '<p>把 <b>站点数据</b>（' + d.cats + ' 个分类 · ' + d.links + ' 个站点）、' +
+        '<b>文章</b>（' + pc + ' 篇）和 <b>站点设置</b>' +
         (lc ? '（含 ' + lc + ' 个自定义链接）' : '') + ' 打包成一个文件下载。</p>' +
         '<div class="admin-actions">' +
           '<button class="btn btn--primary" type="button" id="bkDownload">⬇ 下载备份文件</button>' +
@@ -714,10 +1139,11 @@
       '<div class="admin-card admin-card--danger">' +
         '<h2>恢复默认</h2>' +
         '<p>清掉本机保存的后台改动，回到 <code>data.js</code> / <code>config.js</code> 里的出厂状态。' +
-        '两个按钮都会先弹确认框，且<b>不影响收藏夹</b>。</p>' +
+        '按钮都会先弹确认框，且<b>不影响收藏夹</b>。</p>' +
         '<div class="admin-actions">' +
           '<button class="btn btn--danger" type="button" id="bkResetCfg">恢复默认设置</button>' +
           '<button class="btn btn--danger" type="button" id="bkResetData">恢复默认数据</button>' +
+          '<button class="btn btn--danger" type="button" id="bkResetPosts">恢复默认文章</button>' +
         '</div>' +
       '</div>' +
 
@@ -738,10 +1164,11 @@
   function backupObject() {
     return {
       app: 'xingyu',
-      version: 1,
+      version: 3,
       exportedAt: new Date().toISOString(),
       config: Store.get(),
-      data: Store.dataAll()
+      data: Store.dataAll(),
+      posts: Store.postsAll()
     };
   }
 
@@ -759,6 +1186,7 @@
       obj.data.forEach(function (c) { m += ((c && c.links) || []).length; });
       parts.push(obj.data.length + ' 个分类 · ' + m + ' 个站点');
     }
+    if (Array.isArray(obj.posts)) parts.push(obj.posts.length + ' 篇文章');
     if (obj.config && typeof obj.config === 'object') {
       var cn = (obj.config.customLinks || []).length;
       parts.push('站点设置' + (cn ? '（含 ' + cn + ' 个自定义链接）' : ''));
@@ -770,6 +1198,7 @@
     if (Array.isArray(obj)) { Store.setData(obj); return; }
     if (obj.config && typeof obj.config === 'object') Store.save(obj.config);
     if (Array.isArray(obj.data)) Store.setData(obj.data);
+    if (Array.isArray(obj.posts)) Store.setPosts(obj.posts);
   }
 
   function stamp() {
@@ -819,10 +1248,11 @@
     var a = app();
     return {
       app: 'xingyu',
-      version: 2,
+      version: 3,
       exportedAt: new Date().toISOString(),
       config: Store.get(),
       data: Store.dataAll(),
+      posts: Store.postsAll(),
       fav: (a.fav && a.fav.get) ? a.fav.get() : [],
       visits: (a.visits && a.visits.get) ? a.visits.get() : {}
     };
@@ -995,6 +1425,9 @@
         closeEmoji();
         tab = b.getAttribute('data-tab');
         siteQuery = '';
+        postQuery = '';
+        editing = null;
+        armed = null;
         root.querySelectorAll('.admin-tab').forEach(function (x) {
           x.classList.toggle('is-active', x === b);
         });
@@ -1081,6 +1514,8 @@
   function bindBody(root) {
     var body = root.querySelector('#adminBody');
     if (!body) return;
+
+    bindPosts(root, body);
 
     /* ---------- 站点数据 ---------- */
     var catsWrap = body.querySelector('#adminCats');
@@ -1416,6 +1851,7 @@
     function syncAfterRestore(withData) {
       applyChrome();
       if (app().applyTheme) app().applyTheme(Store.get().themeDefault);
+      if (app().applyPosts) app().applyPosts();
       if (withData) { openCats = {}; firstRun = true; }
       refreshBody(root);
     }
@@ -1489,6 +1925,21 @@
       }, function () {
         Store.resetData();
         toast('已恢复默认站点数据');
+        syncAfterRestore(true);
+      });
+    });
+
+    var bkResetPosts = body.querySelector('#bkResetPosts');
+    if (bkResetPosts) bkResetPosts.addEventListener('click', function () {
+      askConfirm({
+        title: '恢复默认文章？',
+        desc: '所有<b>文章</b>都会回到 <code>data.js</code> 里的出厂内容，你写的那些会丢失。<br>这个操作<b>无法撤销</b>，建议先下载一份备份。',
+        ok: '确认恢复'
+      }, function () {
+        Store.resetPosts();
+        editing = null;
+        postQuery = '';
+        toast('已恢复默认文章');
         syncAfterRestore(true);
       });
     });

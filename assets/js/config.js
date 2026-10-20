@@ -15,6 +15,7 @@
 
   var CFG_KEY = 'xingyu.config.v1';
   var DATA_KEY = 'xingyu.data.v1';
+  var POSTS_KEY = 'xingyu.posts.v1';
   var PASS_KEY = 'xingyu.pass.v1';
   var OPEN_KEY = 'xingyu.unlocked.v1';
 
@@ -62,7 +63,7 @@
 
   var DEFAULT_PASS = 'xingyu';
 
-  var AUTO_KEYS = ['cats', 'links', 'feed', 'days'];
+  var AUTO_KEYS = ['cats', 'links', 'feed', 'days', 'posts'];
   var MAX_STATS = 6;
   var MAX_ENTRIES = 8;
   var MAX_IMG_CHARS = 2200000;   // 图片 data URL 上限（约 1.6MB 二进制）
@@ -185,6 +186,27 @@
       icon: String(l.icon == null ? '' : l.icon).slice(0, 4),
       name: String(l.name || '').slice(0, 20),
       url: url
+    };
+  }
+
+  /* 一篇文章：标题、日期、标签、摘要、Markdown 正文 */
+  function normPost(p, i) {
+    p = p || {};
+    var title = String(p.title == null ? '' : p.title).slice(0, 120).trim();
+    var tags = Array.isArray(p.tags) ? p.tags : [];
+    tags = tags.map(function (t) { return String(t == null ? '' : t).trim().slice(0, 20); })
+      .filter(Boolean).filter(function (t, k, a) { return a.indexOf(t) === k; }).slice(0, 8);
+    var id = String(p.id || '').replace(/[^\w-]/g, '');
+    if (!id) id = 'p' + hash(title + i + String(Date.now()));
+    return {
+      id: id.slice(0, 60),
+      title: title || '未命名文章',
+      date: normDate(p.date, '') || '',
+      tags: tags,
+      excerpt: String(p.excerpt == null ? '' : p.excerpt).slice(0, 300),
+      body: String(p.body == null ? '' : p.body).slice(0, 400000),
+      pin: !!p.pin,
+      draft: !!p.draft
     };
   }
 
@@ -335,6 +357,52 @@
       if (!Array.isArray(v)) return false;
       Store.setData(v);
       return true;
+    },
+
+    /* ---------- 文章（Markdown） ---------- */
+    /* 后台用：始终返回独立副本 */
+    postsAll: function () {
+      var raw = null;
+      try { raw = localStorage.getItem(POSTS_KEY); } catch (e) {}
+      if (raw) {
+        try { var v = JSON.parse(raw); if (Array.isArray(v)) return clone(v); } catch (e) {}
+      }
+      return clone((window.SITE_DATA && window.SITE_DATA.posts) || []);
+    },
+    /* 前台只读：没有本地覆盖时直接返回原数组引用，零开销 */
+    posts: function () {
+      var raw = null;
+      try { raw = localStorage.getItem(POSTS_KEY); } catch (e) {}
+      if (raw) {
+        try { var v = JSON.parse(raw); if (Array.isArray(v)) return v; } catch (e) {}
+      }
+      return (window.SITE_DATA && window.SITE_DATA.posts) || [];
+    },
+    postsIsCustom: function () {
+      try { return !!localStorage.getItem(POSTS_KEY); } catch (e) { return false; }
+    },
+    setPosts: function (list) {
+      var arr = (Array.isArray(list) ? list : []).map(normPost);
+      try { localStorage.setItem(POSTS_KEY, JSON.stringify(arr)); }
+      catch (e) {
+        /* 多半是 localStorage 满了（浏览器一般 5MB） */
+        Store.saveFailed = true;
+        return false;
+      }
+      Store.saveFailed = false;
+      document.dispatchEvent(new CustomEvent('xy:posts', { detail: arr }));
+      return arr;
+    },
+    resetPosts: function () {
+      try { localStorage.removeItem(POSTS_KEY); } catch (e) {}
+      document.dispatchEvent(new CustomEvent('xy:posts', { detail: Store.posts() }));
+    },
+    exportPostsJSON: function () { return JSON.stringify(Store.postsAll(), null, 2); },
+    importPostsJSON: function (str) {
+      var v;
+      try { v = JSON.parse(str); } catch (e) { return false; }
+      if (!Array.isArray(v)) return false;
+      return Store.setPosts(v) !== false;
     },
 
     /* ---------- 口令 ---------- */

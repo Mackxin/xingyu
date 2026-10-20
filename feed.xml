@@ -1,13 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>星屿 · 灵感分享</title>
+    <title>星屿 · 灵感与文章</title>
     <link>https://mackxin.github.io/xingyu/</link>
-    <description>以星为图，以屿为家 —— 每天一小条，记录遇见的工具、灵感与小发现。</description>
+    <description>以星为图，以屿为家 —— 每天一小条，记录遇见的工具、灵感与小发现，也写点长一点的文章。</description>
     <language>zh-cn</language>
-    <lastBuildDate>Tue, 20 Oct 2026 13:24:07 GMT</lastBuildDate>
+    <lastBuildDate>Tue, 20 Oct 2026 14:35:39 GMT</lastBuildDate>
     <generator>XINGYU gen-feed</generator>
     <atom:link href="https://mackxin.github.io/xingyu/feed.xml" rel="self" type="application/rss+xml" />
+  <item>
+    <title>📝 从这里开始写第一篇</title>
+    <link>https://mackxin.github.io/xingyu/#/post/hello-xingyu</link>
+    <guid isPermaLink="true">https://mackxin.github.io/xingyu/#/post/hello-xingyu</guid>
+    <pubDate>Tue, 20 Oct 2026 01:00:00 GMT</pubDate>
+    <description>文章页怎么用、Markdown 支持哪些写法，都写在这一篇里。</description>
+    <category>随笔</category>
+    <category>建站</category>
+  </item>
   <item>
     <title>星屿导航 · 新版上线</title>
     <link>https://mackxin.github.io/xingyu/#/nav</link>
@@ -61,6 +70,15 @@
     <description>长文档理解依旧是它最稳的能力，格式复杂的合同、论文丢进去，能给出条理清晰的结构化摘要，写作时的语气也拿捏得住。</description>
     <category>AI</category>
     <category>工具</category>
+  </item>
+  <item>
+    <title>📝 星屿是怎么搭起来的</title>
+    <link>https://mackxin.github.io/xingyu/#/post/how-xingyu-built</link>
+    <guid isPermaLink="true">https://mackxin.github.io/xingyu/#/post/how-xingyu-built</guid>
+    <pubDate>Mon, 12 Oct 2026 01:00:00 GMT</pubDate>
+    <description>一个不打包、不依赖、不联网也能打开的静态站点，是怎么组织的。</description>
+    <category>建站</category>
+    <category>技术</category>
   </item>
   <item>
     <title>小宇宙播客</title>

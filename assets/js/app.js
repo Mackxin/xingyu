@@ -5,8 +5,12 @@
 (function () {
   'use strict';
 
-  var DATA = window.SITE_DATA || { categories: [], feed: [], entries: [] };
+  var DATA = window.SITE_DATA || { categories: [], feed: [], entries: [], posts: [] };
   var CATS = DATA.categories, FEED = DATA.feed, ENTRIES = DATA.entries;
+  var POSTS = DATA.posts || [];
+  var MD = window.XYMarkdown || { render: escRaw, plain: escRaw, headings: function () { return []; },
+    stats: function () { return { chars: 0, minutes: 1 }; }, fmtChars: function (n) { return n + ' 字'; } };
+  function escRaw(s) { return String(s == null ? '' : s); }
 
   /* ---------- 小工具 ---------- */
   var $ = function (s, r) { return (r || document).querySelector(s); };
@@ -125,8 +129,8 @@
   };
 
   /* ---------- 状态 ---------- */
-  var ROUTES = ['home', 'nav', 'share'];                 // 主导航 / 滑动切换顺序
-  var ALL_ROUTES = ['home', 'nav', 'share', 'admin'];     // 全部可路由页面（admin 不占主导航）
+  var ROUTES = ['home', 'nav', 'share', 'post'];         // 主导航 / 滑动切换顺序
+  var ALL_ROUTES = ['home', 'nav', 'share', 'post', 'admin'];  // 全部可路由页面（admin 不占主导航）
   var state = {
     route: 'home',
     query: '',
@@ -134,6 +138,8 @@
     feedTag: 'all',
     catFilter: '',      // 分类栏筛选词
     recentMode: 'recent', // recent | top —— 最近访问榜的排序方式
+    postId: '',         // 正在阅读的文章 id（空 = 文章列表）
+    postTag: 'all',     // 文章列表的标签筛选
     fav: loadFav()
   };
   var FAV_KEY = 'xingyu.fav.v1';
@@ -170,6 +176,11 @@
   function refreshData() {
     CATS = (window.XYStore && window.XYStore.dataCategories()) || DATA.categories;
     rebuildIndex();
+    PALETTE_INDEX = buildPaletteIndex();
+  }
+  /* 后台改过文章后调用 */
+  function refreshPosts() {
+    POSTS = (window.XYStore && window.XYStore.posts) ? window.XYStore.posts() : (DATA.posts || []);
     PALETTE_INDEX = buildPaletteIndex();
   }
 
@@ -255,7 +266,7 @@
     var h = homeCfg();
     if (h.rotator && h.rotator.length) ROTATOR_WORDS = h.rotator.slice(0, 6);
     var days = daysSinceStart();
-    var autoMap = { cats: CATS.length, links: totalLinks, feed: FEED.length, days: days };
+    var autoMap = { cats: CATS.length, links: totalLinks, feed: FEED.length, days: days, posts: postList().length };
 
     var statsHtml = (h.stats || []).map(function (t) {
       var raw = t.auto ? (autoMap[t.auto] || 0) : t.n;
@@ -620,11 +631,211 @@
       '</section>';
   }
 
+  /* =========================================================
+     文章（#/post 列表 · #/post/<id> 阅读）
+     ========================================================= */
+  function findPost(id) {
+    for (var i = 0; i < POSTS.length; i++) if (POSTS[i] && POSTS[i].id === id) return POSTS[i];
+    return null;
+  }
+  /* 置顶优先，其余按日期倒序；草稿只在后台可见 */
+  function postList() {
+    var list = POSTS.filter(function (p) { return p && !p.draft; });
+    list.sort(function (a, b) {
+      return (b.pin ? 1 : 0) - (a.pin ? 1 : 0) ||
+        String(b.date || '').localeCompare(String(a.date || ''));
+    });
+    return list;
+  }
+  function postExcerpt(p) {
+    if (p.excerpt) return p.excerpt;
+    var t = MD.plain(p.body || '');
+    return t.length > 92 ? t.slice(0, 92) + '…' : t;
+  }
+  function postTagsOf(list) {
+    var tags = ['all'];
+    list.forEach(function (p) {
+      (p.tags || []).forEach(function (t) { if (tags.indexOf(t) < 0) tags.push(t); });
+    });
+    return tags;
+  }
+  function postHref(p) { return '#/post/' + encodeURIComponent(p.id); }
+
+  function postCardHtml(p) {
+    var st = MD.stats(p.body || '');
+    var d = String(p.date || '');
+    var tags = (p.tags || []).map(function (t) {
+      return '<span class="tag post-card__tag" data-post-tag="' + esc(t) + '">#' + esc(t) + '</span>';
+    }).join('');
+    return '<a class="post-card" href="' + postHref(p) + '">' +
+        '<span class="post-card__date">' +
+          '<b>' + esc(d.slice(5) || '—') + '</b>' +
+          '<span>' + esc(d.slice(0, 4) || '') + '</span>' +
+        '</span>' +
+        '<span class="post-card__main">' +
+          '<span class="post-card__title">' +
+            (p.pin ? '<i class="post-card__pin" title="置顶">📌</i>' : '') +
+            esc(p.title) +
+          '</span>' +
+          '<span class="post-card__desc">' + esc(postExcerpt(p)) + '</span>' +
+          '<span class="post-card__meta">' + tags +
+            '<em>' + esc(MD.fmtChars(st.chars)) + ' · 约 ' + st.minutes + ' 分钟</em>' +
+          '</span>' +
+        '</span>' +
+        '<span class="post-card__go" aria-hidden="true">' + I.arrow + '</span>' +
+      '</a>';
+  }
+
+  function renderPosts() {
+    var all = postList();
+    var tags = postTagsOf(all);
+    var items = state.postTag === 'all' ? all
+      : all.filter(function (p) { return (p.tags || []).indexOf(state.postTag) > -1; });
+
+    if (state.postTag !== 'all' && tags.indexOf(state.postTag) < 0) state.postTag = 'all';
+
+    var totalChars = 0;
+    all.forEach(function (p) { totalChars += MD.stats(p.body || '').chars; });
+
+    var statsHtml = '<div class="head-stats">' +
+      '<div class="head-stat"><b>' + all.length + '</b><span>篇文章</span></div>' +
+      '<div class="head-stat"><b>' + (totalChars >= 10000
+        ? (totalChars / 10000).toFixed(1).replace(/\.0$/, '') : (totalChars / 1000).toFixed(1).replace(/\.0$/, '')) +
+        '</b><span>' + (totalChars >= 10000 ? '万字' : '千字') + '</span></div>' +
+      '<div class="head-stat"><b>' + Math.max(0, tags.length - 1) + '</b><span>个标签</span></div>' +
+      '</div>';
+
+    /* 标签筛选条：和分享页同一套外观，但走 data-post-tag，互不干扰 */
+    var tagBar = '';
+    if (tags.length > 1) {
+      tagBar = '<div class="tag-bar post-tagbar">' +
+          '<span class="tag-bar__lead" aria-hidden="true">标签</span>' +
+          '<div class="tag-bar__chips">' +
+            tags.map(function (t) {
+              var label = t === 'all' ? '全部' : t;
+              return '<button class="tag' + (state.postTag === t ? ' is-active' : '') +
+                '" type="button" data-post-tag="' + esc(t) + '">' + esc(label) + '</button>';
+            }).join('') +
+          '</div>' +
+          '<span class="tag-bar__stat">共 <b>' + items.length + '</b> 篇</span>' +
+        '</div>';
+    }
+
+    /* 按年份分组，翻旧文章时有个时间坐标 */
+    var years = [], byYear = {};
+    items.forEach(function (p) {
+      var y = String(p.date || '').slice(0, 4) || '更早';
+      if (!byYear[y]) { byYear[y] = []; years.push(y); }
+      byYear[y].push(p);
+    });
+
+    var body = years.map(function (y) {
+      return '<div class="post-group">' +
+          '<div class="post-year"><b>' + esc(y) + '</b><span>' + byYear[y].length + ' 篇</span></div>' +
+          '<div class="post-list">' + byYear[y].map(postCardHtml).join('') + '</div>' +
+        '</div>';
+    }).join('');
+
+    return '<section class="page page--posts">' +
+      '<div class="page-head page-head--share">' +
+        '<div class="page-head__main">' +
+          '<span class="eyebrow">Writing · 手记</span>' +
+          '<h1>文章</h1>' +
+          '<p>写得长一点的东西：随笔、折腾记录，以及那些值得慢慢想清楚的念头。</p>' +
+        '</div>' +
+        '<div class="page-head__side">' + statsHtml + '</div>' +
+      '</div>' +
+      tagBar +
+      (items.length ? body : emptyHtml('📝', all.length ? '这个标签下还没有文章' : '还没有文章',
+        all.length ? '换个标签，或者点下面的「全部」看看。' : '到后台「文章」页写第一篇，或直接导入 .md 文件。')) +
+      '</section>';
+  }
+
+  function renderPost() {
+    var p = findPost(state.postId);
+    if (!p || p.draft) {
+      return '<section class="page page--posts">' +
+        '<a class="post-back" href="#/post">' + I.arrow + '<span>全部文章</span></a>' +
+        emptyHtml('🌫', '这篇找不到了', '可能是删掉了，或者链接少了一个字符。') +
+        '</section>';
+    }
+    var st = MD.stats(p.body || '');
+    var html = MD.render(p.body || '');
+    var heads = MD.headings(p.body || '').filter(function (h) { return h.level <= 3; });
+
+    var copyUrl = '';
+    try { copyUrl = location.origin + location.pathname + '#/post/' + encodeURIComponent(p.id); } catch (e) {}
+
+    var tags = (p.tags || []).map(function (t) {
+      return '<span class="tag post-card__tag" data-post-tag="' + esc(t) + '">#' + esc(t) + '</span>';
+    }).join('');
+
+    /* 上下篇：list 是「新的在前」，所以 idx+1 是更早的一篇 */
+    var list = postList();
+    var idx = -1;
+    for (var i = 0; i < list.length; i++) if (list[i].id === p.id) { idx = i; break; }
+    var newer = idx > 0 ? list[idx - 1] : null;
+    var older = idx > -1 && idx + 1 < list.length ? list[idx + 1] : null;
+    var pn = (newer || older)
+      ? '<div class="post-pn">' +
+          (older ? '<a class="post-pn__item" href="' + postHref(older) + '">' +
+            '<span class="post-pn__k">← 更早一篇</span><b>' + esc(older.title) + '</b></a>' : '<span></span>') +
+          (newer ? '<a class="post-pn__item post-pn__item--next" href="' + postHref(newer) + '">' +
+            '<span class="post-pn__k">更新一篇 →</span><b>' + esc(newer.title) + '</b></a>' : '<span></span>') +
+        '</div>'
+      : '';
+
+    var toc = heads.length >= 3
+      ? '<aside class="post-toc" aria-label="本文目录">' +
+          '<div class="post-toc__title">本文目录</div>' +
+          '<nav>' + heads.map(function (h) {
+            return '<a class="post-toc__item post-toc__item--l' + h.level + '" href="#' + h.id +
+              '" data-anchor="' + h.id + '">' + esc(h.text) + '</a>';
+          }).join('') + '</nav>' +
+        '</aside>'
+      : '';
+
+    return '<section class="page page--post">' +
+      '<a class="post-back" href="#/post">' + I.arrow + '<span>全部文章</span></a>' +
+      '<div class="post-layout' + (toc ? ' has-toc' : '') + '">' +
+        '<article class="post-article">' +
+          '<header class="post-head">' +
+            '<h1 class="post-title">' + esc(p.title) + '</h1>' +
+            '<div class="post-meta">' +
+              '<span class="post-meta__date">' + esc(p.date || '未标日期') + '</span>' +
+              '<span class="post-meta__dot">·</span>' +
+              '<span>' + esc(MD.fmtChars(st.chars)) + '</span>' +
+              '<span class="post-meta__dot">·</span>' +
+              '<span>约 ' + st.minutes + ' 分钟读完</span>' +
+              (copyUrl ? '<button class="post-meta__copy" type="button" data-copy="' + esc(copyUrl) +
+                '" title="复制这篇文章的链接">' + I.copy + '复制链接</button>' : '') +
+            '</div>' +
+            (tags ? '<div class="post-head__tags">' + tags + '</div>' : '') +
+          '</header>' +
+          '<div class="md">' + html + '</div>' +
+          '<footer class="post-foot">' +
+            pn +
+            '<div class="post-foot__end"><span>✦</span> 写于 ' + esc(p.date || '某一天') + '</div>' +
+            '<a class="btn btn--ghost post-foot__back" href="#/post">← 返回文章列表</a>' +
+          '</footer>' +
+        '</article>' +
+        toc +
+      '</div>' +
+      '</section>';
+  }
+
   /* ---------- 路由 ---------- */
-  function parseRoute() {
+  /* 支持 #/home 这类单段路由，以及 #/post/<id> 这种带参数的详情页 */
+  function parseHash() {
     var h = '';
     try { h = location.hash.replace(/^#\/?/, '').split('?')[0]; } catch (e) {}
-    return ALL_ROUTES.indexOf(h) > -1 ? h : 'home';
+    var m = /^post\/(.+)$/.exec(h);
+    if (m) {
+      var id = m[1];
+      try { id = decodeURIComponent(id); } catch (e) {}
+      return { route: 'post', postId: id };
+    }
+    return { route: ALL_ROUTES.indexOf(h) > -1 ? h : 'home', postId: '' };
   }
   function scrollTop(smooth) {
     try { window.scrollTo({ top: 0, behavior: smooth ? 'smooth' : 'auto' }); }
@@ -633,16 +844,30 @@
   /* 点击内链时直接切换；不依赖 hashchange（预览/iframe 中更可靠） */
   function navigate(route, dir) {
     if (ALL_ROUTES.indexOf(route) < 0) route = 'home';
-    if (state.route === route) { scrollTop(true); return; }
+    if (state.route === route && !state.postId) { scrollTop(true); return; }
     state.route = route;
+    state.postId = '';          // 回到列表页要清掉正在读的那篇
     try { history.pushState(null, '', '#/' + route); }
     catch (e) { try { location.hash = '#/' + route; } catch (e2) {} }
     render({ dir: dir });
   }
+  /* 打开一篇文章（详情页不参与左右滑动） */
+  function openPost(id) {
+    var p = findPost(id);
+    state.route = 'post';
+    state.postId = (p && p.id) || id;
+    try { history.pushState(null, '', '#/post/' + encodeURIComponent(state.postId)); }
+    catch (e) { try { location.hash = '#/post/' + encodeURIComponent(state.postId); } catch (e2) {} }
+    render();
+  }
   /* 浏览器前进/后退 */
   function syncFromHash() {
-    var r = parseRoute();
-    if (r !== state.route) { state.route = r; render(); }
+    var nh = parseHash();
+    if (nh.route !== state.route || nh.postId !== state.postId) {
+      state.route = nh.route;
+      state.postId = nh.postId;
+      render();
+    }
   }
   function render(opts) {
     opts = opts || {};
@@ -656,6 +881,7 @@
              ? (window.XY_ADMIN ? window.XY_ADMIN.render() : renderHome())
              : state.route === 'nav' ? renderNav()
              : state.route === 'share' ? renderShare()
+             : state.route === 'post' ? (state.postId ? renderPost() : renderPosts())
              : renderHome();
     app.innerHTML = html;
     // 原地更新（筛选、收藏、搜索）不重播入场动画，避免视觉抖动
@@ -1037,9 +1263,12 @@
   };
   function buildPaletteIndex() {
     var list = [];
+    var PAGE_INFO = {
+      home: ['首页', '🌌'], nav: ['导航', '🧭'], share: ['分享', '✨'], post: ['文章', '✍️']
+    };
     ROUTES.forEach(function (r) {
-      var label = r === 'home' ? '首页' : r === 'nav' ? '导航' : '分享';
-      list.push({ type: '页面', name: label, sub: '#/' + r, url: '#/' + r, icon: r === 'home' ? '🌌' : r === 'nav' ? '🧭' : '✨', isRoute: true });
+      var info = PAGE_INFO[r] || [r, '📄'];
+      list.push({ type: '页面', name: info[0], sub: '#/' + r, url: '#/' + r, icon: info[1], isRoute: true });
     });
     CATS.forEach(function (c) {
       list.push({ type: '分类', name: c.name, sub: c.links.length + ' 个站点 · ' + c.desc, url: '#/nav', icon: c.icon, catId: c.id });
@@ -1049,6 +1278,14 @@
     });
     FEED.forEach(function (f) {
       list.push({ type: '分享', name: f.title, sub: f.date + ' · ' + (f.tags || []).join(' '), url: f.url, icon: f.icon, external: f.url.charAt(0) !== '#' });
+    });
+    POSTS.filter(function (p) { return p && !p.draft; }).forEach(function (p) {
+      var st = MD.stats(p.body || '');
+      list.push({
+        type: '文章', name: p.title,
+        sub: (p.date || '') + ' · ' + (p.tags || []).join(' ') + ' · ' + MD.fmtChars(st.chars),
+        url: '#/post/' + encodeURIComponent(p.id), icon: '📄', postId: p.id
+      });
     });
     // 拼音索引：输入 zh / txsp 也能命中
     list.forEach(function (it) { it.py = pyInitials(it.name); });
@@ -1081,10 +1318,10 @@
 
   /* ---------- 快捷键说明面板（全站快捷键的唯一出处） ---------- */
   var KEYS_HELP = [
-    { k: ['⌘', 'K'], t: '全局搜索', d: '打开命令面板：搜站点、分类、分享' },
+    { k: ['⌘', 'K'], t: '全局搜索', d: '打开命令面板：搜站点、分类、分享、文章' },
     { k: ['/'], t: '全局搜索', d: '同上，少按一个键' },
-    { k: ['1', '2', '3'], t: '首页 / 导航 / 分享', d: '直接跳到对应页面' },
-    { k: ['←', '→'], t: '上一页 / 下一页', d: '在 首页 ⇄ 导航 ⇄ 分享 之间切换' },
+    { k: ['1', '2', '3', '4'], t: '首页 / 导航 / 分享 / 文章', d: '直接跳到对应页面' },
+    { k: ['←', '→'], t: '上一页 / 下一页', d: '在 首页 ⇄ 导航 ⇄ 分享 ⇄ 文章 之间切换' },
     { k: ['T'], t: '切换主题', d: '暗色 / 明亮来回切' },
     { k: ['R'], t: '随机漫游', d: '从全部站点里随机开一个' },
     { k: ['F'], t: '只看收藏', d: '跳到导航页，只看已收藏的站点' },
@@ -1336,7 +1573,17 @@
     document.addEventListener('click', function (e) {
       var a = e.target.closest ? e.target.closest('a[href^="#/"]') : null;
       if (!a) return;
-      var route = a.getAttribute('href').replace(/^#\/?/, '');
+      var href = a.getAttribute('href');
+      // 文章详情：#/post/<id>
+      var pm = /^#\/post\/(.+)$/.exec(href);
+      if (pm) {
+        e.preventDefault();
+        var pid = pm[1];
+        try { pid = decodeURIComponent(pid); } catch (e5) {}
+        openPost(pid);
+        return;
+      }
+      var route = href.replace(/^#\/?/, '');
       if (ALL_ROUTES.indexOf(route) < 0) return;
       e.preventDefault();
       navigate(route);
@@ -1346,6 +1593,8 @@
     document.addEventListener('xy:config', function () { applyChrome(); });
     // 后台站点数据变化 → 重建索引（页面在下次渲染时自动使用新数据）
     document.addEventListener('xy:data', function () { refreshData(); });
+    // 后台文章变化 → 刷新列表数据
+    document.addEventListener('xy:posts', function () { refreshPosts(); });
 
     // 入场动画一结束就把 animation 摘掉：万一浏览器把收尾的 transform 留在 .page 上，
     // 它会成为 position:fixed 后代的包含块（确认弹窗、表情挑选器、分类面板都会错位）
@@ -1443,6 +1692,33 @@
       if (fav) { e.preventDefault(); e.stopPropagation(); toggleFav(fav.getAttribute('data-fav')); return; }
       var copy = e.target.closest('[data-copy]');
       if (copy) { e.preventDefault(); e.stopPropagation(); copyUrl(copy.getAttribute('data-copy')); return; }
+      /* 文章标签筛选（用 data-post-tag，避免和分享页的 data-tag 打架） */
+      var pt = e.target.closest('[data-post-tag]');
+      if (pt) {
+        e.preventDefault(); e.stopPropagation();
+        state.postTag = pt.getAttribute('data-post-tag');
+        if (state.postId) {
+          /* 从阅读页点标签 → 回列表并带上筛选 */
+          state.postId = '';
+          state.route = 'post';
+          try { history.pushState(null, '', '#/post'); } catch (e3) {}
+          render();
+        } else softRender();
+        return;
+      }
+      /* 文章目录锚点：不能让它改 hash（会打乱路由），手动滚过去 */
+      var anchor = e.target.closest('[data-anchor]');
+      if (anchor) {
+        e.preventDefault();
+        var el = document.getElementById(anchor.getAttribute('data-anchor'));
+        if (el) {
+          var hh = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--header-h'), 10) || 96;
+          var top = el.getBoundingClientRect().top + window.pageYOffset - hh - 24;
+          try { window.scrollTo({ top: top, behavior: 'smooth' }); }
+          catch (e4) { window.scrollTo(0, top); }
+        }
+        return;
+      }
       var tag = e.target.closest('[data-tag]');
       if (tag) {
         e.preventDefault(); e.stopPropagation();
@@ -1494,6 +1770,7 @@
   function initSwipe() {
     function step(delta, dir) {
       if (ROUTES.indexOf(state.route) < 0) return;   // 后台等页面不参与滑动
+      if (state.route === 'post' && state.postId) return;  // 阅读页不参与，免得不小心划走
       var i = ROUTES.indexOf(state.route) + delta;
       if (i < 0 || i >= ROUTES.length) return;   // 不循环，首尾即止
       navigate(ROUTES[i], dir);
@@ -1558,10 +1835,11 @@
     // 打字、下拉框里不拦；面板打开时让给面板
     if (isTyping(e.target) || isPaletteOpen() || keysHelpOpen()) return;
     if (e.key === '?') { e.preventDefault(); openKeysHelp(); return; }
-    var idx = ['1', '2', '3'].indexOf(e.key);
+    var idx = ['1', '2', '3', '4'].indexOf(e.key);
     if (idx > -1) { e.preventDefault(); navigate(ROUTES[idx]); return; }
     if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
       if (isInHScroll(e.target)) return;              // 横向可滚的容器，方向键留给它
+      if (state.route === 'post' && state.postId) return;  // 阅读页让给正常滚动
       var i = ROUTES.indexOf(state.route);
       if (i < 0) return;                              // 后台等页面不参与
       var j = i + (e.key === 'ArrowRight' ? 1 : -1);
@@ -1587,11 +1865,14 @@
     try { if ('scrollRestoration' in history) history.scrollRestoration = 'manual'; } catch (e) {}
     initTheme();
     refreshData();
+    refreshPosts();
     applyChrome();
     header = $('#header'); progress = $('#scrollProgress'); cursorGlow = $('#cursorGlow');
 
     // 解析初始路由（不依赖 hashchange），并补齐 URL
-    state.route = parseRoute();
+    var h0 = parseHash();
+    state.route = h0.route;
+    state.postId = h0.postId;
     var rawHash = '';
     try { rawHash = location.hash.replace(/^#\/?/, ''); } catch (e) {}
     if (rawHash === '') {
@@ -1633,12 +1914,15 @@
     applyChrome: applyChrome,
     applyTheme: applyTheme,
     applyData: refreshData,
+    applyPosts: refreshPosts,
     hostOf: hostOf,
     homeCfg: homeCfg,
     toast: toast,
     esc: esc,
+    md: MD,
     rerender: function () { render({ animate: false, resetScroll: false }); },
     go: navigate,
+    openPost: openPost,
     /* 云备份用：把「最近访问 / 收藏」也一起带走 */
     visits: {
       get: function () { return visits; },

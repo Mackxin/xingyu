@@ -61,21 +61,57 @@ function rfc822(dateStr) {
 /* ---------- 生成 ---------- */
 var loaded = loadData();
 var feed = (loaded.data.feed || []).slice();
+var posts = (loaded.data.posts || []).slice();
 
 feed = feed.filter(function (f) { return f && f.title && rfc822(f.date); });
 feed.sort(function (a, b) { return String(b.date).localeCompare(String(a.date)); });
 feed = feed.slice(0, LIMIT);
 
+/* 文章也算「更新」：带摘要的放进来，正文里没摘就截一段纯文本 */
+function mdPlain(s) {
+  return String(s || '')
+    .replace(/```[\s\S]*?```/g, ' ')
+    .replace(/!\[([^\]]*)\]\([^)]*\)/g, '$1')
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+    .replace(/^[ \t]*\|?[ \t]*:?-{2,}:?[ \t]*(\|[ \t]*:?-{2,}:?[ \t]*)*\|?[ \t]*$/gm, ' ')
+    .replace(/\|/g, ' ')
+    .replace(/^\s{0,3}#{1,6}\s+/gm, '')
+    .replace(/^\s{0,3}>\s?/gm, '')
+    .replace(/^\s*([-*+]|\d+[.)])\s+/gm, '')
+    .replace(/[`*_~]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+posts = posts.filter(function (p) { return p && p.title && !p.draft && rfc822(p.date); })
+  .map(function (p) {
+    var desc = p.excerpt || mdPlain(p.body);
+    if (desc.length > 160) desc = desc.slice(0, 160) + '…';
+    return {
+      date: p.date,
+      title: p.title,
+      url: '#/post/' + encodeURIComponent(p.id),
+      desc: desc,
+      tags: p.tags || [],
+      isPost: true
+    };
+  });
+
+var merged = feed.map(function (f) {
+  return { date: f.date, title: f.title, url: f.url, desc: f.desc || '', tags: f.tags || [], isPost: false };
+}).concat(posts);
+merged.sort(function (a, b) { return String(b.date).localeCompare(String(a.date)); });
+merged = merged.slice(0, LIMIT);
+
 var siteName = loaded.cfg.siteName || '星屿';
 var latin = loaded.cfg.siteLatin || 'XINGYU';
 var tagline = loaded.cfg.tagline || '以星为图，以屿为家';
 
-var items = feed.map(function (f) {
+var items = merged.map(function (f) {
   var tags = (f.tags || []).map(function (t) { return '    <category>' + xml(t) + '</category>'; }).join('\n');
   var link = abs(f.url);
   return [
     '  <item>',
-    '    <title>' + xml(f.title) + '</title>',
+    '    <title>' + xml((f.isPost ? '📝 ' : '') + f.title) + '</title>',
     '    <link>' + xml(link) + '</link>',
     '    <guid isPermaLink="true">' + xml(link) + '</guid>',
     '    <pubDate>' + rfc822(f.date) + '</pubDate>',
@@ -90,9 +126,9 @@ var out = [
   '<?xml version="1.0" encoding="UTF-8"?>',
   '<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">',
   '  <channel>',
-  '    <title>' + xml(siteName + ' · 灵感分享') + '</title>',
+  '    <title>' + xml(siteName + ' · 灵感与文章') + '</title>',
   '    <link>' + xml(BASE) + '</link>',
-  '    <description>' + xml(tagline + ' —— 每天一小条，记录遇见的工具、灵感与小发现。') + '</description>',
+  '    <description>' + xml(tagline + ' —— 每天一小条，记录遇见的工具、灵感与小发现，也写点长一点的文章。') + '</description>',
   '    <language>zh-cn</language>',
   '    <lastBuildDate>' + now + '</lastBuildDate>',
   '    <generator>' + xml(latin + ' gen-feed') + '</generator>',
@@ -108,6 +144,6 @@ fs.writeFileSync(dest, out, 'utf8');
 
 console.log('✓ feed.xml 已生成');
 console.log('  站点：' + BASE);
-console.log('  条目：' + feed.length + ' 条（按日期倒序，最多 ' + LIMIT + ' 条）');
+console.log("  条目：" + merged.length + ' 条（按日期倒序，最多 ' + LIMIT + ' 条）');
 console.log('  体积：' + (Buffer.byteLength(out, 'utf8') / 1024).toFixed(1) + ' KB');
-if (feed.length) console.log('  最新：' + feed[0].date + ' · ' + feed[0].title);
+if (merged.length) console.log("  最新：" + merged[0].date + " · " + merged[0].title);
