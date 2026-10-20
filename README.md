@@ -7,6 +7,22 @@
 设计上参考了同类个人站（如 `yihaozhan.xyz`）"导航 + 讯息流 + 首页"的结构，
 但视觉、交互与内容均为原创：**暗色玻璃拟态 + 极光背景 + 命令面板**。
 
+## 界面预览
+
+| 首页 · 一屏装下所有入口 | 导航 · 12 个分类 / 128 个站点 |
+| :---: | :---: |
+| ![首页](docs/screenshots/01-home.jpg) | ![导航](docs/screenshots/02-nav.jpg) |
+
+| 分享 · 按日期排的时间线 | 文章正文 · 明亮 + 衬线排版 |
+| :---: | :---: |
+| ![分享](docs/screenshots/03-share.jpg) | ![文章](docs/screenshots/04-post.jpg) |
+
+| 后台 · 主题与配色（含「我的配色」） | 手机端 |
+| :---: | :---: |
+| ![后台主题](docs/screenshots/05-admin-theme.jpg) | <img src="docs/screenshots/06-mobile.jpg" width="248" alt="手机端首页"> |
+
+> 所有界面都能在后台实时改：**配色、圆角、字号、行高、字体、正文宽度**都是变量，改完立刻生效，不用构建也不用刷新。
+
 ---
 
 ## 快速开始
@@ -40,6 +56,7 @@ git checkout -- . # 放弃还没提交的改动
 ├── sw.js                   # Service Worker：离线缓存（版本号要和 index.html 的 ?v= 一起改）
 ├── feed.xml                # RSS 订阅源（由 tools/gen-feed.js 生成，别手改）
 ├── tools/gen-feed.js       # 改完「分享」或「文章」后跑一下，重新生成 feed.xml
+├── docs/screenshots/       # README 里那几张界面预览图（换了外观想更新配图就照着重拍）
 └── assets
     ├── og-cover.png        # 分享卡片封面（1200×630，微信/微博/iMessage 抓这张）
     ├── icon-180.png        # iOS 添加到主屏的图标（180×180）
