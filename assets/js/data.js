@@ -84,7 +84,7 @@ window.SITE_DATA = (function () {
       id: 'learn', name: '学习成长', icon: '📚',
       desc: '课程、题库与百科',
       links: [
-        { n: '哔哩哔哩',        u: 'https://www.bilibili.com',       d: '知识区与公开课' },
+        { n: '学堂在线',        u: 'https://www.xuetangx.com',      d: '清华等高校慕课' },
         { n: '知乎',           u: 'https://www.zhihu.com',          d: '问答与深度长文' },
         { n: '中国大学MOOC',    u: 'https://www.icourse163.org',     d: '高校在线课程' },
         { n: 'Coursera',       u: 'https://www.coursera.org',       d: '全球名校课程' },
@@ -120,7 +120,7 @@ window.SITE_DATA = (function () {
       links: [
         { n: '微信读书',        u: 'https://weread.qq.com',          d: '社交化阅读' },
         { n: '豆瓣读书',        u: 'https://book.douban.com',        d: '图书评价与榜单' },
-        { n: '国家数字图书馆',  u: 'http://www.nlc.cn',              d: '海量馆藏资源' },
+        { n: '国家数字图书馆',  u: 'https://www.nlc.cn',              d: '海量馆藏资源' },
         { n: '鸠摩搜书',        u: 'https://www.jiumodiary.com',     d: '电子书聚合搜索' },
         { n: 'Z-Library',      u: 'https://z-lib.io',               d: '大型电子书库' },
         { n: 'Project Gutenberg', u: 'https://www.gutenberg.org',   d: '七万本公版书' },
@@ -153,11 +153,11 @@ window.SITE_DATA = (function () {
         { n: '12306',          u: 'https://www.12306.cn',           d: '铁路售票官方' },
         { n: '大众点评',        u: 'https://www.dianping.com',       d: '吃喝玩乐指南' },
         { n: '国家医保服务平台', u: 'https://fuwu.nhsa.gov.cn',      d: '医保查询办理' },
-        { n: '中国天气网',      u: 'http://www.weather.com.cn',      d: '权威天气预报' },
+        { n: '中国天气网',      u: 'https://www.weather.com.cn',      d: '权威天气预报' },
         { n: '快递 100',       u: 'https://www.kuaidi100.com',      d: '全网快递查询' },
         { n: '个人所得税',      u: 'https://etax.chinatax.gov.cn',   d: '个税申报' },
-        { n: '国家企业信用公示', u: 'http://www.gsxt.gov.cn',        d: '企业信息核验' },
-        { n: '中国教育考试网',  u: 'http://www.neea.edu.cn',         d: '考试报名与成绩' },
+        { n: '国家企业信用公示', u: 'https://www.gsxt.gov.cn',        d: '企业信息核验' },
+        { n: '中国教育考试网',  u: 'https://www.neea.edu.cn',         d: '考试报名与成绩' },
         { n: '12315 平台',     u: 'https://www.12315.cn',           d: '消费投诉举报' }
       ]
     },
