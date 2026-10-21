@@ -537,6 +537,335 @@
     return '<div class="post-admin-list">' + hits.map(postRowHtml).join('') + '</div>';
   }
 
+  /* ======================= Markdown 快捷输入 ======================= */
+  /* 行内样式：前后各包一段标记，再点一次就脱掉 */
+  var MD_INLINE = {
+    bold:   { mark: '**', ph: '粗体' },
+    italic: { mark: '*',  ph: '斜体' },
+    strike: { mark: '~~', ph: '删除线' },
+    code:   { mark: '`',  ph: '代码' }
+  };
+  /* 行级样式：给整行加/去前缀；strip 是「同类前缀」的正则，换标题级别时先剥掉旧的 */
+  var MD_LINE = {
+    h1:    { prefix: '# ',     strip: /^\s{0,3}#{1,6}\s+/ },
+    h2:    { prefix: '## ',    strip: /^\s{0,3}#{1,6}\s+/ },
+    h3:    { prefix: '### ',   strip: /^\s{0,3}#{1,6}\s+/ },
+    quote: { prefix: '> ',     strip: /^\s{0,3}>\s?/ },
+    ul:    { prefix: '- ',     strip: /^\s*([-*+]|\d+[.)])\s+/ },
+    ol:    { prefix: '1. ',    strip: /^\s*([-*+]|\d+[.)])\s+/ },
+    task:  { prefix: '- [ ] ', strip: /^\s*([-*+]|\d+[.)])\s+(\[[ xX]\]\s*)?/ }
+  };
+
+  /* 图标用内联 SVG：彩色 emoji 塞进单色工具条里会跳出来，还和字号不搭 */
+  var MD_ICONS = {
+    link: '<svg viewBox="0 0 24 24"><path d="M10 13.5a4.5 4.5 0 0 0 6.4 0l2.1-2.1a4.5 4.5 0 0 0-6.4-6.4l-1.1 1.1"/><path d="M14 10.5a4.5 4.5 0 0 0-6.4 0l-2.1 2.1a4.5 4.5 0 0 0 6.4 6.4l1.1-1.1"/></svg>',
+    image: '<svg viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="15" rx="2.5"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M20.5 16.5l-4.8-4.8-6.7 6.7"/></svg>',
+    table: '<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3 10h18M9.5 10v9"/></svg>',
+    codeblock: '<svg viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="15" rx="2.5"/><path d="M10 9.5L7.5 12l2.5 2.5M14 9.5L16.5 12 14 14.5"/></svg>',
+    hr: '<svg viewBox="0 0 24 24"><path d="M4 12h16"/><path d="M8 6.5h8M8 17.5h8" opacity=".35"/></svg>'
+  };
+
+  /* [key, 文字标签, 说明, 快捷键提示] —— 有 MD_ICONS 的用图标，否则用文字标签 */
+  var MD_TOOLBAR = [
+    [['h1', 'H1', '一级标题', '⌥⌘1'], ['h2', 'H2', '二级标题', '⌥⌘2'], ['h3', 'H3', '三级标题', '⌥⌘3']],
+    [['bold', 'B', '加粗', '⌘B'], ['italic', 'I', '斜体', '⌘I'], ['strike', 'S', '删除线'], ['code', '‹›', '行内代码', '⌘E']],
+    [['ul', '•', '无序列表'], ['ol', '1.', '有序列表'], ['task', '☐', '待办清单'], ['quote', '❝', '引用']],
+    [['link', '', '链接', '⌘K'], ['image', '', '图片'], ['table', '', '表格'], ['codeblock', '', '代码块'], ['hr', '', '分割线']]
+  ];
+
+  function mdToolbarHtml() {
+    var mac = /Mac|iPhone|iPad|iPod/.test(navigator.platform || '');
+    var groups = MD_TOOLBAR.map(function (g) {
+      return '<span class="md-tools__group">' + g.map(function (b) {
+        var label = MD_ICONS[b[0]] || b[1];
+        var tip = b[2] + (b[3] ? ' · ' + (mac ? b[3] : b[3].replace(/⌘/g, 'Ctrl+').replace(/⌥/g, 'Alt+')) : '');
+        return '<button class="md-tools__btn" type="button" data-md="' + b[0] + '"' +
+          ' title="' + esc(tip) + '" aria-label="' + esc(tip) + '">' + label + '</button>';
+      }).join('') + '</span>';
+    }).join('');
+    return '<div class="md-tools" id="mdTools">' + groups +
+        '<button class="md-tools__btn md-tools__help" type="button" id="mdHelpBtn" title="快捷输入说明" aria-label="快捷输入说明">?</button>' +
+      '</div>';
+  }
+
+  /* 把新文本塞回去。优先用 execCommand，这样 ⌘Z 还能正常撤销；不行再退回直接赋值 */
+  function mdReplace(ta, start, end, text, selStart, selEnd) {
+    var v0 = ta.value;
+    ta.focus();
+    try { ta.setSelectionRange(start, end); } catch (e) {}
+    var ok = false;
+    try { ok = document.execCommand('insertText', false, text); } catch (e) { ok = false; }
+    if (!ok) {
+      ta.value = v0.slice(0, start) + text + v0.slice(end);
+    }
+    var s = selStart == null ? start + text.length : selStart;
+    var e = selEnd == null ? s : selEnd;
+    try { ta.setSelectionRange(s, e); } catch (err) {}
+    try { ta.dispatchEvent(new Event('input', { bubbles: true })); } catch (err) {}
+  }
+
+  /* 光标所在的行块（从行首到行尾） */
+  function mdLineRange(ta) {
+    var v = ta.value, s = ta.selectionStart, e = ta.selectionEnd;
+    var ls = v.lastIndexOf('\n', s - 1) + 1;
+    var le = v.indexOf('\n', e);
+    if (le < 0) le = v.length;
+    return { s: ls, e: le, text: v.slice(ls, le) };
+  }
+
+  function mdToggleInline(ta, kind) {
+    var m = MD_INLINE[kind];
+    if (!m) return;
+    var v = ta.value, s = ta.selectionStart, e = ta.selectionEnd;
+    var sel = v.slice(s, e);
+    var ml = m.mark.length;
+    /* 选中的内容本身带着标记 → 脱掉 */
+    if (sel.length > ml * 2 && sel.slice(0, ml) === m.mark && sel.slice(-ml) === m.mark) {
+      mdReplace(ta, s, e, sel.slice(ml, sel.length - ml), s, e - ml * 2);
+      return;
+    }
+    /* 光标正好在两段标记中间 → 脱掉 */
+    if (!sel && s >= ml && v.slice(s - ml, s) === m.mark && v.slice(e, e + ml) === m.mark) {
+      mdReplace(ta, s - ml, e + ml, '', s - ml);
+      return;
+    }
+    var body = sel || m.ph;
+    mdReplace(ta, s, e, m.mark + body + m.mark, s + ml, s + ml + body.length);
+  }
+
+  function mdToggleLine(ta, kind) {
+    var cfg = MD_LINE[kind];
+    if (!cfg) return;
+    var r = mdLineRange(ta);
+    var lines = r.text.split('\n');
+    var caret = ta.selectionStart;
+    var caretLine = r.text.slice(0, caret - r.s).split('\n').length - 1;
+    var picks = lines.filter(function (l) { return l.trim(); });
+    /* 所有非空行都已经带这个前缀 → 这次是「取消」 */
+    var hasAll = picks.length > 0 && picks.every(function (l) {
+      return l.replace(/^[ \t]+/, '').indexOf(cfg.prefix) === 0;
+    });
+
+    var meta = lines.map(function (l) {
+      var ind = /^[ \t]*/.exec(l)[0];
+      var rest = l.slice(ind.length);
+      var st = rest.match(cfg.strip);
+      return {
+        blank: !l.trim(),
+        ind: ind,
+        body: st ? rest.slice(st[0].length) : rest,
+        oldStart: ind.length + (st ? st[0].length : 0),
+        newStart: ind.length + (hasAll ? 0 : cfg.prefix.length)
+      };
+    });
+
+    var out = meta.map(function (m, i) {
+      if (m.blank) {
+        /* 空行通常不动；但整块只有这一行、或光标正停在这行时，还是得给它加上，否则点了像没反应 */
+        return (!hasAll && (lines.length === 1 || i === caretLine)) ? cfg.prefix : '';
+      }
+      return m.ind + (hasAll ? '' : cfg.prefix) + m.body;
+    });
+    if (kind === 'ol' && !hasAll) {
+      var n = 1;
+      out = out.map(function (l) {
+        return l ? l.replace(/^([ \t]*)1\. /, function (x, ind) { return ind + (n++) + '. '; }) : l;
+      });
+    }
+
+    var text = out.join('\n');
+    if (lines.length > 1) { mdReplace(ta, r.s, r.e, text, r.s, r.s + text.length); return; }
+
+    /* 单行：光标落在「原来选区末尾」映射后的位置。
+       注意选区时 selectionStart 是左边那头，得用 selectionEnd 才算原来的光标 */
+    var m0 = meta[0];
+    var off = ta.selectionEnd - r.s;
+    var newOff = off <= m0.oldStart ? m0.newStart : m0.newStart + (off - m0.oldStart);
+    newOff = Math.max(0, Math.min(out[0].length, newOff));
+    mdReplace(ta, r.s, r.e, text, r.s + newOff);
+  }
+
+  function mdLink(ta) {
+    var v = ta.value, s = ta.selectionStart, e = ta.selectionEnd;
+    var sel = v.slice(s, e) || '链接文字';
+    var text = '[' + sel + '](https://)';
+    mdReplace(ta, s, e, text, s + sel.length + 3, s + sel.length + 11);
+  }
+
+  function mdImage(ta) {
+    var v = ta.value, s = ta.selectionStart, e = ta.selectionEnd;
+    var sel = v.slice(s, e) || '图片说明';
+    var ph = '图片地址';
+    var text = '![' + sel + '](' + ph + ')';
+    mdReplace(ta, s, e, text, s + sel.length + 4, s + sel.length + 4 + ph.length);
+  }
+
+  function mdTable(ta) {
+    var v = ta.value, s = ta.selectionStart, e = ta.selectionEnd;
+    var tpl = '| 列 1 | 列 2 |\n| --- | --- |\n|  |  |';
+    var pre = s > 0 && v.charAt(s - 1) !== '\n' ? '\n' : '';
+    mdReplace(ta, s, e, pre + tpl, s + pre.length + 2, s + pre.length + 5);
+  }
+
+  function mdCodeBlock(ta) {
+    var v = ta.value, s = ta.selectionStart, e = ta.selectionEnd;
+    var sel = v.slice(s, e);
+    var pre = s > 0 && v.charAt(s - 1) !== '\n' ? '\n' : '';
+    var post = e < v.length && v.charAt(e) !== '\n' ? '\n' : '';
+    var text = pre + '```\n' + sel + '\n```' + post;
+    var caret = s + pre.length + 4;   /* 落在围栏里的第一行 */
+    if (sel) mdReplace(ta, s, e, text, s + pre.length + 4, s + pre.length + 4 + sel.length);
+    else mdReplace(ta, s, e, text, caret);
+  }
+
+  function mdHr(ta) {
+    var v = ta.value, s = ta.selectionStart, e = ta.selectionEnd;
+    var pre = s > 0 && v.charAt(s - 1) !== '\n' ? '\n\n' : '';
+    mdReplace(ta, s, e, pre + '---\n\n');
+  }
+
+  /* 列表里回车 → 自动续写下一个标记；空条目再回车 → 退出列表 */
+  function mdContinueList(ta) {
+    if (ta.selectionStart !== ta.selectionEnd) return false;
+    var s = ta.selectionStart;
+    var ls = ta.value.lastIndexOf('\n', s - 1) + 1;
+    var line = ta.value.slice(ls, s);
+    var m = /^([ \t]*)([-*+]|\d+[.)])\s+(\[[ xX]\]\s+)?/.exec(line);
+    if (!m) return false;
+    var rest = line.slice(m[0].length);
+    if (!rest.trim()) { mdReplace(ta, ls, s, '', ls); return true; }
+    var next;
+    if (/^\d/.test(m[2])) next = m[1] + (parseInt(m[2], 10) + 1) + m[2].slice(-1) + ' ';
+    else next = m[1] + m[2] + ' ';
+    if (m[3]) next += '[ ] ';
+    mdReplace(ta, s, s, '\n' + next);
+    return true;
+  }
+
+  /* Tab / ⇧Tab：多行整块缩进，单行就在光标处插两格（有选中就整行缩进，别把选中的字删了） */
+  function mdIndent(ta, back) {
+    var v = ta.value, s = ta.selectionStart, e = ta.selectionEnd;
+    var ls = v.lastIndexOf('\n', s - 1) + 1;
+    var nextNl = v.indexOf('\n', e);
+    var le = nextNl < 0 ? v.length : nextNl;
+    var block = v.slice(ls, le);
+    var multiSel = e > s;   /* 多行选中，或者同一行里选了一段 */
+
+    /* 只有「光标没选中任何东西 + 往前缩」才是纯插空格 */
+    if (block.indexOf('\n') < 0 && s === e && !back) { mdReplace(ta, s, e, '  '); return; }
+
+    var lines = block.split('\n');
+    var out = lines.map(function (l) {
+      if (back) return l.replace(/^( {1,2}|\t)/, '');
+      return '  ' + l;
+    });
+    var text = out.join('\n');
+    if (text === block) return;      /* 反缩进时没东西可去，就别动 */
+
+    var caretLine = v.slice(ls, s).split('\n').length - 1;
+    var delta = out[caretLine].length - lines[caretLine].length;
+    var clamp = function (n) { return Math.max(ls, Math.min(ls + text.length, n)); };
+    if (multiSel) mdReplace(ta, ls, le, text, clamp(s + delta), clamp(e + delta));
+    else mdReplace(ta, ls, le, text, clamp(s + delta));
+  }
+
+  /* 一个入口：工具条按钮 / 快捷键都走这里 */
+  function mdApply(ta, kind) {
+    if (!ta) return;
+    if (MD_INLINE[kind]) return mdToggleInline(ta, kind);
+    if (MD_LINE[kind]) return mdToggleLine(ta, kind);
+    if (kind === 'link') return mdLink(ta);
+    if (kind === 'image') return mdImage(ta);
+    if (kind === 'table') return mdTable(ta);
+    if (kind === 'codeblock') return mdCodeBlock(ta);
+    if (kind === 'hr') return mdHr(ta);
+  }
+
+  function mdHelpHtml() {
+    var mac = /Mac|iPhone|iPad|iPod/.test(navigator.platform || '');
+    var mod = mac ? '⌘' : 'Ctrl+';
+    var alt = mac ? '⌥' : 'Alt+';
+    var rows = [
+      [mod + 'B / ' + mod + 'I', '加粗 / 斜体（选中文字再按也行）'],
+      [mod + 'E / ' + mod + 'K', '行内代码 / 链接'],
+      [alt + mod + '1 2 3', '一 / 二 / 三级标题'],
+      ['Tab / ⇧Tab', '缩进两格 / 反缩进（Esc 离开正文框）'],
+      ['Enter', '在列表里回车自动续写；空条目再回车就结束列表'],
+      [mod + 'S', '保存'],
+      [mod + '↵', '折起 / 展开预览']
+    ];
+    return '<div class="md-help" id="mdHelpBox" hidden>' +
+        '<div class="md-help__head"><b>正文快捷输入</b>' +
+          '<button type="button" class="md-help__x" data-md-help="close" aria-label="关闭">×</button></div>' +
+        '<dl class="md-help__list">' + rows.map(function (r) {
+          return '<dt><kbd>' + r[0] + '</kbd></dt><dd>' + r[1] + '</dd>';
+        }).join('') + '</dl>' +
+        '<p class="md-help__tip">工具条上的按钮也能用：选中文字再点，就是给这段文字套格式。</p>' +
+      '</div>';
+  }
+
+  /* 绑定：工具条、快捷键、帮助浮层 */
+  function bindMarkdown(root, body, ta) {
+    var tools = body.querySelector('#mdTools');
+    if (!tools || !ta) return;
+
+    /* 按下时别把焦点从输入框抢走，否则选区就丢了 */
+    tools.addEventListener('mousedown', function (e) {
+      if (e.target.closest('button')) e.preventDefault();
+    });
+    tools.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-md]');
+      if (b) { mdApply(ta, b.getAttribute('data-md')); return; }
+      if (e.target.closest('#mdHelpBtn')) {
+        var box = body.querySelector('#mdHelpBox');
+        if (box) box.hidden = !box.hidden;
+      }
+    });
+
+    var helpBox = body.querySelector('#mdHelpBox');
+    if (helpBox) helpBox.addEventListener('click', function (e) {
+      if (e.target.closest('[data-md-help="close"]')) helpBox.hidden = true;
+    });
+
+    ta.addEventListener('keydown', function (e) {
+      var mod = e.metaKey || e.ctrlKey;
+
+      if (mod && !e.altKey && !e.shiftKey) {
+        var k = (e.key || '').toLowerCase();
+        if (k === 'b') { e.preventDefault(); mdToggleInline(ta, 'bold'); return; }
+        if (k === 'i') { e.preventDefault(); mdToggleInline(ta, 'italic'); return; }
+        if (k === 'e') { e.preventDefault(); mdToggleInline(ta, 'code'); return; }
+        if (k === 'k') { e.preventDefault(); mdLink(ta); return; }
+        if (k === 's') { e.preventDefault(); saveEditor(root, body); return; }
+        if (e.key === 'Enter') { e.preventDefault(); var pv = body.querySelector('#postPreview'); if (pv) pv.click(); return; }
+      }
+      /* ⌥⌘1/2/3：标题（⌘1 会被浏览器抢去切标签，所以加个 ⌥） */
+      if (mod && e.altKey && /^[123]$/.test(e.key || '')) {
+        e.preventDefault();
+        mdToggleLine(ta, 'h' + e.key);
+        return;
+      }
+      if (e.key === 'Tab') { e.preventDefault(); mdIndent(ta, e.shiftKey); return; }
+      if (e.key === 'Enter' && !e.shiftKey && !mod && !e.altKey) {
+        if (mdContinueList(ta)) e.preventDefault();
+        return;
+      }
+      if (e.key === 'Escape') { ta.blur(); }
+    });
+
+    /* 点别处收起说明。挂 document 上只注册一次：adminBody 会反复重绘，挂在它上面会越积越多 */
+    if (!bindMarkdown._docBound) {
+      bindMarkdown._docBound = true;
+      document.addEventListener('click', function (e) {
+        var box = document.querySelector('#mdHelpBox');
+        if (!box || box.hidden) return;
+        if (e.target && e.target.closest &&
+            (e.target.closest('#mdHelpBox') || e.target.closest('#mdHelpBtn'))) return;
+        box.hidden = true;
+      });
+    }
+  }
+
   function postEditorHtml() {
     var isNew = !editing || editing.isNew;
     var p = isNew
@@ -555,9 +884,13 @@
             '<input type="text" data-pf="title" value="' + esc(p.title) + '" ' +
               'placeholder="给这篇文章起个名字" maxlength="120" /></label>' +
           '<div class="post-editor__grid">' +
-            '<label class="admin-field"><span class="admin-field__label">正文<em>Markdown</em></span>' +
+            '<div class="admin-field post-editor__main">' +
+              '<span class="admin-field__label">正文<em>Markdown · 支持快捷输入</em></span>' +
+              mdToolbarHtml() +
+              mdHelpHtml() +
               '<textarea id="postBody" data-pf="body" spellcheck="false" ' +
-                'placeholder="## 从一个小标题开始写&#10;&#10;正文……">' + esc(p.body) + '</textarea></label>' +
+                'placeholder="## 从一个小标题开始写&#10;&#10;正文……">' + esc(p.body) + '</textarea>' +
+            '</div>' +
             '<div>' +
               '<label class="admin-field"><span class="admin-field__label">日期</span>' +
                 '<input type="date" data-pf="date" value="' + esc(p.date) + '" /></label>' +
@@ -857,6 +1190,7 @@
     var countEl = body.querySelector('#postCount');
     var pvBtn = body.querySelector('#postPreview');
     var pvBox = body.querySelector('#postPreviewBox');
+    bindMarkdown(root, body, bodyEl);
 
     function syncCount() {
       if (!bodyEl || !countEl) return;
