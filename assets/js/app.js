@@ -131,6 +131,8 @@
   /* ---------- 状态 ---------- */
   var ROUTES = ['home', 'nav', 'share', 'post'];         // 主导航 / 滑动切换顺序
   var ALL_ROUTES = ['home', 'nav', 'share', 'post', 'admin'];  // 全部可路由页面（admin 不占主导航）
+  var NAV_FOLD = 12;      // 分类里超过这么多站就先折叠，点「展开全部」再看
+  var NAV_REST = {};      // 折叠掉的卡片 HTML，等点开再插进 DOM
   var state = {
     route: 'home',
     query: '',
@@ -242,7 +244,7 @@
       cta1Text: '开始探索', cta1Url: '#/nav', cta2Text: '随机漫游',
       badge: '🛰️ 持续更新中', image: '', imageFit: 'cover',
       stats: [
-        { auto: 'cats', n: '', s: '主题岛屿' }, { auto: 'links', n: '', s: '精选站点' },
+        { auto: 'cats', n: '', s: '主题岛屿' }, { auto: 'links', n: '', s: '站点坐标' },
         { auto: 'feed', n: '', s: '分享条目' }, { auto: 'days', n: '', s: '成长天数' }
       ],
       entries: ENTRIES,
@@ -433,6 +435,7 @@
   }
 
   function renderNav() {
+    NAV_REST = {};                 // 每次重渲染都重建折叠缓存
     var q = state.query;
     var searching = !!norm(q) || state.favOnly;
     var results = searching
@@ -495,12 +498,28 @@
       '</aside>';
 
     var blocks = CATS.map(function (c) {
-      return '<div class="cat-block" id="cat-' + esc(c.id) + '" data-cat-block="' + esc(c.id) + '">' +
+      var sorted = sortPinned(c.links);
+      var headCards = sorted.slice(0, NAV_FOLD);
+      var restCards = sorted.slice(NAV_FOLD);
+      var many = restCards.length > 0;
+      var card = function (l) { return linkCard({ n: l.n, u: l.u, d: l.d, pin: l.pin }); };
+
+      /* 先只渲染前 NAV_FOLD 张，剩下的存进缓存等点开再插进 DOM
+         —— 62 个分类一次铺满会有两万多节点，手机上会明显发涩 */
+      var headHtml = headCards.map(card).join('');
+      if (many) NAV_REST[c.id] = { h: headHtml, r: restCards.map(card).join('') };
+
+      return '<div class="cat-block' + (many ? ' is-folded' : '') + '" id="cat-' + esc(c.id) + '" data-cat-block="' + esc(c.id) + '">' +
         '<div class="cat-block__head"><h2>' + esc(c.icon) + ' ' + esc(c.name) + '</h2>' +
           '<span class="count">' + c.links.length + ' 个站点 · ' + esc(c.desc) + '</span></div>' +
-        '<div class="link-grid">' + sortPinned(c.links).map(function (l) {
-          return linkCard({ n: l.n, u: l.u, d: l.d, pin: l.pin });
-        }).join('') + '</div>' +
+        '<div class="link-grid" data-grid="' + esc(c.id) + '">' + headHtml + '</div>' +
+        (many
+          ? '<button class="cat-more" type="button" data-more="' + esc(c.id) + '" ' +
+              'data-n="' + c.links.length + '" aria-expanded="false">' +
+              '<span class="cat-more__t">展开全部 ' + c.links.length + ' 个</span>' +
+              '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9.5l6 6 6-6"/></svg>' +
+            '</button>'
+          : '') +
         '</div>';
     }).join('');
 
@@ -515,8 +534,8 @@
       '<div class="page-head__main">' +
         '<span class="eyebrow">Navigation · 航图</span>' +
         '<h1>星屿导航</h1>' +
-        '<p>十二座主题岛屿，收拢网页世界里的精选坐标。直接在顶部搜索框输入关键词即时筛选，点星标收藏常用站点，' +
-          '或按 <kbd style="font-family:inherit;padding:1px 6px;border:1px solid var(--border);border-radius:6px;font-size:12px">⌘K</kbd> 全局跳转。</p>' +
+        '<p>精选的几座岛，加上一柜子攒了多年的老书签 —— 共 <b>' + CATS.length + '</b> 类、<b>' + totalLinks + '</b> 个坐标。' +
+          '顶部搜索框随时筛，点星标收藏，按 <kbd style="font-family:inherit;padding:1px 6px;border:1px solid var(--border);border-radius:6px;font-size:12px">⌘K</kbd> 一键盘点。</p>' +
       '</div>' +
       '<div class="page-head__side">' +
         '<span class="nav-meta">' + (meta || '') + '</span>' +
@@ -998,6 +1017,31 @@
       });
     }
     bindCatRail();
+
+    /* 分类块折叠：站点多的分类先只露 12 个，点一下把剩下的插进来 */
+    var navBody = $('.nav-body');
+    if (navBody) navBody.addEventListener('click', function (e) {
+      var btn = e.target.closest ? e.target.closest('.cat-more') : null;
+      if (!btn) return;
+      var id = btn.getAttribute('data-more');
+      var block = $('#cat-' + id);
+      var grid = block && block.querySelector('.link-grid');
+      var cache = NAV_REST[id];
+      if (!block || !grid || !cache) return;
+
+      var open = block.classList.toggle('is-folded') === false;
+      grid.innerHTML = open ? cache.h + cache.r : cache.h;
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      btn.querySelector('.cat-more__t').textContent =
+        open ? '收起' : ('展开全部 ' + (btn.getAttribute('data-n') || '') + ' 个');
+      if (!open) {
+        // 收起时如果已经滚到很远，先回到这个分类的头部，别让人悬在半空
+        if (block.getBoundingClientRect().top < 0) {
+          var hh = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--header-h'), 10) || 96;
+          window.scrollTo({ top: block.getBoundingClientRect().top + window.scrollY - (hh + 20), behavior: 'smooth' });
+        }
+      }
+    });
 
     setupSpy();
   }

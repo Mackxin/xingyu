@@ -69,7 +69,7 @@
       imageFit: 'cover',       // cover | contain
       stats: [
         { auto: 'cats',  n: '', s: '主题岛屿' },
-        { auto: 'links', n: '', s: '精选站点' },
+        { auto: 'links', n: '', s: '站点坐标' },
         { auto: 'feed',  n: '', s: '分享条目' },
         { auto: 'days',  n: '', s: '成长天数' }
       ],

@@ -212,6 +212,14 @@ window.SITE_DATA = (function () {
     }
   ];
 
+  /* ---------------- 老书签（从「壹号导航」搬过来的） ----------------
+     数据在 assets/js/bookmarks.js（由 tools/import-naver.py 自动生成，
+     50 个分类 / 2242 条链接）。这里接上去，顺序排在 12 个精选分类之后。
+     没加载到那个文件（比如漏了 script 标签）也不会报错，只是少一半分类。 */
+  if (window.SITE_BOOKMARKS && window.SITE_BOOKMARKS.categories) {
+    categories = categories.concat(window.SITE_BOOKMARKS.categories);
+  }
+
   /* ---------------- 分享流（时间线） ---------------- */
   var feed = [
     {
@@ -316,7 +324,7 @@ window.SITE_DATA = (function () {
 
   /* ---------------- 首页快捷入口 ---------------- */
   var entries = [
-    { route: '#/nav',   icon: '🧭', title: '星屿导航',   desc: '十二座主题岛屿，收拢全网精选站点，随时一键盘点。', wide: false, spark: true },
+    { route: '#/nav',   icon: '🧭', title: '星屿导航',   desc: '精选岛屿加上一柜子攒了多年的老书签，随时一键盘点。', wide: false, spark: true },
     { route: '#/share', icon: '✨', title: '灵感分享',   desc: '像刷动态一样，回看这一年里遇见的工具、灵感与好内容。', wide: false, spark: false },
     { route: '#/post',  icon: '✍️', title: '手记文章',   desc: '写得长一点的东西都在这里：随笔、折腾记录与一点思考。', wide: false, spark: false },
     { route: '#/home',  icon: '🌌', title: '关于星屿',   desc: '一座以星为图、以屿为家的个人数字花园，慢慢生长。', wide: false, spark: false }
