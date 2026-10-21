@@ -8,217 +8,20 @@
    ========================================================= */
 window.SITE_DATA = (function () {
 
-  /* ---------------- 精选导航站点 ---------------- */
-  var categories = [
-    {
-      id: 'ai', name: 'AI 智能', icon: '🤖',
-      desc: '对话、生成与创作',
-      links: [
-        { n: 'ChatGPT',        u: 'https://chat.openai.com',        d: 'OpenAI 对话助手' },
-        { n: 'Claude',         u: 'https://claude.ai',              d: '长文理解与写作' },
-        { n: 'Gemini',         u: 'https://gemini.google.com',      d: 'Google 多模态模型' },
-        { n: 'DeepSeek',       u: 'https://chat.deepseek.com',      d: '国产推理与代码' },
-        { n: 'Kimi',           u: 'https://kimi.moonshot.cn',       d: '超长上下文阅读' },
-        { n: '通义千问',        u: 'https://tongyi.aliyun.com',      d: '阿里大模型助手' },
-        { n: 'Perplexity',     u: 'https://www.perplexity.ai',      d: '带引用的 AI 搜索' },
-        { n: 'Midjourney',     u: 'https://www.midjourney.com',     d: '图像生成标杆' },
-        { n: '即梦 Dreamina',   u: 'https://jimeng.jianying.com',    d: '字节图像视频生成' },
-        { n: 'Suno',           u: 'https://suno.com',               d: '一句话生成歌曲' },
-        { n: 'Suno / Udio 试听', u: 'https://udio.com',             d: 'AI 音乐另一选择' },
-        { n: 'Hugging Face',   u: 'https://huggingface.co',         d: '模型与数据集社区' }
-      ]
-    },
-    {
-      id: 'dev', name: '开发编程', icon: '💻',
-      desc: '写码、部署与协作',
-      links: [
-        { n: 'GitHub',         u: 'https://github.com',             d: '全球最大的代码托管' },
-        { n: 'MDN',            u: 'https://developer.mozilla.org',  d: 'Web 开发权威文档' },
-        { n: 'Stack Overflow', u: 'https://stackoverflow.com',      d: '开发问答' },
-        { n: 'npm',            u: 'https://www.npmjs.com',          d: 'JavaScript 包仓库' },
-        { n: 'Vercel',         u: 'https://vercel.com',             d: '前端一键部署' },
-        { n: 'Cloudflare',     u: 'https://dash.cloudflare.com',    d: 'CDN · Workers · DNS' },
-        { n: 'Docker Hub',     u: 'https://hub.docker.com',         d: '容器镜像仓库' },
-        { n: '掘金',           u: 'https://juejin.cn',              d: '中文开发者社区' },
-        { n: 'V2EX',           u: 'https://www.v2ex.com',           d: '创意工作者社区' },
-        { n: 'Can I use',      u: 'https://caniuse.com',            d: '浏览器兼容性查询' },
-        { n: 'Regex101',       u: 'https://regex101.com',           d: '正则在线调试' },
-        { n: 'Carbon',         u: 'https://carbon.now.sh',          d: '代码片段美化截图' }
-      ]
-    },
-    {
-      id: 'design', name: '设计灵感', icon: '🎨',
-      desc: '配色、排版与素材',
-      links: [
-        { n: 'Figma',          u: 'https://www.figma.com',          d: '协作式界面设计' },
-        { n: 'Dribbble',       u: 'https://dribbble.com',           d: '设计作品瀑布流' },
-        { n: 'Behance',        u: 'https://www.behance.net',        d: '创意作品集平台' },
-        { n: 'Canva',          u: 'https://www.canva.cn',           d: '在线海报与排版' },
-        { n: '稿定设计',        u: 'https://www.gaoding.com',        d: '电商与新媒体设计' },
-        { n: 'Coolors',        u: 'https://coolors.co',             d: '配色方案生成器' },
-        { n: 'Color Hunt',     u: 'https://colorhunt.co',           d: '精选四色配色' },
-        { n: 'Iconify',        u: 'https://icon-sets.iconify.design',d: '海量开源图标集' },
-        { n: 'Google Fonts',   u: 'https://fonts.google.com',       d: '免费字体库' },
-        { n: 'Framer',         u: 'https://www.framer.com',         d: '交互动效与原型' },
-        { n: 'MasterGo',       u: 'https://mastergo.com',           d: '国产协设工具' },
-        { n: 'Collect UI',     u: 'https://collectui.com',          d: '每日 UI 灵感' }
-      ]
-    },
-    {
-      id: 'tool', name: '效率工具', icon: '🧰',
-      desc: '随手可用的小工具',
-      links: [
-        { n: 'TinyPNG',        u: 'https://tinypng.com',            d: '图片无损压缩' },
-        { n: 'Squoosh',        u: 'https://squoosh.app',            d: '浏览器内图片压缩' },
-        { n: 'Convertio',      u: 'https://convertio.co/zh/',       d: '万能格式转换' },
-        { n: '草料二维码',      u: 'https://cli.im',                d: '二维码生成与管理' },
-        { n: 'JSON 格式化',     u: 'https://www.json.cn',            d: 'JSON 解析校验' },
-        { n: 'Excalidraw',     u: 'https://excalidraw.com',         d: '手绘风白板' },
-        { n: 'Notion',         u: 'https://www.notion.so',          d: '一体化笔记与协作' },
-        { n: '飞书',           u: 'https://www.feishu.cn',          d: '文档 · 表格 · 会议' },
-        { n: 'Obsidian',       u: 'https://obsidian.md',            d: '本地优先知识库' },
-        { n: 'ProcessOn',      u: 'https://www.processon.com',      d: '思维导图与流程图' },
-        { n: 'IT Tools',       u: 'https://it-tools.tech',          d: '开发者工具合集' },
-        { n: 'draw.io',        u: 'https://app.diagrams.net',       d: '免费在线绘图' }
-      ]
-    },
-    {
-      id: 'learn', name: '学习成长', icon: '📚',
-      desc: '课程、题库与百科',
-      links: [
-        { n: '学堂在线',        u: 'https://www.xuetangx.com',      d: '清华等高校慕课' },
-        { n: '知乎',           u: 'https://www.zhihu.com',          d: '问答与深度长文' },
-        { n: '中国大学MOOC',    u: 'https://www.icourse163.org',     d: '高校在线课程' },
-        { n: 'Coursera',       u: 'https://www.coursera.org',       d: '全球名校课程' },
-        { n: '可汗学院',        u: 'https://zh.khanacademy.org',     d: '免费系统学习' },
-        { n: '菜鸟教程',        u: 'https://www.runoob.com',         d: '入门到进阶教程' },
-        { n: 'LeetCode',       u: 'https://leetcode.cn',            d: '算法刷题' },
-        { n: '维基百科',        u: 'https://zh.wikipedia.org',       d: '自由的百科全书' },
-        { n: 'Wolfram Alpha',  u: 'https://www.wolframalpha.com',   d: '计算知识引擎' },
-        { n: '术语在线',        u: 'https://www.termonline.cn',      d: '规范术语查询' },
-        { n: 'Anki',           u: 'https://apps.ankiweb.net',       d: '间隔重复记忆' },
-        { n: '阮一峰周刊',      u: 'https://www.ruanyifeng.com/blog',d: '科技爱好者周刊' }
-      ]
-    },
-    {
-      id: 'media', name: '影音娱乐', icon: '🎬',
-      desc: '影视、音乐与综艺',
-      links: [
-        { n: '哔哩哔哩',        u: 'https://www.bilibili.com',       d: '弹幕视频社区' },
-        { n: '网易云音乐',      u: 'https://music.163.com',          d: '歌单与乐评' },
-        { n: 'QQ 音乐',        u: 'https://y.qq.com',               d: '正版曲库' },
-        { n: 'Spotify',        u: 'https://open.spotify.com',       d: '全球流媒体音乐' },
-        { n: 'YouTube',        u: 'https://www.youtube.com',        d: '全球视频平台' },
-        { n: '腾讯视频',        u: 'https://v.qq.com',               d: '影视剧集' },
-        { n: '豆瓣',           u: 'https://www.douban.com',         d: '评分与影评' },
-        { n: 'IMDb',           u: 'https://www.imdb.com',           d: '全球影视数据库' },
-        { n: 'Radio Garden',   u: 'https://radio.garden',           d: '全球电台地球' },
-        { n: '小宇宙播客',      u: 'https://www.xiaoyuzhoufm.com',   d: '中文播客平台' }
-      ]
-    },
-    {
-      id: 'read', name: '阅读书籍', icon: '📖',
-      desc: '读书、找书与电子书',
-      links: [
-        { n: '微信读书',        u: 'https://weread.qq.com',          d: '社交化阅读' },
-        { n: '豆瓣读书',        u: 'https://book.douban.com',        d: '图书评价与榜单' },
-        { n: '国家数字图书馆',  u: 'https://www.nlc.cn',              d: '海量馆藏资源' },
-        { n: '鸠摩搜书',        u: 'https://www.jiumodiary.com',     d: '电子书聚合搜索' },
-        { n: 'Z-Library',      u: 'https://z-lib.io',               d: '大型电子书库' },
-        { n: 'Project Gutenberg', u: 'https://www.gutenberg.org',   d: '七万本公版书' },
-        { n: '书格',           u: 'https://new.shuge.org',          d: '古籍善本数字图书馆' },
-        { n: 'Wikipedia Books', u: 'https://zh.wikisource.org',     d: '维基文库' },
-        { n: '标准电子书',      u: 'https://standardebooks.org',     d: '精校公版电子书' }
-      ]
-    },
-    {
-      id: 'news', name: '资讯前沿', icon: '📡',
-      desc: '科技、行业与热榜',
-      links: [
-        { n: '少数派',          u: 'https://sspai.com',              d: '高效工作与数字生活' },
-        { n: '36氪',           u: 'https://36kr.com',               d: '商业科技创投' },
-        { n: '虎嗅',           u: 'https://www.huxiu.com',          d: '商业深度分析' },
-        { n: '爱范儿',          u: 'https://www.ifanr.com',          d: '科技生活方式' },
-        { n: 'IT 之家',        u: 'https://www.ithome.com',         d: '数码快讯' },
-        { n: 'Hacker News',    u: 'https://news.ycombinator.com',   d: '极客新闻聚合' },
-        { n: 'Solidot 奇客',    u: 'https://www.solidot.org',        d: '科技资讯中文站' },
-        { n: '今日热榜',        u: 'https://tophub.today',           d: '全平台热榜聚合' },
-        { n: 'V2EX 热门',      u: 'https://www.v2ex.com/?tab=hot',  d: '社区热议' },
-        { n: 'The Verge',      u: 'https://www.theverge.com',       d: '国际科技媒体' }
-      ]
-    },
-    {
-      id: 'life', name: '生活服务', icon: '🏙️',
-      desc: '出行、政务与便民',
-      links: [
-        { n: '高德地图',        u: 'https://www.amap.com',           d: '导航与路况' },
-        { n: '12306',          u: 'https://www.12306.cn',           d: '铁路售票官方' },
-        { n: '大众点评',        u: 'https://www.dianping.com',       d: '吃喝玩乐指南' },
-        { n: '国家医保服务平台', u: 'https://fuwu.nhsa.gov.cn',      d: '医保查询办理' },
-        { n: '中国天气网',      u: 'https://www.weather.com.cn',      d: '权威天气预报' },
-        { n: '快递 100',       u: 'https://www.kuaidi100.com',      d: '全网快递查询' },
-        { n: '个人所得税',      u: 'https://etax.chinatax.gov.cn',   d: '个税申报' },
-        { n: '国家企业信用公示', u: 'https://www.gsxt.gov.cn',        d: '企业信息核验' },
-        { n: '中国教育考试网',  u: 'https://www.neea.edu.cn',         d: '考试报名与成绩' },
-        { n: '12315 平台',     u: 'https://www.12315.cn',           d: '消费投诉举报' }
-      ]
-    },
-    {
-      id: 'shop', name: '购物消费', icon: '🛒',
-      desc: '电商、比价与二手',
-      links: [
-        { n: '京东',           u: 'https://www.jd.com',             d: '自营与物流' },
-        { n: '淘宝',           u: 'https://www.taobao.com',         d: '全民电商' },
-        { n: '天猫',           u: 'https://www.tmall.com',          d: '品牌旗舰' },
-        { n: '拼多多',          u: 'https://www.pinduoduo.com',      d: '拼团低价' },
-        { n: '1688',           u: 'https://www.1688.com',           d: '源头批发' },
-        { n: 'Apple 官网',     u: 'https://www.apple.com.cn',       d: '官方商城' },
-        { n: '什么值得买',      u: 'https://www.smzdm.com',          d: '优惠与种草' },
-        { n: '闲鱼',           u: 'https://2.taobao.com',           d: '二手交易' },
-        { n: '慢慢买比价',      u: 'https://www.manmanbuy.com',      d: '历史价格查询' },
-        { n: '小米有品',        u: 'https://www.xiaomiyoupin.com',   d: '精品生活电商' }
-      ]
-    },
-    {
-      id: 'image', name: '图片素材', icon: '🖼️',
-      desc: '免费图库与壁纸',
-      links: [
-        { n: 'Unsplash',       u: 'https://unsplash.com',           d: '免费高质摄影' },
-        { n: 'Pexels',         u: 'https://www.pexels.com/zh-cn/',  d: '免费图片视频' },
-        { n: 'Pixabay',        u: 'https://pixabay.com',            d: '百万免费素材' },
-        { n: 'Wallhaven',      u: 'https://wallhaven.cc',           d: '高质量壁纸' },
-        { n: '极简壁纸',        u: 'https://bz.zzzmh.cn',            d: '国产壁纸站' },
-        { n: 'unDraw',         u: 'https://undraw.co',              d: '可换色插画' },
-        { n: 'Storyset',       u: 'https://storyset.com',           d: '免费故事插画' },
-        { n: 'Mixkit',         u: 'https://mixkit.co',              d: '免费视频配乐模板' },
-        { n: 'Alphacoders',    u: 'https://wall.alphacoders.com',   d: '超清壁纸库' }
-      ]
-    },
-    {
-      id: 'social', name: '社交社区', icon: '💬',
-      desc: '圈子、论坛与分享',
-      links: [
-        { n: '微博',           u: 'https://weibo.com',              d: '实时热点广场' },
-        { n: '小红书',          u: 'https://www.xiaohongshu.com',    d: '生活方式社区' },
-        { n: 'Reddit',         u: 'https://www.reddit.com',         d: '全球兴趣社区' },
-        { n: 'X (Twitter)',    u: 'https://x.com',                  d: '实时信息流' },
-        { n: 'Instagram',      u: 'https://www.instagram.com',      d: '视觉社交' },
-        { n: 'Telegram',       u: 'https://telegram.org',           d: '加密即时通讯' },
-        { n: 'Discord',        u: 'https://discord.com',            d: '语音兴趣社群' },
-        { n: '即刻',           u: 'https://web.okjike.com',         d: '年轻人兴趣社区' },
-        { n: 'Product Hunt',   u: 'https://www.producthunt.com',    d: '每日新产品' },
-        { n: '少数派社区',      u: 'https://sspai.com/community',    d: '效率爱好者' }
-      ]
-    }
-  ];
+  /* ---------------- 导航分类 ----------------
+     站点数据全在 assets/js/bookmarks.js（由 tools/import-naver.py 从「壹号导航」
+     抽取的 50 个分类 / 2242 条链接）。data.js 只负责把两边接起来。
+     想加自己的分类，直接 push 到这个数组里就行，或者写在下面「自己补的分类」。 */
+  var categories = (window.SITE_BOOKMARKS && window.SITE_BOOKMARKS.categories) || [];
 
-  /* ---------------- 老书签（从「壹号导航」搬过来的） ----------------
-     数据在 assets/js/bookmarks.js（由 tools/import-naver.py 自动生成，
-     50 个分类 / 2242 条链接）。这里接上去，顺序排在 12 个精选分类之后。
-     没加载到那个文件（比如漏了 script 标签）也不会报错，只是少一半分类。 */
-  if (window.SITE_BOOKMARKS && window.SITE_BOOKMARKS.categories) {
-    categories = categories.concat(window.SITE_BOOKMARKS.categories);
-  }
+  /* ---------------- 自己补的分类（可选） ----------------
+     bookmarks.js 里没有的站可以写在这儿，会自动接在最后。
+     一个分类长这样：{ id: "mine", name: "我的", icon: "⭐", desc: "一句话说明",
+                      links: [{ n: "站点名", u: "https://…", d: "描述" }] }
+  var myCats = [
+  ];
+  categories = categories.concat(myCats); */
+
 
   /* ---------------- 分享流（时间线） ---------------- */
   var feed = [
@@ -226,7 +29,7 @@ window.SITE_DATA = (function () {
       date: '2026-10-17', icon: '🧭',
       title: '星屿导航 · 新版上线',
       url: '#/nav',
-      desc: '把散落在浏览器书签栏里的网址重新收拢成 12 个主题岛屿，支持拼音与关键词即时搜索、收藏置顶，以及 ⌘K 一键盘点所有站点。',
+      desc: '把散落在浏览器书签栏里的网址重新收拢成 50 个主题岛屿，支持拼音与关键词即时搜索、收藏置顶，以及 ⌘K 一键盘点所有站点。',
       tags: ['本站', '导航']
     },
     {
@@ -324,7 +127,7 @@ window.SITE_DATA = (function () {
 
   /* ---------------- 首页快捷入口 ---------------- */
   var entries = [
-    { route: '#/nav',   icon: '🧭', title: '星屿导航',   desc: '精选岛屿加上一柜子攒了多年的老书签，随时一键盘点。', wide: false, spark: true },
+    { route: '#/nav',   icon: '🧭', title: '星屿导航',   desc: '攒了多年的书签全收在这一页，随时一键盘点。', wide: false, spark: true },
     { route: '#/share', icon: '✨', title: '灵感分享',   desc: '像刷动态一样，回看这一年里遇见的工具、灵感与好内容。', wide: false, spark: false },
     { route: '#/post',  icon: '✍️', title: '手记文章',   desc: '写得长一点的东西都在这里：随笔、折腾记录与一点思考。', wide: false, spark: false },
     { route: '#/home',  icon: '🌌', title: '关于星屿',   desc: '一座以星为图、以屿为家的个人数字花园，慢慢生长。', wide: false, spark: false }

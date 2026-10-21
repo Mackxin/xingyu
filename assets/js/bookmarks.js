@@ -1,7 +1,7 @@
 /* =========================================================
    星屿 XINGYU · 书签数据（自动生成，别手改）
 
-   来源：壹号导航 naver.html（50 个分类 / 2242 条链接）
+   来源：壹号导航 naver.html（50 个分类 / 2078 条链接）
    重新生成：python3 tools/import-naver.py /path/to/naver.html
    想改内容请去后台「导航」页，或者直接改这个文件。
    ========================================================= */
@@ -210,10 +210,6 @@ window.SITE_BOOKMARKS = (function () {
   "u": "https://www.logosc.cn/so/"
   },
   {
-  "n": "简搜题",
-  "u": "https://www.jiansouti.com/"
-  },
-  {
   "n": "风鸟企业查询",
   "u": "https://riskbird.com/"
   },
@@ -288,10 +284,6 @@ window.SITE_BOOKMARKS = (function () {
   {
   "n": "51LA网站统计",
   "u": "https://www.51.la/"
-  },
-  {
-  "n": "百夫长统计",
-  "u": "https://cn.centcount.com/"
   },
   {
   "n": "Deepl翻译器",
@@ -390,10 +382,6 @@ window.SITE_BOOKMARKS = (function () {
   "u": "https://rss.cafe/"
   },
   {
-  "n": "OSS King图床",
-  "u": "https://www.ossking.com/"
-  },
-  {
   "n": "IP 工具箱",
   "u": "https://ipcheck.ing/"
   },
@@ -430,10 +418,6 @@ window.SITE_BOOKMARKS = (function () {
   "u": "https://metaso.cn/study"
   },
   {
-  "n": "完美提示词",
-  "u": "https://www.pp.wen2tu.com/"
-  },
-  {
   "n": "3分钟AI日报",
   "u": "https://ai.3min.top/"
   },
@@ -444,10 +428,6 @@ window.SITE_BOOKMARKS = (function () {
   {
   "n": "NewsHub",
   "u": "https://newshub.shenzjd.com/"
-  },
-  {
-  "n": "今日时事",
-  "u": "https://news.yltfspace.com/"
   },
   {
   "n": "OfferNow",
@@ -574,10 +554,6 @@ window.SITE_BOOKMARKS = (function () {
   "u": "https://linux.do/"
   },
   {
-  "n": "酷小呵资源站",
-  "u": "https://kuhehe.kuhehe.top/"
-  },
-  {
   "n": "NOISE宝藏阁",
   "u": "https://noisevip.cn/"
   },
@@ -684,10 +660,6 @@ window.SITE_BOOKMARKS = (function () {
   {
   "n": "广州交通",
   "u": "http://www.gzjt.gov.cn/"
-  },
-  {
-  "n": "广州网上办事大厅",
-  "u": "http://wsbs.gz.gov.cn/gz/"
   },
   {
   "n": "中国动车组",
@@ -902,10 +874,6 @@ window.SITE_BOOKMARKS = (function () {
   "u": "http://www.yxdm.tv/"
   },
   {
-  "n": "樱花动漫",
-  "u": "https://www.857yhdm.com/"
-  },
-  {
   "n": "Anime1.me",
   "u": "https://anime1.me/"
   },
@@ -938,10 +906,6 @@ window.SITE_BOOKMARKS = (function () {
   "u": "http://www.migudm.cn/"
   },
   {
-  "n": "漫画台",
-  "u": "https://www.manhuatai.com/"
-  },
-  {
   "n": "咚漫",
   "u": "https://www.dongmanmanhua.cn/"
   },
@@ -952,14 +916,6 @@ window.SITE_BOOKMARKS = (function () {
   {
   "n": "Dialogue",
   "u": "https://dialogue.moe/"
-  },
-  {
-  "n": "漫画DB",
-  "u": "https://www.manhuadb.com/"
-  },
-  {
-  "n": "萌图社",
-  "u": "https://moetu.club/"
   },
   {
   "n": "动漫花园同步站",
@@ -1050,10 +1006,6 @@ window.SITE_BOOKMARKS = (function () {
   "u": "https://nyaa.si/"
   },
   {
-  "n": "NT动漫",
-  "u": "https://www.ntdm.tv/"
-  },
-  {
   "n": "Anime List",
   "u": "https://yuc.wiki/"
   },
@@ -1064,10 +1016,6 @@ window.SITE_BOOKMARKS = (function () {
   {
   "n": "包子漫画",
   "u": "https://cn.baozimh.com/"
-  },
-  {
-  "n": "呵呵动漫",
-  "u": "https://www.hehe.la/"
   },
   {
   "n": "蜜糖动漫",
@@ -1178,10 +1126,6 @@ window.SITE_BOOKMARKS = (function () {
   "u": "https://www.gugu3.com/"
   },
   {
-  "n": "简单TV",
-  "u": "https://dianying.one/"
-  },
-  {
   "n": "Komiic",
   "u": "https://komiic.com/"
   },
@@ -1196,10 +1140,6 @@ window.SITE_BOOKMARKS = (function () {
   {
   "n": "ACG导航站",
   "u": "https://www.acgdhz.com/"
-  },
-  {
-  "n": "bimi动漫",
-  "u": "https://www.bimiacg.icu/"
   },
   {
   "n": "酱紫社动漫",
@@ -1220,10 +1160,6 @@ window.SITE_BOOKMARKS = (function () {
   {
   "n": "CN影院",
   "u": "https://cnys.tv/"
-  },
-  {
-  "n": "趣动漫",
-  "u": "https://www.qdm.plus/"
   },
   {
   "n": "打驴动漫",
@@ -1350,10 +1286,6 @@ window.SITE_BOOKMARKS = (function () {
   "u": "https://www.youzack.com/"
   },
   {
-  "n": "日喀则谷歌推广网",
-  "u": "https://www.danganhe.com/"
-  },
-  {
   "n": "Notion中文文档",
   "u": "https://www.notion.so/Notion-64ab96a7fccf4d74b9a9a68b338bc501"
   },
@@ -1374,10 +1306,6 @@ window.SITE_BOOKMARKS = (function () {
   "u": "https://wiki.52poke.com/"
   },
   {
-  "n": "快捷键备忘录",
-  "u": "https://hotkeycheatsheet.com/zh"
-  },
-  {
   "n": "渐构",
   "u": "https://www.modevol.com/"
   },
@@ -1391,23 +1319,15 @@ window.SITE_BOOKMARKS = (function () {
   "id": "bk-book",
   "name": "书籍阅读",
   "icon": "📖",
-  "desc": "微信读书 · 熊猫搜书…",
+  "desc": "微信读书 · 书伴…",
   "links": [
   {
   "n": "微信读书",
   "u": "https://weread.qq.com/"
   },
   {
-  "n": "熊猫搜书",
-  "u": "https://ebook.huzerui.com/"
-  },
-  {
   "n": "书伴",
   "u": "https://bookfere.com/"
-  },
-  {
-  "n": "拨云小说搜索",
-  "u": "https://www.boyunso.com/"
   },
   {
   "n": "苦瓜书盘",
@@ -1430,10 +1350,6 @@ window.SITE_BOOKMARKS = (function () {
   "u": "https://yabook.org/"
   },
   {
-  "n": "点书网",
-  "u": "http://www.gezhongshu.com/"
-  },
-  {
   "n": "漢川草廬",
   "u": "http://www.漢川草廬.tw"
   },
@@ -1452,10 +1368,6 @@ window.SITE_BOOKMARKS = (function () {
   {
   "n": "意林杂志网",
   "u": "https://www.yilinzazhi.com/"
-  },
-  {
-  "n": "读者文摘杂志",
-  "u": "https://www.dzwzzz.com/"
   },
   {
   "n": "搬书匠",
@@ -1598,10 +1510,6 @@ window.SITE_BOOKMARKS = (function () {
   "u": "https://www.gulongwang.com/"
   },
   {
-  "n": "小兔搜书",
-  "u": "https://ss.yesky.online/"
-  },
-  {
   "n": "书书读",
   "u": "https://www.shushudu.com/"
   },
@@ -1662,10 +1570,6 @@ window.SITE_BOOKMARKS = (function () {
   "u": "http://iwin10.net/"
   },
   {
-  "n": "正版中国",
-  "u": "https://getitfree.cn/"
-  },
-  {
   "n": "小笨软件",
   "u": "http://www.zhouxiaoben.info/"
   },
@@ -1714,10 +1618,6 @@ window.SITE_BOOKMARKS = (function () {
   "u": "https://bbs.tampermonkey.net.cn/"
   },
   {
-  "n": "WinApps",
-  "u": "https://down.gxzyzd.com/"
-  },
-  {
   "n": "蓝鲨",
   "u": "https://www.lan-sha.com/"
   },
@@ -1760,14 +1660,6 @@ window.SITE_BOOKMARKS = (function () {
   {
   "n": "俄罗斯破解",
   "u": "https://positiverecords.ru/"
-  },
-  {
-  "n": "AtomHub",
-  "u": "https://atomhub.openatom.cn/"
-  },
-  {
-  "n": "系统镜像站",
-  "u": "https://i.pixcat.ru/jing-xiang-zhan-hui-zong"
   },
   {
   "n": "1XG Team",
@@ -2026,10 +1918,6 @@ window.SITE_BOOKMARKS = (function () {
   "u": "https://www.cuppaso.com/"
   },
   {
-  "n": "SOSO云盘",
-  "u": "https://www.sosoyunpan.com/"
-  },
-  {
   "n": "BT资源搜索",
   "u": "http://www.btfan.com/"
   },
@@ -2052,10 +1940,6 @@ window.SITE_BOOKMARKS = (function () {
   {
   "n": "YaPan",
   "u": "https://yapan.io/"
-  },
-  {
-  "n": "小纸条",
-  "u": "https://ali.gitcafe.ink/"
   },
   {
   "n": "阿里小站",
@@ -2176,10 +2060,6 @@ window.SITE_BOOKMARKS = (function () {
   {
   "n": "吾爱资源网",
   "u": "https://pan.52wei.cc/"
-  },
-  {
-  "n": "即刻盘",
-  "u": "https://jikepan.xyz/"
   },
   {
   "n": "海搜",
@@ -2334,10 +2214,6 @@ window.SITE_BOOKMARKS = (function () {
   "u": "http://www.tcmdoc.cn/"
   },
   {
-  "n": "医学电子书在线阅读",
-  "u": "https://yixueshu.gitee.io/"
-  },
-  {
   "n": "AI医学",
   "u": "https://www.aipubmed.com/"
   },
@@ -2406,10 +2282,6 @@ window.SITE_BOOKMARKS = (function () {
   "u": "https://www.toolfk.com/"
   },
   {
-  "n": "虚假截图制作工具",
-  "u": "https://fakes.netlify.com"
-  },
-  {
   "n": "MikuTools工具集合",
   "u": "https://tools.miku.ac/"
   },
@@ -2418,16 +2290,8 @@ window.SITE_BOOKMARKS = (function () {
   "u": "https://screendump.techulus.com/"
   },
   {
-  "n": "windows在线激活",
-  "u": "https://v0v.bid/"
-  },
-  {
   "n": "工具123",
   "u": "http://www.gjw123.com/"
-  },
-  {
-  "n": "标注工具PxCook",
-  "u": "https://www.fancynode.com.cn/pxcook"
   },
   {
   "n": "独特工具箱",
@@ -2618,14 +2482,6 @@ window.SITE_BOOKMARKS = (function () {
   "u": "https://tinywow.com/"
   },
   {
-  "n": "IT-TOOLS",
-  "u": "https://www.aiotools.top/"
-  },
-  {
-  "n": "查询Q绑HeikeBook",
-  "u": "https://qb.heikebook.com/index"
-  },
-  {
   "n": "千盒工具",
   "u": "https://1000tool.com/"
   },
@@ -2678,10 +2534,6 @@ window.SITE_BOOKMARKS = (function () {
   "u": "https://www.30aitool.com/"
   },
   {
-  "n": "Math Solver",
-  "u": "https://mathsolver.microsoft.com/zh"
-  },
-  {
   "n": "Mintimate",
   "u": "https://tool.mintimate.cn/"
   },
@@ -2712,10 +2564,6 @@ window.SITE_BOOKMARKS = (function () {
   {
   "n": "CSV处理工具",
   "u": "https://csv.ink/"
-  },
-  {
-  "n": "Excel表格去重",
-  "u": "https://sheet-cleaner.com/zh"
   },
   {
   "n": "免费网站流量查询工具",
@@ -2810,10 +2658,6 @@ window.SITE_BOOKMARKS = (function () {
   "u": "https://www.luoow.com/"
   },
   {
-  "n": "音乐磁场",
-  "u": "https://www.hifini.com/"
-  },
-  {
   "n": "免费版权FreePD",
   "u": "https://freepd.com/"
   },
@@ -2900,10 +2744,6 @@ window.SITE_BOOKMARKS = (function () {
   {
   "n": "Radishes",
   "u": "https://radishes-music.vercel.app/music/"
-  },
-  {
-  "n": "百乐米",
-  "u": "https://bailemi.com/"
   },
   {
   "n": "思奥FM",
@@ -3006,20 +2846,12 @@ window.SITE_BOOKMARKS = (function () {
   "u": "https://xyzrank.com/"
   },
   {
-  "n": "TuneFree",
-  "u": "https://pt.sayqz.com/"
-  },
-  {
   "n": "Chosic",
   "u": "https://www.chosic.com/free-music/all/"
   },
   {
   "n": "StockTune",
   "u": "https://stocktune.com/"
-  },
-  {
-  "n": "无损生活",
-  "u": "https://www.flac.life/"
   },
   {
   "n": "日常聊天室",
@@ -3042,10 +2874,6 @@ window.SITE_BOOKMARKS = (function () {
   "u": "https://www.audioatlas.com/"
   },
   {
-  "n": "极客音乐",
-  "u": "https://music.bestgeek.org/"
-  },
-  {
   "n": "趣趣音",
   "u": "https://www.qqyin.com/"
   },
@@ -3056,10 +2884,6 @@ window.SITE_BOOKMARKS = (function () {
   {
   "n": "Toomic",
   "u": "https://www.toomic.com/"
-  },
-  {
-  "n": "音乐魔石",
-  "u": "https://yym4.com/"
   },
   {
   "n": "网抑云音乐",
@@ -3078,10 +2902,6 @@ window.SITE_BOOKMARKS = (function () {
   "u": "https://www.yinwe.com/"
   },
   {
-  "n": "音乐榜",
-  "u": "https://www.mp3b.com/"
-  },
-  {
   "n": "RadioCast",
   "u": "https://radiocast.co/"
   },
@@ -3092,10 +2912,6 @@ window.SITE_BOOKMARKS = (function () {
   {
   "n": "米兔音乐",
   "u": "http://qqmp3.vip/"
-  },
-  {
-  "n": "Qobuz SquidWTF",
-  "u": "https://eu.qobuz.squid.wtf/"
   },
   {
   "n": "XCloud音乐",
@@ -3144,10 +2960,6 @@ window.SITE_BOOKMARKS = (function () {
   {
   "n": "1Music",
   "u": "https://1music.cc/zh-CN"
-  },
-  {
-  "n": "COCO音乐下载站",
-  "u": "https://coco-downloader.vercel.app/"
   },
   {
   "n": "MobiMusic",
@@ -3204,10 +3016,6 @@ window.SITE_BOOKMARKS = (function () {
   {
   "n": "摹客",
   "u": "https://www.mockplus.cn/"
-  },
-  {
-  "n": "码良",
-  "u": "https://godspen.ymm56.com/"
   },
   {
   "n": "设计E周",
@@ -3414,10 +3222,6 @@ window.SITE_BOOKMARKS = (function () {
   "u": "https://neave.com/"
   },
   {
-  "n": "GitHub Games",
-  "u": "http://likexia.gitee.io/game/"
-  },
-  {
   "n": "在线小游戏网站",
   "u": "http://www.bestgames.com/"
   },
@@ -3472,10 +3276,6 @@ window.SITE_BOOKMARKS = (function () {
   {
   "n": "在线文件加密工具",
   "u": "https://hat.sh/"
-  },
-  {
-  "n": "拷贝兔",
-  "u": "https://cp.anyknew.com/"
   },
   {
   "n": "Base64",
@@ -3590,24 +3390,12 @@ window.SITE_BOOKMARKS = (function () {
   "u": "https://send.bitiful.com/"
   },
   {
-  "n": "文本排版工具",
-  "u": "https://slogan.ishell.online/"
-  },
-  {
   "n": "Enclosed",
   "u": "https://enclosed.cc/"
   },
   {
   "n": "阅后即焚-飞鸽传书",
   "u": "http://bao.5364.cn/msg/"
-  },
-  {
-  "n": "魔曰",
-  "u": "https://sheepchef.github.io/Abracadabra/"
-  },
-  {
-  "n": "文本数字水印工具",
-  "u": "https://hidden-word.top/"
   },
   {
   "n": "在线记事本",
@@ -3698,10 +3486,6 @@ window.SITE_BOOKMARKS = (function () {
   "u": "https://xinquji.com/"
   },
   {
-  "n": "电脑小百科",
-  "u": "http://www.pc1999.com"
-  },
-  {
   "n": "汽车之家",
   "u": "https://www.autohome.com.cn/"
   },
@@ -3718,20 +3502,12 @@ window.SITE_BOOKMARKS = (function () {
   "u": "https://weibo.com/p/1005051822894882"
   },
   {
-  "n": "车本部落",
-  "u": "https://carben.me/"
-  },
-  {
   "n": "电手",
   "u": "https://www.dians.net/"
   },
   {
   "n": "鲸吼",
   "u": "https://www.jinghooo.com/"
-  },
-  {
-  "n": "有梗鸭",
-  "u": "https://www.cuiuc.com/"
   },
   {
   "n": "极客视界",
@@ -3802,10 +3578,6 @@ window.SITE_BOOKMARKS = (function () {
   "u": "http://www.cnplugins.com/"
   },
   {
-  "n": "扩展迷",
-  "u": "https://extfans.com/"
-  },
-  {
   "n": "CRX离线安装包",
   "u": "http://yurl.sinaapp.com/crx.php"
   },
@@ -3820,14 +3592,6 @@ window.SITE_BOOKMARKS = (function () {
   {
   "n": "Crx4Chrome",
   "u": "http://www.crx4.com/"
-  },
-  {
-  "n": "谷歌应用商店免墙版",
-  "u": "https://www.gugeapps.net/"
-  },
-  {
-  "n": "耍下ShuaX",
-  "u": "https://shuax.com/"
   },
   {
   "n": "谷歌插件英雄榜",
@@ -3880,10 +3644,6 @@ window.SITE_BOOKMARKS = (function () {
   {
   "n": "图片助手",
   "u": "http://www.pullywood.com/ImageAssistant/"
-  },
-  {
-  "n": "集装箱",
-  "u": "http://one.newday.me/"
   },
   {
   "n": "极简插件",
@@ -4030,10 +3790,6 @@ window.SITE_BOOKMARKS = (function () {
   "u": "https://imyshare.com/parsevideo/"
   },
   {
-  "n": "下载Youtube视频",
-  "u": "https://keepvid.works/zh/"
-  },
-  {
   "n": "全网小视频无水印下载",
   "u": "http://www.dspjx.com/"
   },
@@ -4048,10 +3804,6 @@ window.SITE_BOOKMARKS = (function () {
   {
   "n": "小视频Streamvi",
   "u": "https://streamvi.com/"
-  },
-  {
-  "n": "视频转GIF",
-  "u": "http://www.92sucai.com/gif/video.html"
   },
   {
   "n": "VideoFK",
@@ -4104,10 +3856,6 @@ window.SITE_BOOKMARKS = (function () {
   {
   "n": "下载狗",
   "u": "https://www.xiazaitool.com/"
-  },
-  {
-  "n": "魔法解析",
-  "u": "https://wantwatch.me/"
   },
   {
   "n": "SeedHub",
@@ -4246,10 +3994,6 @@ window.SITE_BOOKMARKS = (function () {
   "u": "https://www.hippopx.com/zh"
   },
   {
-  "n": "乌云壁纸",
-  "u": "http://www.obzhi.com/"
-  },
-  {
   "n": "每天一幅酷炫图像",
   "u": "http://www.facets.la/"
   },
@@ -4306,10 +4050,6 @@ window.SITE_BOOKMARKS = (function () {
   "u": "https://photo.ihansen.org/"
   },
   {
-  "n": "微软官方壁纸站",
-  "u": "https://wallpapers.microsoft.design/"
-  },
-  {
   "n": "Skitterphoto",
   "u": "https://skitterphoto.com/"
   },
@@ -4350,10 +4090,6 @@ window.SITE_BOOKMARKS = (function () {
   "u": "https://www.sitapix.com/"
   },
   {
-  "n": "逗逼拯救世界",
-  "u": "https://www.dbbqb.com/"
-  },
-  {
   "n": "免扣图片网",
   "u": "https://miankoutupian.com/"
   },
@@ -4384,10 +4120,6 @@ window.SITE_BOOKMARKS = (function () {
   {
   "n": "Hdqwalls",
   "u": "https://hdqwalls.com/"
-  },
-  {
-  "n": "拾光壁纸",
-  "u": "https://app.nguaduot.cn/timeline"
   },
   {
   "n": "Vave BG",
@@ -4464,10 +4196,6 @@ window.SITE_BOOKMARKS = (function () {
   {
   "n": "黑白图像着色器",
   "u": "https://imagecolorizer.com/"
-  },
-  {
-  "n": "给照片上色",
-  "u": "https://demos.algorithmia.com/colorize-photos"
   },
   {
   "n": "在线编辑图片",
@@ -4642,10 +4370,6 @@ window.SITE_BOOKMARKS = (function () {
   "u": "https://img.top/"
   },
   {
-  "n": "webp2jpg",
-  "u": "https://renzhezhilu.gitee.io/webp2jpg-online/"
-  },
-  {
   "n": "最优图像优化",
   "u": "https://zh.recompressor.com/"
   },
@@ -4710,20 +4434,12 @@ window.SITE_BOOKMARKS = (function () {
   "u": "https://imagestool.com/zh_CN/"
   },
   {
-  "n": "图小小",
-  "u": "https://txx.cssrefs.com/"
-  },
-  {
   "n": "FREE TinyPNG",
   "u": "https://free.tinypng.site/"
   },
   {
   "n": "WebP到PNG转换器",
   "u": "https://webptopng.com/cn"
-  },
-  {
-  "n": "在线PS网页",
-  "u": "https://freeps.org/"
   },
   {
   "n": "加水印",
@@ -4778,10 +4494,6 @@ window.SITE_BOOKMARKS = (function () {
   "u": "http://www.shalou.net/"
   },
   {
-  "n": "独立ios",
-  "u": "https://josephchang10.github.io/chinese-indie-hackers/"
-  },
-  {
   "n": "雷锋源中文网",
   "u": "https://www.abcydia.com/"
   },
@@ -4834,10 +4546,6 @@ window.SITE_BOOKMARKS = (function () {
   "u": "https://www.macbl.com/"
   },
   {
-  "n": "麦克坞",
-  "u": "https://www.macw.cn/down.php"
-  },
-  {
   "n": "麦氪派",
   "u": "https://www.waitsun.com/topics/os"
   },
@@ -4864,10 +4572,6 @@ window.SITE_BOOKMARKS = (function () {
   {
   "n": "精品Mac应用分享",
   "u": "https://xclient.info/"
-  },
-  {
-  "n": "越狱工具",
-  "u": "https://id.cydias.top/"
   },
   {
   "n": "MAC-brew源",
@@ -4982,10 +4686,6 @@ window.SITE_BOOKMARKS = (function () {
   "u": "https://vip.bljiex.com/"
   },
   {
-  "n": "日本在线视频GYAO",
-  "u": "https://gyao.yahoo.co.jp/"
-  },
-  {
   "n": "韩饭网",
   "u": "https://www.hanfan.cc/"
   },
@@ -5020,10 +4720,6 @@ window.SITE_BOOKMARKS = (function () {
   {
   "n": "蓝光电影网",
   "u": "https://www.1080.cn/"
-  },
-  {
-  "n": "好片网",
-  "u": "https://www.becmd.com/"
   },
   {
   "n": "视频啦",
@@ -5066,14 +4762,6 @@ window.SITE_BOOKMARKS = (function () {
   "u": "https://www.niutv.top/"
   },
   {
-  "n": "低端影视",
-  "u": "https://ddys.pro/"
-  },
-  {
-  "n": "LIBHD",
-  "u": "https://www.libhd.com/"
-  },
-  {
   "n": "稀饭影视",
   "u": "https://www.xifanys.com/"
   },
@@ -5094,10 +4782,6 @@ window.SITE_BOOKMARKS = (function () {
   "u": "https://hydrahd.com/"
   },
   {
-  "n": "剧圈圈",
-  "u": "https://www.jqqzx.cc/"
-  },
-  {
   "n": "黑猫TV",
   "u": "https://heimaotv.vip/"
   },
@@ -5112,14 +4796,6 @@ window.SITE_BOOKMARKS = (function () {
   {
   "n": "豌豆Pro(聚合)",
   "u": "https://wandou.la/"
-  },
-  {
-  "n": "Freeok",
-  "u": "https://www.freeok.one/"
-  },
-  {
-  "n": "iQIYIs影院",
-  "u": "https://iqiyis.com/"
   },
   {
   "n": "indieLens",
@@ -5152,10 +4828,6 @@ window.SITE_BOOKMARKS = (function () {
   {
   "n": "Moovie",
   "u": "https://moovie.c2v2.com/"
-  },
-  {
-  "n": "P-Stream",
-  "u": "https://pstream.mov/"
   },
   {
   "n": "子子影视",
@@ -5216,10 +4888,6 @@ window.SITE_BOOKMARKS = (function () {
   {
   "n": "临时邮箱so",
   "u": "https://tempmail.so/"
-  },
-  {
-  "n": "mfk 临时邮箱",
-  "u": "https://www.8164.cc/"
   },
   {
   "n": "在线颜值分析",
@@ -5336,10 +5004,6 @@ window.SITE_BOOKMARKS = (function () {
   {
   "n": "在线制作键盘图纸",
   "u": "http://www.keyboard-layout-editor.com/"
-  },
-  {
-  "n": "图形方格纸",
-  "u": "https://www.mygraphpaper.com/index.php?lang=zh-hans"
   },
   {
   "n": "下载Windows",
@@ -5518,10 +5182,6 @@ window.SITE_BOOKMARKS = (function () {
   "u": "https://www.thiswaifudoesnotexist.net/"
   },
   {
-  "n": "沙雕兔子生成器",
-  "u": "https://www.danmu9.com/sticker"
-  },
-  {
   "n": "沙雕动图生成器",
   "u": "https://app.xuty.tk/static/app/index.html"
   },
@@ -5582,10 +5242,6 @@ window.SITE_BOOKMARKS = (function () {
   "u": "https://www.sexauth.com/"
   },
   {
-  "n": "身份证号生成器",
-  "u": "https://www.tiebazhushou.com/"
-  },
-  {
   "n": "迷宫生成器",
   "u": "http://www.mazegenerator.net/"
   },
@@ -5603,15 +5259,7 @@ window.SITE_BOOKMARKS = (function () {
   },
   {
   "n": "举牌小人生成器",
-  "u": "https://small-upup.upuptoyou.com/"
-  },
-  {
-  "n": "举牌小人生成器",
   "u": "http://1.hus.tcapps.twocola.com/"
-  },
-  {
-  "n": "图标在线制作生成器",
-  "u": "https://bingoicon.com/"
   },
   {
   "n": "免费二维码生成器",
@@ -5630,10 +5278,6 @@ window.SITE_BOOKMARKS = (function () {
   "u": "https://h5.codefuture.top/2020-mask"
   },
   {
-  "n": "中乱文序成生器(破)",
-  "u": "https://bit.ly/cnvoice"
-  },
-  {
   "n": "高深语生成器",
   "u": "https://deep-talk.web.app/"
   },
@@ -5644,10 +5288,6 @@ window.SITE_BOOKMARKS = (function () {
   {
   "n": "在线渐变色神器",
   "u": "https://meshgradient.com/"
-  },
-  {
-  "n": "胡编评论生成器",
-  "u": "https://ihubian.xyz/"
   },
   {
   "n": "小瓶子生成器",
@@ -5670,10 +5310,6 @@ window.SITE_BOOKMARKS = (function () {
   "u": "https://www.gaitubao.com/yinzhang/"
   },
   {
-  "n": "余额不足生成器",
-  "u": "https://cc.bjadjty.com/cx3/2088/"
-  },
-  {
   "n": "藏头诗生成器",
   "u": "https://cts.chazhi.net/"
   },
@@ -5688,10 +5324,6 @@ window.SITE_BOOKMARKS = (function () {
   {
   "n": "网红脸生成器成语接龙生成器",
   "u": "http://www.seeprettyface.com/"
-  },
-  {
-  "n": "为所欲为生成器",
-  "u": "https://eleflea.coding.me/"
   },
   {
   "n": "背景生成器",
@@ -5722,14 +5354,6 @@ window.SITE_BOOKMARKS = (function () {
   "u": "https://wangyasai.github.io/Awesome-Mosaic/"
   },
   {
-  "n": "营销号生成器",
-  "u": "http://kaseidis.gitee.io/interesting_gadgets/marketing_generator/index.htm"
-  },
-  {
-  "n": "烟花模拟器",
-  "u": "https://pandecheng.coding.me/firework-simulator-v2/"
-  },
-  {
   "n": "粒子线生成器",
   "u": "https://wangyasai.github.io/PerlinNoisePainter/"
   },
@@ -5748,10 +5372,6 @@ window.SITE_BOOKMARKS = (function () {
   {
   "n": "城市路网生成器",
   "u": "https://anvaka.github.io/city-roads/"
-  },
-  {
-  "n": "梵高画风生成器",
-  "u": "https://wangyasai.github.io/Noise-flow-field-painter/"
   },
   {
   "n": "地形生成器",
@@ -5814,10 +5434,6 @@ window.SITE_BOOKMARKS = (function () {
   "u": "https://download.lenovo.com/bsco/"
   },
   {
-  "n": "模拟眼球生成器",
-  "u": "http://www.vill.ee/eye/"
-  },
-  {
   "n": "字符化生成器",
   "u": "https://www.fontke.com/tool/image2ascii/"
   },
@@ -5844,10 +5460,6 @@ window.SITE_BOOKMARKS = (function () {
   {
   "n": "龙飞船模拟器",
   "u": "https://iss-sim.spacex.com/"
-  },
-  {
-  "n": "泥石流海报生成器",
-  "u": "https://graph.readhub.cn/"
   },
   {
   "n": "形状分割生成器",
@@ -5966,14 +5578,6 @@ window.SITE_BOOKMARKS = (function () {
   "u": "https://www.dayin.page/"
   },
   {
-  "n": "蔚蓝档案标题生成器",
-  "u": "https://tmp.nulla.top/ba-logo/"
-  },
-  {
-  "n": "三国杀卡牌制作器",
-  "u": "https://www.lyciumaker.com/"
-  },
-  {
   "n": "哄哄模拟器",
   "u": "https://hong.greatdk.com"
   },
@@ -6054,10 +5658,6 @@ window.SITE_BOOKMARKS = (function () {
   "u": "https://introcard.iwhy.dev/"
   },
   {
-  "n": "卡通头像",
-  "u": "https://katong.oogao.com/"
-  },
-  {
   "n": "学生证生成器",
   "u": "https://student-id.pages.dev/"
   },
@@ -6136,10 +5736,6 @@ window.SITE_BOOKMARKS = (function () {
   {
   "n": "故障文本生成器",
   "u": "https://photobackgroundchange.net/zh"
-  },
-  {
-  "n": "PetPet生成器",
-  "u": "https://petpetgenerator.app/zh"
   },
   {
   "n": "超萌二维码生成器",
@@ -6226,14 +5822,6 @@ window.SITE_BOOKMARKS = (function () {
   "u": "https://nmsl.shadiao.app/"
   },
   {
-  "n": "找快照",
-  "u": "https://www.zhaokuaizhao.com/"
-  },
-  {
-  "n": "homepagecached",
-  "u": "https://homepagecached.com/"
-  },
-  {
   "n": "Alteredqualia",
   "u": "https://alteredqualia.com/"
   },
@@ -6272,10 +5860,6 @@ window.SITE_BOOKMARKS = (function () {
   {
   "n": "趣站地图",
   "u": "http://www.sitemap.fun/"
-  },
-  {
-  "n": "公交路线辐射图",
-  "u": "https://bus.daibor.com/"
   },
   {
   "n": "渣男说话的艺术",
@@ -6374,10 +5958,6 @@ window.SITE_BOOKMARKS = (function () {
   "u": "https://www.animatedknots.com/"
   },
   {
-  "n": "假装是特工",
-  "u": "http://www.geektyper.com/tegnio/"
-  },
-  {
   "n": "魔性的鳗鱼",
   "u": "http://www.staggeringbeauty.com/"
   },
@@ -6422,10 +6002,6 @@ window.SITE_BOOKMARKS = (function () {
   "u": "https://enchroma.com/pages/color-blindness-test"
   },
   {
-  "n": "IQ超人测试",
-  "u": "http://www.iqsuperman.net/"
-  },
-  {
   "n": "心理学测试",
   "u": "https://zh.piixemto.com/"
   },
@@ -6448,10 +6024,6 @@ window.SITE_BOOKMARKS = (function () {
   {
   "n": "信任的进化",
   "u": "https://dccxi.com/trust/"
-  },
-  {
-  "n": "青年图摘",
-  "u": "https://qingniantuzhai.com/"
   },
   {
   "n": "小人跳舞aidn.jp/",
@@ -6530,10 +6102,6 @@ window.SITE_BOOKMARKS = (function () {
   "u": "https://lichess.org/"
   },
   {
-  "n": "学笔画",
-  "u": "https://xuebihua.cn/"
-  },
-  {
   "n": "贾斯纳的猫",
   "u": "https://edui.fun/cat/"
   },
@@ -6556,10 +6124,6 @@ window.SITE_BOOKMARKS = (function () {
   {
   "n": "网格背景制作",
   "u": "https://edui.fun/wangge/"
-  },
-  {
-  "n": "Drive & Listen",
-  "u": "https://driveandlisten.herokuapp.com/"
   },
   {
   "n": "小游戏 & shapez",
@@ -6586,24 +6150,8 @@ window.SITE_BOOKMARKS = (function () {
   "u": "http://timelineofearth.com/"
   },
   {
-  "n": "1stagram",
-  "u": "https://air.inc/blog/1stagram"
-  },
-  {
-  "n": "网络流行语",
-  "u": "https://www.sayloving.com/"
-  },
-  {
-  "n": "Tiktok镜像",
-  "u": "https://tiktok.fail/browse"
-  },
-  {
   "n": "FFF单机游戏下载",
   "u": "http://www.fffyouxi.com/"
-  },
-  {
-  "n": "typing-cn",
-  "u": "https://barneyzhao.gitee.io/typing-cn/"
   },
   {
   "n": "Monkey-type",
@@ -6648,14 +6196,6 @@ window.SITE_BOOKMARKS = (function () {
   {
   "n": "小熊仰卧起坐",
   "u": "https://myex.jp/zh-cn/"
-  },
-  {
-  "n": "顿顿饭",
-  "u": "https://dun.mianbaoduo.com/"
-  },
-  {
-  "n": "纸盒集合网站",
-  "u": "https://www.templatemaker.nl/zh-cn/"
   },
   {
   "n": "看梵高画作",
@@ -6782,10 +6322,6 @@ window.SITE_BOOKMARKS = (function () {
   "u": "http://dashudong.com/"
   },
   {
-  "n": "有用经验",
-  "u": "https://yyjingyan.com/"
-  },
-  {
   "n": "诓骗",
   "u": "https://www.kuangpian.com/"
   },
@@ -6882,10 +6418,6 @@ window.SITE_BOOKMARKS = (function () {
   "u": "https://www.rdonly.com/"
   },
   {
-  "n": "机器学习导航",
-  "u": "https://www.mlhub123.com/"
-  },
-  {
   "n": "比格张",
   "u": "https://bigezhang.com/"
   },
@@ -6896,10 +6428,6 @@ window.SITE_BOOKMARKS = (function () {
   {
   "n": "中国设计网址导航",
   "u": "http://wz.cndesign.com/"
-  },
-  {
-  "n": "卖家导航",
-  "u": "https://maijia800.com/"
   },
   {
   "n": "柠檬导航",
@@ -6916,10 +6444,6 @@ window.SITE_BOOKMARKS = (function () {
   {
   "n": "龙喵网",
   "u": "https://ailongmiao.com/"
-  },
-  {
-  "n": "书签地球",
-  "u": "https://www.bookmarkearth.com/"
   },
   {
   "n": "神秘的热心网友",
@@ -6964,10 +6488,6 @@ window.SITE_BOOKMARKS = (function () {
   {
   "n": "硬核指南",
   "u": "https://yingheapp.com/"
-  },
-  {
-  "n": "数字生活指南",
-  "u": "https://nav.guidebook.top/"
   },
   {
   "n": "TBox导航",
@@ -7150,10 +6670,6 @@ window.SITE_BOOKMARKS = (function () {
   "u": "https://cn.office-converter.com/"
   },
   {
-  "n": "PDFsam",
-  "u": "https://pdfsam.org/zh/download-pdfsam-basic/"
-  },
-  {
   "n": "PickFrom",
   "u": "https://zh.pickfrom.net/"
   },
@@ -7190,10 +6706,6 @@ window.SITE_BOOKMARKS = (function () {
   "u": "https://app.xunjiepdf.com/"
   },
   {
-  "n": "Stirling PDF",
-  "u": "https://pdf.nite07.org/?lang=zh_CN"
-  },
-  {
   "n": "PDNob PDF",
   "u": "https://www.pdnob.com/tw/"
   },
@@ -7212,10 +6724,6 @@ window.SITE_BOOKMARKS = (function () {
   {
   "n": "PDF Guru Anki",
   "u": "https://guru.kevin2li.top/"
-  },
-  {
-  "n": "QuicklyPDF",
-  "u": "https://quicklypdf.com/zh"
   },
   {
   "n": "Hello-PDF",
@@ -7250,10 +6758,6 @@ window.SITE_BOOKMARKS = (function () {
   "u": "https://x10hosting.com/"
   },
   {
-  "n": "Servervy",
-  "u": "https://billing.servervy.com/"
-  },
-  {
   "n": "Beget",
   "u": "https://beget.com/"
   },
@@ -7272,10 +6776,6 @@ window.SITE_BOOKMARKS = (function () {
   {
   "n": "新鸟云",
   "u": "https://www.xinniaoyun.com/"
-  },
-  {
-  "n": "无服务器虚拟主机",
-  "u": "https://drv.tw/"
   },
   {
   "n": "热铁盒",
@@ -7354,10 +6854,6 @@ window.SITE_BOOKMARKS = (function () {
   "u": "http://ef.zhiweidata.com/"
   },
   {
-  "n": "pandownload网页版",
-  "u": "https://www.baiduwp.com/"
-  },
-  {
   "n": "闲鱼转转二手搜",
   "u": "http://2.liukai.tech/"
   },
@@ -7414,10 +6910,6 @@ window.SITE_BOOKMARKS = (function () {
   "u": "https://www.grabient.com/"
   },
   {
-  "n": "百度网盘提取码查询",
-  "u": "https://pnote.net/pan/"
-  },
-  {
   "n": "词云",
   "u": "https://wordart.com/"
   },
@@ -7442,10 +6934,6 @@ window.SITE_BOOKMARKS = (function () {
   "u": "http://scholar.hezibuluo.com/"
   },
   {
-  "n": "Writeathon写作",
-  "u": "https://www.writeathon.cn/u/mackxin"
-  },
-  {
   "n": "HelloGithub",
   "u": "https://hellogithub.com/"
   },
@@ -7454,28 +6942,12 @@ window.SITE_BOOKMARKS = (function () {
   "u": "https://www.veryins.com/"
   },
   {
-  "n": "Ins下载器",
-  "u": "https://www.saveimgs.com/zh-cn/"
-  },
-  {
   "n": "showdoc",
   "u": "https://www.showdoc.cc/"
   },
   {
-  "n": "USproject",
-  "u": "https://usproject.info/"
-  },
-  {
   "n": "远鉴字幕组网盘",
   "u": "https://yj.apkgm.top/"
-  },
-  {
-  "n": "厘米云资源盘",
-  "u": "https://download.iplc.wiki/"
-  },
-  {
-  "n": "懒勤网盘",
-  "u": "https://pan.ldqk.workers.dev/2:/"
   },
   {
   "n": "攀登读书会",
@@ -7492,14 +6964,6 @@ window.SITE_BOOKMARKS = (function () {
   {
   "n": "次元计划",
   "u": "https://acg02.com/"
-  },
-  {
-  "n": "萌盘",
-  "u": "https://moedrive.org/"
-  },
-  {
-  "n": "大数据词云",
-  "u": "https://www.kt1.com/"
   },
   {
   "n": "AI Emoji Finder",
@@ -7550,10 +7014,6 @@ window.SITE_BOOKMARKS = (function () {
   "u": "http://www.1ppt.com/"
   },
   {
-  "n": "HiPPTer",
-  "u": "https://www.hippter.com/"
-  },
-  {
   "n": "islide插件",
   "u": "https://www.islide.cc/"
   },
@@ -7576,10 +7036,6 @@ window.SITE_BOOKMARKS = (function () {
   {
   "n": "爱PPT",
   "u": "https://www.2ppt.com/"
-  },
-  {
-  "n": "pptBoss",
-  "u": "https://www.pptboss.com/"
   },
   {
   "n": "首屈一指PPT模板",
@@ -7662,10 +7118,6 @@ window.SITE_BOOKMARKS = (function () {
   "u": "https://wx.qnmlgb.tech/"
   },
   {
-  "n": "抽屉新热榜",
-  "u": "https://dig.chouti.com/"
-  },
-  {
   "n": "AnyKnew",
   "u": "https://www.anyknew.com/#/"
   },
@@ -7716,10 +7168,6 @@ window.SITE_BOOKMARKS = (function () {
   {
   "n": "iH5",
   "u": "https://www.ih5.cn/"
-  },
-  {
-  "n": "百度H5",
-  "u": "https://h5.bce.baidu.com"
   },
   {
   "n": "秀米",
@@ -7810,10 +7258,6 @@ window.SITE_BOOKMARKS = (function () {
   "u": "http://www.5118.com/"
   },
   {
-  "n": "头条媒体实验室",
-  "u": "https://mlab.toutiao.com/"
-  },
-  {
   "n": "企鹅智酷",
   "u": "http://re.qq.com/"
   },
@@ -7878,10 +7322,6 @@ window.SITE_BOOKMARKS = (function () {
   "u": "https://github.com/zerosoul/chinese-colors"
   },
   {
-  "n": "加密猫",
-  "u": "https://github.com/Corydonbyte"
-  },
-  {
   "n": "如何破冰",
   "u": "https://github.com/bannedbook/fanqiang/wiki"
   },
@@ -7898,16 +7338,8 @@ window.SITE_BOOKMARKS = (function () {
   "u": "https://github.com/cloudreve/Cloudreve"
   },
   {
-  "n": "FindInChannelBot",
-  "u": "https://github.com/jsmjsm/telegram-find-in-channel-bot"
-  },
-  {
   "n": "字幕编辑器",
   "u": "https://github.com/zhw2590582/SubPlayer"
-  },
-  {
-  "n": "GitHub中文排行榜",
-  "u": "https://github.com/kon9chunkit/GitHub-Chinese-Top-Charts"
   },
   {
   "n": "GitHub 文件加速",
@@ -7956,10 +7388,6 @@ window.SITE_BOOKMARKS = (function () {
   {
   "n": "废话集",
   "u": "https://github.com/yaoleifly/Nonsense-Series"
-  },
-  {
-  "n": "虚假截图助手",
-  "u": "https://github.com/thegreatjavascript/FakeScreenshot/blob/master/README.zh.md"
   },
   {
   "n": "生成KMS激活脚本",
@@ -8058,10 +7486,6 @@ window.SITE_BOOKMARKS = (function () {
   "u": "https://github.com/tabler/tabler-icons"
   },
   {
-  "n": "Windows软件集合",
-  "u": "https://github.com/Awesome-Windows/Awesome/blob/master/README-cn.md"
-  },
-  {
   "n": "youtube",
   "u": "https://github.com/Closty/youtube"
   },
@@ -8072,10 +7496,6 @@ window.SITE_BOOKMARKS = (function () {
   {
   "n": "修改Win默认字体",
   "u": "https://github.com/Tatsu-syo/noMeiryoUI"
-  },
-  {
-  "n": "浅谈部分破冰",
-  "u": "https://github.com/DuyaoSS/SSR/issues/1"
   },
   {
   "n": "Pixeval",
@@ -8128,10 +7548,6 @@ window.SITE_BOOKMARKS = (function () {
   {
   "n": "m3u8视频在线提取工具",
   "u": "https://github.com/Momo707577045/m3u8-downloader"
-  },
-  {
-  "n": "Chrome 插件开发教程",
-  "u": "https://github.com/facert/chrome-extension-guide"
   },
   {
   "n": "浏览器端图片压缩工具",
@@ -8232,10 +7648,6 @@ window.SITE_BOOKMARKS = (function () {
   {
   "n": "JavRocket",
   "u": "https://github.com/wxbool/video-srt-windows"
-  },
-  {
-  "n": "学无止下载器",
-  "u": "https://github.com/PyJun/Mooc_Downloader"
   },
   {
   "n": "前端小课",
@@ -8454,10 +7866,6 @@ window.SITE_BOOKMARKS = (function () {
   "u": "https://rule.taobao.com/rulecycle.htm"
   },
   {
-  "n": "学电商",
-  "u": "https://xuedianshang.com/"
-  },
-  {
   "n": "猫窝论坛",
   "u": "https://www.maowotao.com/"
   },
@@ -8534,10 +7942,6 @@ window.SITE_BOOKMARKS = (function () {
   "u": "http://www.html-js.com/music"
   },
   {
-  "n": "AsPoem",
-  "u": "https://aspoem.com/zh-Hans"
-  },
-  {
   "n": "二一组卷",
   "u": "https://zujuan.21cnjy.com/"
   },
@@ -8552,10 +7956,6 @@ window.SITE_BOOKMARKS = (function () {
   {
   "n": "考试酷",
   "u": "https://www.examcoo.com/index/ku"
-  },
-  {
-  "n": "宝贝辅食",
-  "u": "https://www.bbcook.cn/"
   },
   {
   "n": "Qwerty Learner",
@@ -8576,10 +7976,6 @@ window.SITE_BOOKMARKS = (function () {
   {
   "n": "涂鸦着色卡生成",
   "u": "https://dearcoloringpages.com/zh-Hans"
-  },
-  {
-  "n": "AI涂色书",
-  "u": "https://cropimage.app/zh"
   },
   {
   "n": "读典籍",
@@ -8616,10 +8012,6 @@ window.SITE_BOOKMARKS = (function () {
   {
   "n": "新概念英语学习",
   "u": "https://wxaiway.com/nce/index.html"
-  },
-  {
-  "n": "Word Wonderland",
-  "u": "https://app.word.hjm.skin/"
   },
   {
   "n": "英语听力练习",
@@ -8720,14 +8112,6 @@ window.SITE_BOOKMARKS = (function () {
   {
   "n": "Open Doodles",
   "u": "https://www.opendoodles.com/"
-  },
-  {
-  "n": "Flow Lava",
-  "u": "https://flowlava.club/"
-  },
-  {
-  "n": "Ikonate",
-  "u": "https://ikonate.com/"
   },
   {
   "n": "Remix Icon",
@@ -8842,10 +8226,6 @@ window.SITE_BOOKMARKS = (function () {
   "u": "https://www.shareae.cn/"
   },
   {
-  "n": "AE后影池塘",
-  "u": "https://www.aepond.com/"
-  },
-  {
   "n": "PR模板网",
   "u": "https://prmuban.com/"
   },
@@ -8872,10 +8252,6 @@ window.SITE_BOOKMARKS = (function () {
   {
   "n": "OpenCut",
   "u": "https://opencut.net/"
-  },
-  {
-  "n": "剪视频",
-  "u": "https://jianshipin123.com/"
   }
   ]
   },
@@ -8962,24 +8338,12 @@ window.SITE_BOOKMARKS = (function () {
   "u": "https://www.yucongming.com/"
   },
   {
-  "n": "GPTs Menu",
-  "u": "https://gptsmenu.com/"
-  },
-  {
   "n": "XCole-千言万象",
   "u": "https://www.xcole.cn/"
   },
   {
-  "n": "GPTS123",
-  "u": "https://gpts123.ai/zh"
-  },
-  {
   "n": "Ai卜力脑库",
   "u": "https://aipre.cn/"
-  },
-  {
-  "n": "火山写作",
-  "u": "https://writingo.net/"
   },
   {
   "n": "一起用AI",
@@ -9090,10 +8454,6 @@ window.SITE_BOOKMARKS = (function () {
   "u": "https://hao.uisdc.com/ai/"
   },
   {
-  "n": "AI Short",
-  "u": "https://prompt.vsftp.cn/"
-  },
-  {
   "n": "PixVerse AI",
   "u": "https://pixverse.ai/"
   },
@@ -9116,10 +8476,6 @@ window.SITE_BOOKMARKS = (function () {
   {
   "n": "质谱清言",
   "u": "https://chatglm.cn/"
-  },
-  {
-  "n": "AI导航站",
-  "u": "https://ainav.today/"
   },
   {
   "n": "免费AI API收集",
@@ -9270,24 +8626,12 @@ window.SITE_BOOKMARKS = (function () {
   "u": "https://www.better365.cn/"
   },
   {
-  "n": "mac青桔",
-  "u": "https://www.macqj.com?aff=112f43c5b8b69da9"
-  },
-  {
   "n": "小番茄盒子",
   "u": "https://www.mac163.cn/"
   },
   {
   "n": "mac良选",
   "u": "https://www.maclx.com/"
-  },
-  {
-  "n": "MacWk",
-  "u": "https://macwk.com.cn/"
-  },
-  {
-  "n": "Cmacked",
-  "u": "https://m4.cmacked.com/"
   },
   {
   "n": "小怪兽mac分享屋",

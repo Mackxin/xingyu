@@ -1,0 +1,167 @@
+# 死链接清单（tools/check-links.py 探测 + 真实浏览器复验后确认打不开）
+# 共 164 条。import-naver.py 生成 bookmarks.js 时会跳过这些网址。
+# 格式：网址 <TAB> 站名 <TAB> 分类 <TAB> 原因
+https://prompt.vsftp.cn/	AI Short	AI赋能	net::ERR_CONNECTION_CLOSED
+https://ainav.today/	AI导航站	AI赋能	net::ERR_CONNECTION_CLOSED
+https://gpts123.ai/zh	GPTS123	AI赋能	HTTP 404
+https://gptsmenu.com/	GPTs Menu	AI赋能	net::ERR_CONNECTION_CLOSED
+https://writingo.net/	火山写作	AI赋能	HTTP 404
+https://m4.cmacked.com/	Cmacked	MAC	net::ERR_CONNECTION_CLOSED
+https://macwk.com.cn/	MacWk	MAC	net::ERR_CONNECTION_CLOSED
+https://www.macqj.com?aff=112f43c5b8b69da9	mac青桔	MAC	net::ERR_CONNECTION_CLOSED
+https://pdfsam.org/zh/download-pdfsam-basic/	PDFsam	PDF相关	HTTP 404
+https://quicklypdf.com/zh	QuicklyPDF	PDF相关	HTTP 404
+https://pdf.nite07.org/?lang=zh_CN	Stirling PDF	PDF相关	net::ERR_CONNECTION_CLOSED
+https://billing.servervy.com/	Servervy	主机服务	net::ERR_CONNECTION_CLOSED
+https://drv.tw/	无服务器虚拟主机	主机服务	net::ERR_CONNECTION_CLOSED
+https://ss.yesky.online/	小兔搜书	书籍阅读	net::ERR_CONNECTION_CLOSED
+https://www.boyunso.com/	拨云小说搜索	书籍阅读	net::ERR_CONNECTION_CLOSED
+http://www.gezhongshu.com/	点书网	书籍阅读	HTTP 404
+https://ebook.huzerui.com/	熊猫搜书	书籍阅读	net::ERR_CONNECTION_CLOSED
+https://www.dzwzzz.com/	读者文摘杂志	书籍阅读	net::ERR_CONNECTION_CLOSED
+https://yixueshu.gitee.io/	医学电子书在线阅读	健康养生	HTTP 404
+https://www.saveimgs.com/zh-cn/	Ins下载器	偶尔用用	net::ERR_CONNECTION_CLOSED
+https://usproject.info/	USproject	偶尔用用	net::ERR_CONNECTION_CLOSED
+https://www.writeathon.cn/u/mackxin	Writeathon写作	偶尔用用	HTTP 404
+https://www.baiduwp.com/	pandownload网页版	偶尔用用	net::ERR_CONNECTION_CLOSED
+https://download.iplc.wiki/	厘米云资源盘	偶尔用用	net::ERR_CONNECTION_CLOSED
+https://www.kt1.com/	大数据词云	偶尔用用	net::ERR_CONNECTION_CLOSED
+https://pan.ldqk.workers.dev/2:/	懒勤网盘	偶尔用用	HTTP 404
+https://pnote.net/pan/	百度网盘提取码查询	偶尔用用	HTTP 404
+https://moedrive.org/	萌盘	偶尔用用	HTTP 404
+https://cropimage.app/zh	AI涂色书	儿童教育	HTTP 404
+https://aspoem.com/zh-Hans	AsPoem	儿童教育	net::ERR_CONNECTION_CLOSED
+https://app.word.hjm.skin/	Word Wonderland	儿童教育	net::ERR_CONNECTION_CLOSED
+https://www.bbcook.cn/	宝贝辅食	儿童教育	net::ERR_CONNECTION_CLOSED
+https://www.aepond.com/	AE后影池塘	剪辑汇总	net::ERR_CONNECTION_CLOSED
+https://jianshipin123.com/	剪视频	剪辑汇总	net::ERR_CONNECTION_CLOSED
+https://www.hippter.com/	HiPPTer	办公学习	HTTP 404
+https://www.pptboss.com/	pptBoss	办公学习	HTTP 404
+http://wsbs.gz.gov.cn/gz/	广州网上办事大厅	国家服务	HTTP 404
+https://flowlava.club/	Flow Lava	图标图库	net::ERR_CONNECTION_CLOSED
+https://ikonate.com/	Ikonate	图标图库	net::ERR_CONNECTION_CLOSED
+https://renzhezhilu.gitee.io/webp2jpg-online/	webp2jpg	图片工具	HTTP 404
+https://txx.cssrefs.com/	图小小	图片工具	net::ERR_CONNECTION_CLOSED
+https://freeps.org/	在线PS网页	图片工具	net::ERR_CONNECTION_CLOSED
+https://demos.algorithmia.com/colorize-photos	给照片上色	图片工具	net::ERR_CONNECTION_CLOSED
+http://www.obzhi.com/	乌云壁纸	图片素材	HTTP 404
+https://wallpapers.microsoft.design/	微软官方壁纸站	图片素材	net::ERR_CONNECTION_CLOSED
+https://app.nguaduot.cn/timeline	拾光壁纸	图片素材	net::ERR_CONNECTION_CLOSED
+https://www.dbbqb.com/	逗逼拯救世界	图片素材	net::ERR_CONNECTION_CLOSED
+https://www.8164.cc/	mfk 临时邮箱	在线杂乱	net::ERR_CONNECTION_CLOSED
+https://www.mygraphpaper.com/index.php?lang=zh-hans	图形方格纸	在线杂乱	net::ERR_CONNECTION_CLOSED
+https://www.bookmarkearth.com/	书签地球	导航网站	net::ERR_CONNECTION_CLOSED
+https://maijia800.com/	卖家导航	导航网站	net::ERR_CONNECTION_CLOSED
+https://nav.guidebook.top/	数字生活指南	导航网站	net::ERR_CONNECTION_CLOSED
+https://www.mlhub123.com/	机器学习导航	导航网站	HTTP 404
+https://www.ossking.com/	OSS King图床	小白常用	net::ERR_CONNECTION_CLOSED
+https://news.yltfspace.com/	今日时事	小白常用	net::ERR_CONNECTION_CLOSED
+https://www.pp.wen2tu.com/	完美提示词	小白常用	net::ERR_CONNECTION_CLOSED
+https://cn.centcount.com/	百夫长统计	小白常用	net::ERR_CONNECTION_CLOSED
+https://sheet-cleaner.com/zh	Excel表格去重	工具合集	HTTP 404
+https://www.aiotools.top/	IT-TOOLS	工具合集	net::ERR_CONNECTION_CLOSED
+https://mathsolver.microsoft.com/zh	Math Solver	工具合集	HTTP 404
+https://v0v.bid/	windows在线激活	工具合集	net::ERR_CONNECTION_CLOSED
+https://qb.heikebook.com/index	查询Q绑HeikeBook	工具合集	HTTP 404
+https://www.fancynode.com.cn/pxcook	标注工具PxCook	工具合集	net::ERR_CONNECTION_CLOSED
+https://fakes.netlify.com	虚假截图制作工具	工具合集	HTTP 404
+https://github.com/facert/chrome-extension-guide	Chrome 插件开发教程	开源社区	HTTP 404
+https://github.com/jsmjsm/telegram-find-in-channel-bot	FindInChannelBot	开源社区	HTTP 404
+https://github.com/kon9chunkit/GitHub-Chinese-Top-Charts	GitHub中文排行榜	开源社区	HTTP 404
+https://github.com/Awesome-Windows/Awesome/blob/master/README-cn.md	Windows软件集合	开源社区	HTTP 404
+https://github.com/Corydonbyte	加密猫	开源社区	HTTP 404
+https://github.com/PyJun/Mooc_Downloader	学无止下载器	开源社区	HTTP 404
+https://github.com/DuyaoSS/SSR/issues/1	浅谈部分破冰	开源社区	HTTP 404
+https://github.com/thegreatjavascript/FakeScreenshot/blob/master/README.zh.md	虚假截图助手	开源社区	HTTP 404
+https://www.jiansouti.com/	简搜题	搜索标签	HTTP 404
+https://mlab.toutiao.com/	头条媒体实验室	数据平台	HTTP 404
+https://cp.anyknew.com/	拷贝兔	文件分享	net::ERR_CONNECTION_CLOSED
+https://slogan.ishell.online/	文本排版工具	文件分享	net::ERR_CONNECTION_CLOSED
+https://hidden-word.top/	文本数字水印工具	文件分享	net::ERR_CONNECTION_CLOSED
+https://sheepchef.github.io/Abracadabra/	魔曰	文件分享	HTTP 404
+https://air.inc/blog/1stagram	1stagram	新奇有趣	HTTP 404
+https://driveandlisten.herokuapp.com/	Drive & Listen	新奇有趣	HTTP 404
+http://www.iqsuperman.net/	IQ超人测试	新奇有趣	HTTP 404
+https://tiktok.fail/browse	Tiktok镜像	新奇有趣	net::ERR_CONNECTION_CLOSED
+https://homepagecached.com/	homepagecached	新奇有趣	net::ERR_CONNECTION_CLOSED
+https://barneyzhao.gitee.io/typing-cn/	typing-cn	新奇有趣	HTTP 404
+http://www.geektyper.com/tegnio/	假装是特工	新奇有趣	HTTP 404
+https://bus.daibor.com/	公交路线辐射图	新奇有趣	net::ERR_CONNECTION_CLOSED
+https://xuebihua.cn/	学笔画	新奇有趣	net::ERR_CONNECTION_CLOSED
+https://www.zhaokuaizhao.com/	找快照	新奇有趣	net::ERR_CONNECTION_CLOSED
+https://yyjingyan.com/	有用经验	新奇有趣	net::ERR_CONNECTION_CLOSED
+https://www.templatemaker.nl/zh-cn/	纸盒集合网站	新奇有趣	HTTP 404
+https://www.sayloving.com/	网络流行语	新奇有趣	net::ERR_CONNECTION_CLOSED
+https://qingniantuzhai.com/	青年图摘	新奇有趣	net::ERR_CONNECTION_CLOSED
+https://dun.mianbaoduo.com/	顿顿饭	新奇有趣	net::ERR_CONNECTION_CLOSED
+https://www.ntdm.tv/	NT动漫	次元壁垒	net::ERR_CONNECTION_CLOSED
+https://www.bimiacg.icu/	bimi动漫	次元壁垒	net::ERR_CONNECTION_CLOSED
+https://www.hehe.la/	呵呵动漫	次元壁垒	net::ERR_CONNECTION_CLOSED
+https://www.857yhdm.com/	樱花动漫	次元壁垒	net::ERR_CONNECTION_CLOSED
+https://www.manhuadb.com/	漫画DB	次元壁垒	net::ERR_CONNECTION_CLOSED
+https://www.manhuatai.com/	漫画台	次元壁垒	HTTP 404
+https://dianying.one/	简单TV	次元壁垒	net::ERR_CONNECTION_CLOSED
+https://moetu.club/	萌图社	次元壁垒	net::ERR_CONNECTION_CLOSED
+https://www.qdm.plus/	趣动漫	次元壁垒	net::ERR_CONNECTION_CLOSED
+https://extfans.com/	扩展迷	浏览插件	net::ERR_CONNECTION_CLOSED
+https://shuax.com/	耍下ShuaX	浏览插件	HTTP 404
+https://www.gugeapps.net/	谷歌应用商店免墙版	浏览插件	net::ERR_CONNECTION_CLOSED
+http://one.newday.me/	集装箱	浏览插件	HTTP 404
+http://likexia.gitee.io/game/	GitHub Games	游戏学习	HTTP 404
+https://petpetgenerator.app/zh	PetPet生成器	生成神器	HTTP 404
+https://www.lyciumaker.com/	三国杀卡牌制作器	生成神器	HTTP 404
+https://bit.ly/cnvoice	中乱文序成生器(破)	生成神器	HTTP 404
+https://eleflea.coding.me/	为所欲为生成器	生成神器	net::ERR_CONNECTION_CLOSED
+https://small-upup.upuptoyou.com/	举牌小人生成器	生成神器	net::ERR_CONNECTION_CLOSED
+https://cc.bjadjty.com/cx3/2088/	余额不足生成器	生成神器	net::ERR_CONNECTION_CLOSED
+https://katong.oogao.com/	卡通头像	生成神器	net::ERR_CONNECTION_CLOSED
+https://bingoicon.com/	图标在线制作生成器	生成神器	net::ERR_CONNECTION_CLOSED
+https://wangyasai.github.io/Noise-flow-field-painter/	梵高画风生成器	生成神器	HTTP 404
+http://www.vill.ee/eye/	模拟眼球生成器	生成神器	HTTP 404
+https://www.danmu9.com/sticker	沙雕兔子生成器	生成神器	HTTP 404
+https://graph.readhub.cn/	泥石流海报生成器	生成神器	net::ERR_CONNECTION_CLOSED
+https://pandecheng.coding.me/firework-simulator-v2/	烟花模拟器	生成神器	net::ERR_CONNECTION_CLOSED
+https://ihubian.xyz/	胡编评论生成器	生成神器	net::ERR_CONNECTION_CLOSED
+http://kaseidis.gitee.io/interesting_gadgets/marketing_generator/index.htm	营销号生成器	生成神器	HTTP 404
+https://tmp.nulla.top/ba-logo/	蔚蓝档案标题生成器	生成神器	net::ERR_CONNECTION_CLOSED
+https://www.tiebazhushou.com/	身份证号生成器	生成神器	net::ERR_CONNECTION_CLOSED
+https://xuedianshang.com/	学电商	电商梦想	net::ERR_CONNECTION_CLOSED
+https://hotkeycheatsheet.com/zh	快捷键备忘录	知识学习	HTTP 404
+https://www.danganhe.com/	日喀则谷歌推广网	知识学习	net::ERR_CONNECTION_CLOSED
+https://www.cuiuc.com/	有梗鸭	科技资讯	net::ERR_CONNECTION_CLOSED
+http://www.pc1999.com	电脑小百科	科技资讯	HTTP 404
+https://carben.me/	车本部落	科技资讯	HTTP 404
+https://josephchang10.github.io/chinese-indie-hackers/	独立ios	苹果管理	HTTP 404
+https://id.cydias.top/	越狱工具	苹果管理	net::ERR_CONNECTION_CLOSED
+https://www.macw.cn/down.php	麦克坞	苹果管理	HTTP 410
+https://h5.bce.baidu.com	百度H5	营销工具	net::ERR_CONNECTION_CLOSED
+https://keepvid.works/zh/	下载Youtube视频	视频下载	net::ERR_CONNECTION_CLOSED
+http://www.92sucai.com/gif/video.html	视频转GIF	视频下载	HTTP 404
+https://wantwatch.me/	魔法解析	视频下载	net::ERR_CONNECTION_CLOSED
+https://www.freeok.one/	Freeok	视频影院	HTTP 404
+https://www.libhd.com/	LIBHD	视频影院	net::ERR_CONNECTION_CLOSED
+https://pstream.mov/	P-Stream	视频影院	net::ERR_CONNECTION_CLOSED
+https://iqiyis.com/	iQIYIs影院	视频影院	net::ERR_CONNECTION_CLOSED
+https://ddys.pro/	低端影视	视频影院	net::ERR_CONNECTION_CLOSED
+https://www.jqqzx.cc/	剧圈圈	视频影院	HTTP 404
+https://www.becmd.com/	好片网	视频影院	net::ERR_CONNECTION_CLOSED
+https://gyao.yahoo.co.jp/	日本在线视频GYAO	视频影院	net::ERR_CONNECTION_CLOSED
+https://kuhehe.kuhehe.top/	酷小呵资源站	论坛平台	net::ERR_CONNECTION_CLOSED
+https://godspen.ymm56.com/	码良	设计天才	HTTP 404
+https://www.sosoyunpan.com/	SOSO云盘	资源搜索	net::ERR_CONNECTION_CLOSED
+https://jikepan.xyz/	即刻盘	资源搜索	net::ERR_CONNECTION_CLOSED
+https://ali.gitcafe.ink/	小纸条	资源搜索	HTTP 404
+https://atomhub.openatom.cn/	AtomHub	软件资源	HTTP 404
+https://down.gxzyzd.com/	WinApps	软件资源	net::ERR_CONNECTION_CLOSED
+https://getitfree.cn/	正版中国	软件资源	HTTP 404
+https://i.pixcat.ru/jing-xiang-zhan-hui-zong	系统镜像站	软件资源	net::ERR_CONNECTION_CLOSED
+https://dig.chouti.com/	抽屉新热榜	运营学习	net::ERR_CONNECTION_CLOSED
+https://coco-downloader.vercel.app/	COCO音乐下载站	音乐天才	HTTP 404
+https://eu.qobuz.squid.wtf/	Qobuz SquidWTF	音乐天才	net::ERR_CONNECTION_CLOSED
+https://pt.sayqz.com/	TuneFree	音乐天才	net::ERR_CONNECTION_CLOSED
+https://www.flac.life/	无损生活	音乐天才	net::ERR_CONNECTION_CLOSED
+https://music.bestgeek.org/	极客音乐	音乐天才	HTTP 404
+https://bailemi.com/	百乐米	音乐天才	HTTP 404
+https://www.mp3b.com/	音乐榜	音乐天才	net::ERR_CONNECTION_CLOSED
+https://www.hifini.com/	音乐磁场	音乐天才	net::ERR_CONNECTION_CLOSED
+https://yym4.com/	音乐魔石	音乐天才	net::ERR_CONNECTION_CLOSED

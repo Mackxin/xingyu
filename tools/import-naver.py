@@ -86,6 +86,20 @@ def norm(u: str) -> str:
     return u.rstrip('/')
 
 
+def load_dead(path: Path) -> set:
+    """读死链清单（tools/check-links.py 生成），返回归一化后的网址集合"""
+    if not path.exists():
+        return set()
+    dead = set()
+    for line in path.read_text(encoding='utf-8').split('\n'):
+        if not line.strip() or line.startswith('#'):
+            continue
+        url = line.split('\t')[0].strip()
+        if url:
+            dead.add(norm(url))
+    return dead
+
+
 def clean_text(s: str) -> str:
     s = re.sub(r'<[^>]+>', '', s)
     s = html.unescape(s)
@@ -101,9 +115,11 @@ def main(src_path: str) -> None:
     if not pos:
         raise SystemExit('没找到任何 <section>，页面结构变了？')
 
+    dead = load_dead(Path(__file__).resolve().parent / 'dead-links.txt')
     out = []
     used_ids = set()
     total_in = 0
+    skipped_dead = 0
     for i, p in enumerate(pos):
         seg = body[p: pos[i + 1] if i + 1 < len(pos) else len(body)]
         mt = re.search(r'<h2 class="category-title">(.*?)</h2>', seg, re.S)
@@ -123,6 +139,9 @@ def main(src_path: str) -> None:
                 continue
             url = href if re.match(r'^https?://', href, re.I) else SITE + href.lstrip('/')
             k = norm(url)
+            if k in dead:                            # 探测下来打不开的，直接不入库
+                skipped_dead += 1
+                continue
             if k in seen:
                 continue
             seen.add(k)
@@ -153,8 +172,8 @@ def main(src_path: str) -> None:
     dst.write_text('\n'.join(js), encoding='utf-8')
 
     n_links = sum(len(c['links']) for c in out)
-    print('分类 %d 个，链接 %d 条（原始 %d，类内去重掉 %d）'
-          % (len(out), n_links, total_in, total_in - n_links))
+    print('分类 %d 个，链接 %d 条（原始 %d，跳过死链 %d，类内去重掉 %d）'
+          % (len(out), n_links, total_in, skipped_dead, total_in - skipped_dead - n_links))
     print('写出：%s（%.0f KB）' % (dst, dst.stat().st_size / 1024))
     for c in out:
         print('  %-6s %-8s %3d' % (c['id'], c['name'], len(c['links'])))

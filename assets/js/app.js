@@ -534,7 +534,7 @@
       '<div class="page-head__main">' +
         '<span class="eyebrow">Navigation · 航图</span>' +
         '<h1>星屿导航</h1>' +
-        '<p>精选的几座岛，加上一柜子攒了多年的老书签 —— 共 <b>' + CATS.length + '</b> 类、<b>' + totalLinks + '</b> 个坐标。' +
+        '<p>攒了多年的老书签全收在这一页 —— 共 <b>' + CATS.length + '</b> 类、<b>' + totalLinks + '</b> 个坐标。' +
           '顶部搜索框随时筛，点星标收藏，按 <kbd style="font-family:inherit;padding:1px 6px;border:1px solid var(--border);border-radius:6px;font-size:12px">⌘K</kbd> 一键盘点。</p>' +
       '</div>' +
       '<div class="page-head__side">' +
