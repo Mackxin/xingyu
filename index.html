@@ -25,15 +25,25 @@
 <meta name="twitter:image" content="https://mackxin.github.io/xingyu/assets/og-cover.png" />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%237c9cff'/%3E%3Cstop offset='.55' stop-color='%23b47cff'/%3E%3Cstop offset='1' stop-color='%234fe3d0'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='9' fill='%230a0c14'/%3E%3Cpath d='M16 5.5l2.4 7.6 7.6 2.4-7.6 2.4L16 25.5l-2.4-7.6L6 15.5l7.6-2.4z' fill='url(%23g)'/%3E%3C/svg%3E" />
 <link rel="apple-touch-icon" href="https://mackxin.github.io/xingyu/assets/icon-180.png" />
-<!-- PWA：装到手机主屏后像 App 一样打开，并能离线查看已经访问过的内容 -->
-<link rel="manifest" href="manifest.webmanifest" />
+<!-- PWA：装到手机主屏后像 App 一样打开，并能离线查看已经访问过的内容。
+     manifest 由脚本注入而不是直接写死在 head 里：浏览器取 manifest 时按规范是
+     「不带 cookie」的，托管平台若按 URL 上的 ?sharecode=… 鉴权就会返回 403。
+     这里把当前地址的查询串原样带上，GitHub Pages（没有查询串）与分享链接都能取到。 -->
+<script>
+(function () {
+  var l = document.createElement('link');
+  l.rel = 'manifest';
+  l.href = 'manifest.webmanifest' + (location.search || '');
+  document.head.appendChild(l);
+})();
+</script>
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="apple-mobile-web-app-title" content="星屿" />
 <meta name="mobile-web-app-capable" content="yes" />
 <!-- 订阅源：分享页的更新 -->
 <link rel="alternate" type="application/rss+xml" title="星屿 · 灵感与文章" href="feed.xml" />
-<link rel="stylesheet" href="assets/css/style.css?v=86" />
+<link rel="stylesheet" href="assets/css/style.css?v=87" />
 </head>
 <body>
 
@@ -190,11 +200,11 @@
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="assets/js/config.js?v=86"></script>
-<script src="assets/js/bookmarks.js?v=86"></script>
-<script src="assets/js/data.js?v=86"></script>
-<script src="assets/js/md.js?v=86"></script>
-<script src="assets/js/app.js?v=86"></script>
-<script src="assets/js/admin.js?v=86"></script>
+<script src="assets/js/config.js?v=87"></script>
+<script src="assets/js/bookmarks.js?v=87"></script>
+<script src="assets/js/data.js?v=87"></script>
+<script src="assets/js/md.js?v=87"></script>
+<script src="assets/js/app.js?v=87"></script>
+<script src="assets/js/admin.js?v=87"></script>
 </body>
 </html>
