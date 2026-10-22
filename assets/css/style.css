@@ -360,11 +360,24 @@ html[data-theme="light"] #themeBtn .i-moon{ display:block; }
    包含块，确认弹窗 / 表情挑选器 / 分类面板都会错位。fill 用默认值，动画结束即回到无 transform。 */
 .page{ animation:pageIn .45s var(--ease); }
 @keyframes pageIn{ from{ opacity:0; transform:translateY(10px); } to{ opacity:1; transform:none; } }
-/* 左右滑动切换：新页面从对应方向滑入 */
-.page--from-right{ animation:pageInRight .42s var(--ease); }
-.page--from-left{ animation:pageInLeft .42s var(--ease); }
-@keyframes pageInRight{ from{ opacity:0; transform:translateX(28px); } to{ opacity:1; transform:none; } }
-@keyframes pageInLeft{ from{ opacity:0; transform:translateX(-28px); } to{ opacity:1; transform:none; } }
+/* 左右滑动切换：旧页先滑出去，新页再从对应方向滑进来
+   位移用 40%（整屏 100% 要合成一块很高的图层，手机上反而更容易掉帧） */
+.page--from-right{ animation:pageInRight .26s cubic-bezier(.22,.61,.36,1); }
+.page--from-left{ animation:pageInLeft .26s cubic-bezier(.22,.61,.36,1); }
+@keyframes pageInRight{ from{ opacity:.15; transform:translate3d(40%,0,0); } to{ opacity:1; transform:none; } }
+@keyframes pageInLeft{ from{ opacity:.15; transform:translate3d(-40%,0,0); } to{ opacity:1; transform:none; } }
+/* 手指还按着、页面跟手平移时：关掉入场动画和过渡，直接跟着手指走 */
+.page.is-drag{ animation:none !important; transition:none !important; will-change:transform; }
+/* 切页 / 拖拽期间把毛玻璃先关掉：背面内容在动的时候，backdrop-filter 每一帧都要
+   重新采样 + 模糊，是中低端手机掉帧的大头。用更实的底色顶上，静态看几乎没差 */
+body.is-page-move .dock{
+  -webkit-backdrop-filter:none; backdrop-filter:none;
+  background:color-mix(in srgb, var(--bg-soft) 96%, transparent);
+}
+body.is-page-move .header.is-stuck .header__inner{
+  -webkit-backdrop-filter:none; backdrop-filter:none;
+  background:color-mix(in srgb, var(--bg-soft) 96%, transparent);
+}
 
 .eyebrow{
   display:inline-flex; align-items:center; gap:8px;

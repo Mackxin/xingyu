@@ -870,7 +870,9 @@
     try { window.scrollTo({ top: 0, behavior: smooth ? 'smooth' : 'instant' }); }
     catch (e) { window.scrollTo(0, 0); }
   }
-  /* 点击内链时直接切换；不依赖 hashchange（预览/iframe 中更可靠） */
+  /* 点击内链时直接切换；不依赖 hashchange（预览/iframe 中更可靠）
+     dir 有值 = 滑动切页（播方向动画）；没值 = 点 tab（直接换，不播入场动画，
+     否则每次点击都淡入+上移一下，看着就是"闪"） */
   function navigate(route, dir) {
     if (ALL_ROUTES.indexOf(route) < 0) route = 'home';
     if (state.route === route && !state.postId) { scrollTop(true); return; }
@@ -878,7 +880,7 @@
     state.postId = '';          // 回到列表页要清掉正在读的那篇
     try { history.pushState(null, '', '#/' + route); }
     catch (e) { try { location.hash = '#/' + route; } catch (e2) {} }
-    render({ dir: dir });
+    render(dir ? { dir: dir } : { animate: false });
   }
   /* 打开一篇文章（详情页不参与左右滑动） */
   function openPost(id) {
@@ -887,7 +889,7 @@
     state.postId = (p && p.id) || id;
     try { history.pushState(null, '', '#/post/' + encodeURIComponent(state.postId)); }
     catch (e) { try { location.hash = '#/post/' + encodeURIComponent(state.postId); } catch (e2) {} }
-    render();
+    render({ animate: false });
   }
   /* 浏览器前进/后退 */
   function syncFromHash() {
@@ -895,7 +897,7 @@
     if (nh.route !== state.route || nh.postId !== state.postId) {
       state.route = nh.route;
       state.postId = nh.postId;
-      render();
+      render({ animate: false });
     }
   }
   function render(opts) {
@@ -1910,41 +1912,102 @@
 
   /* ---------- 左右滑动切换页面 ---------- */
   function initSwipe() {
-    function step(delta, dir) {
-      if (ROUTES.indexOf(state.route) < 0) return;   // 后台等页面不参与滑动
-      if (state.route === 'post' && state.postId) return;  // 阅读页不参与，免得不小心划走
+    function stepTarget(delta) {
+      if (ROUTES.indexOf(state.route) < 0) return null;        // 后台等页面不参与
+      if (state.route === 'post' && state.postId) return null; // 阅读页不参与，免得不小心划走
       var i = ROUTES.indexOf(state.route) + delta;
-      if (i < 0 || i >= ROUTES.length) return;   // 不循环，首尾即止
-      navigate(ROUTES[i], dir);
+      if (i < 0 || i >= ROUTES.length) return null;            // 不循环，首尾即止
+      return ROUTES[i];
     }
+    function step(delta, dir) {
+      var route = stepTarget(delta);
+      if (route) navigate(route, dir);
+    }
+    function pageEl() { var app = $('#app'); return app ? app.firstElementChild : null; }
 
-    /* 1) 触屏滑动（手机 / 触控屏） */
-    var sx = 0, sy = 0, tracking = false, decided = false, horiz = false;
+    /* 1) 触屏滑动：跟手拖拽
+       手指移动时页面实时跟着平移（transform，GPU 合成），松手再决定是切页还是弹回去。
+       之前是"松手才动"，所以手感是一顿一顿的。 */
+    var EDGE = 26;            // 左右边缘这一条留给系统的手势（iOS/安卓的侧滑返回），不去抢
+    var COMMIT = 56;          // 松手时超过这个位移就算切页
+    var drag = null;
+    var moveTimer = null;     // 延后恢复毛玻璃的定时器（连续划动时不能被上一轮的定时器打断）
+
     document.body.addEventListener('touchstart', function (e) {
-      if (isPaletteOpen() || e.touches.length !== 1) { tracking = false; return; }
-      sx = e.touches[0].clientX; sy = e.touches[0].clientY;
-      tracking = true; decided = false; horiz = false;
+      drag = null;
+      if (isPaletteOpen() || e.touches.length !== 1) return;
+      var t = e.touches[0];
+      var vw = window.innerWidth;
+      if (t.clientX < EDGE || t.clientX > vw - EDGE) return;   // 边缘让给系统返回手势
+      if (isInHScroll(e.target)) return;                       // 横向滚动容器内不接管
+      var pg = pageEl();
+      if (!pg) return;
+      drag = { x: t.clientX, y: t.clientY, dx: 0, decided: false, horiz: false,
+               pg: pg, ok: true, t0: Date.now(), vw: vw };
     }, { passive: true });
 
     document.body.addEventListener('touchmove', function (e) {
-      if (!tracking) return;
-      var dx = e.touches[0].clientX - sx, dy = e.touches[0].clientY - sy;
-      if (!decided) {
-        if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
-        decided = true;
-        horiz = Math.abs(dx) > Math.abs(dy) * 1.3;        // 横向意图明显才接管
-        if (horiz && isInHScroll(e.target)) tracking = false; // 横向滚动容器内不拦截
+      if (!drag || !drag.ok) return;
+      var t = e.touches[0];
+      var dx = t.clientX - drag.x, dy = t.clientY - drag.y;
+      if (!drag.decided) {
+        if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+        drag.decided = true;
+        drag.horiz = Math.abs(dx) > Math.abs(dy) * 1.15;       // 横向意图明显才接管
+        if (!drag.horiz) { drag.ok = false; return; }
+        drag.pg.classList.add('is-drag');                      // 关掉入场动画，直接跟手
+        clearTimeout(moveTimer);                               // 上一轮"恢复毛玻璃"的定时器作废
+        document.body.classList.add('is-page-move');            // 让顶栏/底部 tab 先关掉毛玻璃
       }
+      e.preventDefault();                                      // 拦下浏览器自己的横滑 / 回弹 / 返回
+      var delta = dx < 0 ? 1 : -1;
+      var can = !!stepTarget(delta);
+      var move = can ? dx : dx * 0.28;                          // 已经到头了，给个阻尼
+      drag.dx = move;
+      drag.pg.style.transform = 'translate3d(' + move.toFixed(1) + 'px,0,0)';
+    }, { passive: false });
+
+    document.body.addEventListener('touchend', function () {
+      if (!drag || !drag.ok) { drag = null; return; }
+      var d = drag; drag = null;
+      if (!d.decided || !d.horiz) { cleanup(d.pg); return; }
+      var pg = d.pg, dx = d.dx;
+      var dt = Math.max(1, Date.now() - d.t0);
+      var fast = Math.abs(dx) / dt > 0.35;                      // 甩得够快也算切页
+      var delta = dx < 0 ? 1 : -1;
+      var commit = !!stepTarget(delta) && Math.abs(dx) > 20 && (Math.abs(dx) > COMMIT || fast);
+      var dur = 170;
+      pg.style.transition = 'transform ' + dur + 'ms cubic-bezier(.22,.61,.36,1)';
+      if (!commit) {                                            // 没过阈值：弹回原位
+        pg.style.transform = 'translate3d(0,0,0)';
+        setTimeout(function () { cleanup(pg); }, dur + 30);
+        return;
+      }
+      // 旧页顺着手指方向滑出去，滑完再换页（新页从另一侧进来）
+      pg.style.transform = 'translate3d(' + (dx < 0 ? -1 : 1) * Math.max(d.vw * 0.55, 200) + 'px,0,0)';
+      setTimeout(function () { step(delta, dx < 0 ? 'right' : 'left'); }, dur - 20);
+      // 新页面的入场动画（.26s）走完再恢复毛玻璃，中途恢复会逐帧重采样、白掉帧
+      moveTimer = setTimeout(function () { document.body.classList.remove('is-page-move'); }, dur + 320);
     }, { passive: true });
 
-    document.body.addEventListener('touchend', function (e) {
-      if (!tracking || !horiz) { tracking = false; return; }
-      tracking = false;
-      var t = e.changedTouches[0];
-      var dx = t.clientX - sx, dy = t.clientY - sy;
-      if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy)) return;
-      step(dx < 0 ? 1 : -1, dx < 0 ? 'right' : 'left');
+    document.body.addEventListener('touchcancel', function () {
+      if (!drag) return;
+      var pg = drag.pg; drag = null;
+      if (pg) { pg.style.transform = 'translate3d(0,0,0)'; setTimeout(function () { cleanup(pg); }, 220); }
     }, { passive: true });
+
+    function cleanup(pg) {
+      if (!pg) return;
+      pg.classList.remove('is-drag');
+      /* 关键：显式关掉 animation。上一页可能还带着 page--from-right 这个类，
+         一旦移除 is-drag，animation-name 从 none 变回去，入场动画会重播 —— 看着就是"闪一下" */
+      pg.style.animation = 'none';
+      pg.style.transition = '';
+      pg.style.transform = '';
+      pg.style.willChange = '';
+      clearTimeout(moveTimer);
+      document.body.classList.remove('is-page-move');
+    }
 
     /* 2) 触控板 / 鼠标横向滑动 */
     var acc = 0, idle = null, lock = 0;
