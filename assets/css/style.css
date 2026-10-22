@@ -779,6 +779,9 @@ html[data-theme="light"] .btn--primary{ color:#fff; }
   box-shadow:inset 0 1px 0 rgba(255,255,255,.1);
 }
 .cat-item__name{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+/* 分类 emoji：独立一层，后台关掉「分类图标」时整块消失（不会留空位）。
+   不用 flex 包名字，是为了保住长分类名的省略号。 */
+.cat-ico{ line-height:1; margin-right:5px; }
 .cat-item__count{ font-size:11.5px; color:var(--text-mute); font-variant-numeric:tabular-nums; }
 
 .nav-body{ min-width:0; }
@@ -833,8 +836,25 @@ html[data-theme="light"] .btn--primary{ color:#fff; }
   white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
 }
 .link-card__act{ display:flex; align-items:center; gap:2px; flex-shrink:0; }
-/* 后台「站点卡片显示左侧图标」关掉时（只影响电脑端，手机端本来就不显示） */
+
+/* ---------- 三个显示开关（后台「站点信息 → 显示项」，默认全关） ----------
+   挂 <html data-*> 上，改一次属性全站立刻生效，不用重渲染两万张卡。
+   ① data-icons  卡片左侧的彩色方块图标
+   ② data-desc   卡片名称下面那行介绍 / 域名
+   ③ data-cat-icon  分类名前面的 emoji（🎨 设计天才）        */
 html[data-icons="off"] .link-card .glyph{ display:none; }
+html[data-desc="off"] .link-card__desc{ display:none; }
+html[data-cat-icon="off"] .cat-ico,
+html[data-cat-icon="off"] #headerCatEmoji{ display:none; }
+
+/* 图标和介绍都关掉时，卡片就是一行名字：把内边距收一点、格子排密一点。
+   只在宽屏生效 —— 手机端固定一行两个（见下面 max-width:640px 那段），别顶掉它。 */
+@media (min-width:641px){
+  html[data-icons="off"][data-desc="off"] .link-card{ padding:11px 14px; }
+  html[data-icons="off"][data-desc="off"] .link-grid{
+    grid-template-columns:repeat(auto-fill,minmax(196px,1fr)); gap:10px;
+  }
+}
 
 /* ---------- 置顶 ---------- */
 .link-card.is-pinned{ border-color:var(--border-strong); }
@@ -1767,6 +1787,15 @@ body.is-dragging-row, body.is-dragging-row *{ cursor:grabbing !important; }
 .admin-switch input:checked + .admin-switch__track{ background:var(--grad); border-color:transparent; }
 .admin-switch input:checked + .admin-switch__track .admin-switch__dot{ left:23px; background:#fff; }
 .admin-switch input:focus-visible + .admin-switch__track{ box-shadow:0 0 0 4px rgba(124,156,255,.2); }
+/* 开关右边的文字：可以带一行浅色小注（<em>） */
+.admin-switch__text{ min-width:0; }
+.admin-switch__text em{
+  display:block; margin-top:2px; font-style:normal;
+  font-size:12px; line-height:1.5; color:var(--text-mute);
+}
+/* 分组小标题（一个卡片里分几段开关时用） */
+.admin-sub{ font-size:12.5px; color:var(--text-mute); margin-top:20px; }
+.admin-sub + .admin-switch{ margin-top:10px; }
 
 .admin-json{
   width:100%; margin-top:12px; padding:13px 15px; border-radius:12px; resize:vertical;

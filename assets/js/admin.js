@@ -1864,10 +1864,19 @@
         '<label class="admin-switch"><input type="checkbox" data-site="showSearch"' + (c.showSearch ? ' checked' : '') + ' />' +
           '<span class="admin-switch__track"><span class="admin-switch__dot"></span></span>' +
           '<span class="admin-switch__text">顶栏显示搜索框</span></label>' +
-        '<label class="admin-switch"><input type="checkbox" data-site="showIcons"' + (c.showIcons !== false ? ' checked' : '') + ' />' +
+        '<p class="admin-sub">导航页的卡片长什么样（三项默认都关，只留名字最清爽）</p>' +
+        '<label class="admin-switch"><input type="checkbox" data-site="showIcons"' + (c.showIcons ? ' checked' : '') + ' />' +
           '<span class="admin-switch__track"><span class="admin-switch__dot"></span></span>' +
-          '<span class="admin-switch__text">站点卡片显示左侧图标</span></label>' +
-        '<p class="admin-tip">「站点卡片左侧图标」<b>只对电脑端生效</b>：手机端卡片本来就只显示名称和简介（长按卡片可收藏 / 复制）。关掉后电脑端一行能看更多站点。</p>' +
+          '<span class="admin-switch__text">卡片显示图标<em>名字左边那个彩色方块</em></span></label>' +
+        '<label class="admin-switch"><input type="checkbox" data-site="showDesc"' + (c.showDesc ? ' checked' : '') + ' />' +
+          '<span class="admin-switch__track"><span class="admin-switch__dot"></span></span>' +
+          '<span class="admin-switch__text">卡片显示介绍<em>名字下面那行域名</em></span></label>' +
+        '<label class="admin-switch"><input type="checkbox" data-site="showCatIcon"' + (c.showCatIcon ? ' checked' : '') + ' />' +
+          '<span class="admin-switch__track"><span class="admin-switch__dot"></span></span>' +
+          '<span class="admin-switch__text">分类显示图标<em>🎨 设计天才 前面那个 emoji</em></span></label>' +
+        '<p class="admin-tip">这三项<b>默认全关</b>，导航页只有名字，一行能看更多站点。' +
+        '开了「图标」在电脑端会多出一个彩色方块（手机端卡片是上下结构，本来就只放名称和介绍）；' +
+        '「介绍」是后台里每个站点填的简介，没填就显示域名。</p>' +
       '</div>';
   }
 

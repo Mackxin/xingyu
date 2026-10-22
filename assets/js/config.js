@@ -22,13 +22,21 @@
 
   var MAX_LINKS = 5;
 
+  /* 配置版本号：只用来判断「这份本地配置是按哪一版默认值存的」，
+     升级默认值时做一次性迁移（见 Store.get）。改默认值才需要 +1。 */
+  var CFG_VER = 2;
+
   var DEFAULTS = {
     siteName: '星屿',
     siteLatin: 'XINGYU',
     tagline: '以星为图，以屿为家',
     themeDefault: 'dark',      // dark | light
     showSearch: true,          // 顶栏是否显示搜索框
-    showIcons: true,           // 站点卡片左侧图标（后台可关；只影响电脑端，手机端本来就不显示）
+    /* ---- 导航页的三个显示开关（后台「站点信息 → 显示项」）。
+       默认全关：卡片只留名字，一行能看更多站点，最清爽。 ---- */
+    showIcons: false,          // 卡片左侧那个彩色方块图标
+    showDesc: false,           // 卡片名称下面那行介绍 / 域名
+    showCatIcon: false,        // 分类名前面的 emoji（🎨 设计天才 这种）
     cardDensity: 'normal',     // compact | normal | comfy —— 导航页卡片密度
     logoImage: '',             // 顶栏 Logo 图片（data URL 或网址）；空 = 内置星形 SVG
     favicon: '',               // 浏览器标签图标；空 = 内置 SVG
@@ -331,7 +339,17 @@
     /* 当前完整配置 */
     get: function () {
       var out = pick(clone(DEFAULTS), window.XY_CONFIG);
-      return pick(out, readLS());
+      var ls = readLS();
+      if (ls) {
+        /* v1 → v2 迁移：卡片图标 / 介绍从「默认显示」改成「默认隐藏」。
+           老版本只要你在后台存过任何一项设置，save() 就会把当时的默认值
+           （showIcons:true）一起固化进 localStorage —— 那不是你选出来的。
+           所以没带 _ver 的老配置一律丢掉 showIcons，让新的默认值生效；
+           升级之后你手动开的开关带 _ver 存着，不会被再重置。 */
+        if (!ls._ver) delete ls.showIcons;
+        out = pick(out, ls);
+      }
+      return out;
     },
 
     /* 局部更新并保存 */
@@ -430,6 +448,7 @@
 
     save: function (cfg) {
       cfg = pick(clone(DEFAULTS), cfg);
+      cfg._ver = CFG_VER;          /* 盖上版本戳，下次 get() 就知道不用再迁移 */
       Store.saveFailed = false;
       try { localStorage.setItem(CFG_KEY, JSON.stringify(cfg)); }
       catch (e) { Store.saveFailed = true; }

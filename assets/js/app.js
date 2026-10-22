@@ -47,6 +47,12 @@
     return '<span class="glyph glyph--' + (size || 'md') + '" style="background:linear-gradient(135deg,' + c1 + ',' + c2 + ')">' +
       esc(firstChar(name)) + '</span>';
   }
+  /* 分类名前面的 emoji。单独包一层 span：后台「分类图标」一关就整片消失，
+     也不会在名字前面留一个没人看得见的空格。 */
+  function catIco(icon) {
+    var s = String(icon == null ? '' : icon).trim();
+    return s ? '<span class="cat-ico" aria-hidden="true">' + esc(s) + '</span>' : '';
+  }
   function hostOf(url) {
     try { return new URL(url).hostname.replace(/^www\./, ''); }
     catch (e) { return url; }
@@ -478,7 +484,7 @@
       // 供分类栏筛选使用：名字 + 图标 + 描述都能命中
       var hay = norm(c.name + c.icon + ' ' + (c.desc || ''));
       return '<button class="cat-item" type="button" data-cat="' + esc(c.id) + '" data-search="' + esc(hay) + '">' +
-        '<span class="cat-item__name">' + esc(c.icon) + ' ' + esc(c.name) + '</span>' +
+        '<span class="cat-item__name">' + catIco(c.icon) + esc(c.name) + '</span>' +
         '<span class="cat-item__count">' + c.links.length + '</span>' +
         '</button>';
     }).join('');
@@ -516,7 +522,7 @@
       /* 全部铺出来，不再折叠。视口外的分类块交给 CSS 的 content-visibility 跳过
          布局与绘制（见 .cat-block），所以要一口气放两万多张卡也不至于卡 */
       return '<div class="cat-block" id="cat-' + esc(c.id) + '" data-cat-block="' + esc(c.id) + '">' +
-        '<div class="cat-block__head"><h2>' + esc(c.icon) + ' ' + esc(c.name) + '</h2>' +
+        '<div class="cat-block__head"><h2>' + catIco(c.icon) + esc(c.name) + '</h2>' +
           '<span class="count">' + c.links.length + ' 个站点 · ' + esc(c.desc) + '</span></div>' +
         '<div class="link-grid" data-grid="' + esc(c.id) + '">' + cards + '</div>' +
         '</div>';
@@ -1813,10 +1819,14 @@
     applyHeaderLinks();
     var sw = $('#headerSearchWrap');
     if (sw) sw.hidden = !c.showSearch;
-    // 链接卡片左侧图标（后台可关，只影响电脑端）
-    document.documentElement.setAttribute('data-icons', c.showIcons === false ? 'off' : 'on');
+    /* 导航页三个显示开关：卡片图标 / 卡片介绍 / 分类前面的 emoji。
+       走 <html data-*> + CSS 控制，后台一点开关整页立刻变，不用重渲染两万张卡。 */
+    var root = document.documentElement;
+    root.setAttribute('data-icons', c.showIcons ? 'on' : 'off');
+    root.setAttribute('data-desc', c.showDesc ? 'on' : 'off');
+    root.setAttribute('data-cat-icon', c.showCatIcon ? 'on' : 'off');
     // 卡片密度：compact | normal | comfy
-    document.documentElement.setAttribute('data-density', c.cardDensity || 'normal');
+    root.setAttribute('data-density', c.cardDensity || 'normal');
     // 主题配色 / 阅读排版（后台「主题」页）
     applyLook();
   }
