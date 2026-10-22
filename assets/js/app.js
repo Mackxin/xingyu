@@ -528,8 +528,11 @@
         '</div>';
     }).join('');
 
-    return '<section class="page">' + head +
-      '<div class="nav-layout">' + rail +
+    /* 标题区（head）放进 .nav-layout 里，交给 CSS grid 摆到右侧内容栏顶端 ——
+       这样它跟卡片的左边缘对齐，左边那列空出来的位置正好让分类栏顶上去。
+       DOM 顺序保持 head → 分类栏 → 正文：读屏和手机端仍是「先标题后内容」。 */
+    return '<section class="page">' +
+      '<div class="nav-layout">' + head + rail +
         '<div class="nav-body">' + (recentHtml === undefined ? recentBlockHtml() : recentHtml) + blocks + '</div>' +
       '</div></section>';
   }

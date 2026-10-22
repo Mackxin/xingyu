@@ -712,11 +712,25 @@ html[data-theme="light"] .btn--primary{ color:#fff; }
 .searchbox__clear svg{ position:static; width:13px; height:13px; stroke:currentColor; fill:none; stroke-width:2; }
 .searchbox.has-value .searchbox__clear{ display:grid; }
 
+/* 导航页两栏：左「分类栏」、右「标题 + 卡片」。
+   标题区不再横跨整页摆在最上面，而是放进右栏顶端 —— 这样它跟卡片左边缘对齐，
+   左栏空出来的上方位置正好让分类栏顶上去（分类栏从页面顶端开始，一直吸顶）。
+   用 grid-template-areas 命名摆位，DOM 顺序仍是 标题 → 分类栏 → 正文，
+   读屏和手机端拿到的顺序不变。 */
 .nav-layout{
   display:grid; grid-template-columns:clamp(300px,23vw,410px) minmax(0,1fr);
-  gap:clamp(18px,3vw,34px); margin-top:6px; align-items:start;
+  grid-template-areas:
+    "rail head"
+    "rail body";
+  column-gap:clamp(18px,3vw,34px); row-gap:0;
+  margin-top:6px; align-items:start;
 }
-.nav-layout--solo{ grid-template-columns:minmax(0,1fr); margin-top:26px; }
+.nav-layout > .cat-rail{ grid-area:rail; }
+.nav-layout > .nav-body{ grid-area:body; }
+.nav-layout > .page-head--nav{ grid-area:head; }
+/* 搜索/收藏结果：没有分类栏，单栏铺满，标题回到页宽左边缘。
+   选择器写成两个类，是为了压过下面窄屏那条 .nav-layout 的摆位（否则会多出一行空行） */
+.nav-layout.nav-layout--solo{ grid-template-columns:minmax(0,1fr); grid-template-areas:"body"; margin-top:26px; }
 /* 分类栏：双列；分类很多时整栏自己滚动，顶部还有筛选框 */
 .cat-rail{
   position:sticky; top:calc(var(--header-h, 96px) + 16px);
@@ -1242,7 +1256,14 @@ html[data-theme="light"] .tl-date{ box-shadow:0 14px 34px -22px rgba(30,40,70,.3
   .bento__item{ grid-column:span 3; }
   .bento__item:last-child{ grid-column:span 6; }
   .bento__item--wide{ grid-column:span 6; }
-  .nav-layout{ grid-template-columns:1fr; }
+  /* 单栏：分类栏在手机端被「顶栏分类按钮 + 底部面板」取代，这里只剩标题和卡片 */
+  .nav-layout{
+    grid-template-columns:1fr;
+    grid-template-areas:
+      "rail"
+      "head"
+      "body";
+  }
   /* 分类栏：手机上整栏收起，分类靠顶栏那个「分类」按钮 + 底部面板切换 */
   .cat-rail{
     position:static; max-height:none; overflow:visible;
