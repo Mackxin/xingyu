@@ -21,6 +21,16 @@
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
+  /* 把命中的那段字高亮出来（不区分大小写，忽略空格差异已由 norm 处理，
+     这里只按原串位置找，找不到就原样返回） */
+  function textMarkHtml(text, q) {
+    var src = String(text || '');
+    var needle = String(q || '').trim();
+    if (!needle) return esc(src);
+    var i = src.toLowerCase().indexOf(needle.toLowerCase());
+    if (i < 0) return esc(src);
+    return esc(src.slice(0, i)) + '<mark>' + esc(src.slice(i, i + needle.length)) + '</mark>' + esc(src.slice(i + needle.length));
+  }
   function hashHue(str) {
     var h = 2166136261;
     for (var i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = (h * 16777619) >>> 0; }
@@ -166,7 +176,13 @@
     allLinks = [];
     CATS.forEach(function (c) {
       c.links.forEach(function (l) {
-        allLinks.push({ n: l.n, u: l.u, d: l.d, cat: c.name, catId: c.id, icon: c.icon, pin: !!l.pin, py: pyInitials(l.n) });
+        allLinks.push({
+          n: l.n, u: l.u, d: l.d, cat: c.name, catId: c.id, icon: c.icon, pin: !!l.pin,
+          py: pyInitials(l.n),
+          /* 预拼好的可搜索串：站名 + 描述 + 分类名 + 网址。搜索时只做 indexOf，
+             不用每次输入都重新拼两千多遍（顶栏搜索是边打字边搜的，这个很关键） */
+          hay: norm(l.n + (l.d || '') + c.name + l.u)
+        });
       });
     });
     totalLinks = allLinks.length;
@@ -206,7 +222,7 @@
 
   function matchLink(l, q) {
     if (!q) return true;
-    var hay = norm(l.n + l.d + l.cat + l.u);
+    var hay = l.hay || norm(l.n + (l.d || '') + l.cat + l.u);
     if (hay.indexOf(q) > -1) return true;
     // 纯字母 / 数字的查询：再按拼音首字母试一次（zh → 知乎，txsp → 腾讯视频）
     if (/^[a-z0-9]+$/.test(q) && !!l.py && l.py.indexOf(q) > -1) return true;
@@ -1038,18 +1054,8 @@
       railList.addEventListener('click', function (e) {
         var btn = e.target.closest ? e.target.closest('.cat-item') : null;
         if (!btn || btn.classList.contains('is-hidden')) return;
-        var id = btn.getAttribute('data-cat');
-        var block = $('#cat-' + id);
         closeCatSheet();
-        if (block) {
-          /* 用 scrollIntoView：它会先把目标块布局好再算位置（分类块用了
-             content-visibility:auto，视口外的块高度是估算值，自己拼 scrollTo
-             容易滚偏）。落点由 CSS 的 scroll-margin-top 留出顶栏的高度。
-             近处平滑滚过去；隔着好几屏就直接跳，免得长距离平滑滚动一路重排、越滑越卡 */
-          var near = Math.abs(block.getBoundingClientRect().top) < window.innerHeight * 1.5;
-          block.scrollIntoView({ behavior: near ? 'smooth' : 'instant', block: 'start' });
-          syncCatBtn(id);
-        }
+        scrollToCat(btn.getAttribute('data-cat'));
       });
     }
     bindCatRail();
@@ -1150,6 +1156,20 @@
       sheet.removeAttribute('aria-label');
     }
     return true;
+  }
+
+  /* 滚到某个分类块 —— 分类栏、顶栏分类按钮、全站搜索结果里的「分类」项都走这里。
+     落点交给 CSS 的 scroll-margin-top 留出顶栏高度；近处平滑滚过去，隔着好几屏直接跳，
+     免得长距离平滑滚动一路重排、越滑越卡。
+     （分类块用了 content-visibility:auto，视口外的块高度是估算值，所以必须让浏览器
+      自己算位置 —— scrollIntoView 会先按需布局再定位，自己拼 scrollTo 会滚偏。） */
+  function scrollToCat(id) {
+    var block = $('#cat-' + id);
+    if (!block) return;
+    var near = Math.abs(block.getBoundingClientRect().top) < window.innerHeight * 1.5;
+    block.scrollIntoView({ behavior: near ? 'smooth' : 'instant', block: 'start' });
+    syncCatBtn(id);
+    $$('.cat-item').forEach(function (b) { b.classList.toggle('is-active', b.getAttribute('data-cat') === id); });
   }
 
   /* ---------- 手机端长按链接卡片：收藏 / 复制（卡片上的图标已隐藏） ---------- */
@@ -1277,25 +1297,158 @@
     var wrap = $('#headerSearchWrap');
     if (wrap) wrap.classList.toggle('has-value', !!state.query);
   }
+  /* ---------- 顶栏搜索：搜全站（页面 / 分类 / 站点 / 分享 / 文章） ----------
+     输入就在搜索框下面弹结果，不整页跳走；↑↓ 选、↵ 打开、Esc 收起。
+     匹配逻辑与 ⌘K 命令面板共用 searchIndexHits()，两边结果永远一致。 */
+  var hdr = { open: false, items: [], sel: 0 };
+  function hdrClose() {
+    var el = $('#hdrHits');
+    hdr.open = false;
+    hdr.items = [];
+    if (el) { el.hidden = true; el.innerHTML = ''; }
+  }
+  function hdrMove(d) {
+    if (!hdr.open || !hdr.items.length) return;
+    hdr.sel = (hdr.sel + d + hdr.items.length) % hdr.items.length;
+    $$('[data-idx]', $('#hdrHits')).forEach(function (el) {
+      el.classList.toggle('is-sel', +el.getAttribute('data-idx') === hdr.sel);
+    });
+    var cur = $('.is-sel', $('#hdrHits'));
+    if (cur) cur.scrollIntoView({ block: 'nearest' });
+  }
+  function hdrRender(q) {
+    var el = $('#hdrHits');
+    if (!el) return;
+    var n = norm(q);
+    if (!n) { hdrClose(); return; }
+
+    /* 站点这一组直接用 searchLinks()：它跟导航页筛选是同一套匹配 + 排序
+       （站名命中优先，其次拼音，最后描述/网址），所以下面"看全部 N 个"的数字
+       跳过去之后分毫不差。其它几类走 PALETTE_INDEX。 */
+    var siteHits = searchLinks(q);
+    var others = PALETTE_INDEX.filter(function (it) {
+      if (it.type === '站点') return false;
+      if (it.hay.indexOf(n) > -1) return true;
+      return /^[a-z0-9]+$/.test(n) && !!it.py && it.py.indexOf(n) > -1;
+    });
+
+    var byType = {};
+    pickByGroup(others, 3).forEach(function (it) { (byType[it.type] = byType[it.type] || []).push(it); });
+    byType['站点'] = siteHits.slice(0, 3).map(function (l) {
+      return { type: '站点', name: l.n, sub: l.cat + ' · ' + (l.d || hostOf(l.u)), url: l.u, icon: l.icon, external: true };
+    });
+    /* 固定顺序：页面 → 分类 → 站点 → 分享 → 文章 */
+    var items = [];
+    ['页面', '分类', '站点', '分享', '文章'].forEach(function (t) {
+      if (byType[t] && byType[t].length) items = items.concat(byType[t]);
+    });
+
+    var html = '';
+    if (!items.length) {
+      html = '<div class="hdr-hits__empty"><b>没找到「' + esc(q.trim()) + '」</b>' +
+             '<span>换个词试试：站点名、分类名，或者文章的标题</span></div>';
+    } else {
+      var lastType = null;
+      items.forEach(function (it, i) {
+        if (it.type !== lastType) {
+          lastType = it.type;
+          html += '<div class="hdr-hits__group">' + esc(it.type) + '</div>';
+        }
+        var ext = !!it.external || it.url.charAt(0) !== '#';
+        var mark = textMarkHtml(it.name, q);       // 命中的字高亮
+        html += '<div class="hdr-hits__item" data-idx="' + i + '" role="option">' +
+          '<span class="hdr-hits__ico">' + esc(it.icon || '•') + '</span>' +
+          '<span class="hdr-hits__txt"><span class="hdr-hits__name">' + mark + '</span>' +
+            '<span class="hdr-hits__sub">' + esc(it.sub || '') + '</span></span>' +
+          '<span class="hdr-hits__go">' + (it.catId ? '查看' : ext ? '↗' : '跳转') + '</span>' +
+          '</div>';
+      });
+    }
+
+    /* 站点结果太多时给一条"去导航页看全部"，键盘也能选中（数字与跳转后一致） */
+    if (siteHits.length > 3) {
+      var label = '在导航页看全部 ' + siteHits.length + ' 个站点结果';
+      items.push({ type: '动作', act: 'all', name: label });
+      html += '<button class="hdr-hits__all" type="button" data-idx="' + (items.length - 1) + '">' +
+              label + ' <span>↵</span></button>';
+    }
+
+    el.innerHTML = html;
+    el.hidden = false;
+    hdr.open = true;
+    hdr.items = items;
+    hdr.sel = 0;
+    $$('[data-idx]', el).forEach(function (n) { n.classList.toggle('is-sel', +n.getAttribute('data-idx') === 0); });
+  }
+  function hdrActivate(idx) {
+    if (!hdr.open) return;
+    var it = hdr.items[idx];
+    if (!it) return;
+    if (it.act === 'all') {                        // 去导航页看全部站点结果
+      hdrClose();
+      if (state.route === 'nav') softRender(); else navigate('nav');
+      return;
+    }
+    hdrClose();
+    if (it.catId) {                                // 分类：跳到导航页并定位到那一块
+      var wasNav = state.route === 'nav';
+      state.query = '';                            // 别让搜索词把导航页筛成一片空白
+      syncHeaderSearch();
+      if (wasNav) softRender(); else navigate('nav');
+      setTimeout(function () { scrollToCat(it.catId); }, wasNav ? 40 : 160);
+      return;
+    }
+    var ext = !!it.external || it.url.charAt(0) !== '#';
+    if (ext) recordVisit({ n: it.name, u: it.url, d: it.sub });
+    go(it.url, ext);
+  }
+
   function bindHeaderSearch() {
     var input = $('#headerSearch');
     if (!input) return;
-    var run = debounce(function () { softRender(); }, 130);
+    var wrap = $('#headerSearchWrap');
+    var run = debounce(function () { softRender(); }, 200);
 
     input.addEventListener('input', function () {
       state.query = input.value;
       syncHeaderSearch();
-      if (state.route === 'nav') run();
-      else navigate('nav');           // 其它页面输入时自动跳到导航页看结果
+      hdrRender(input.value);                     // 全站结果浮层，立刻出
+      if (state.route === 'nav') run();           // 停手后再把导航页筛一遍
     });
     input.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape') { state.query = ''; syncHeaderSearch(); if (state.route === 'nav') softRender(); }
+      if (e.key === 'Escape') {
+        hdrClose();
+        state.query = ''; input.value = ''; syncHeaderSearch();
+        if (state.route === 'nav') softRender();
+        return;
+      }
+      if (!hdr.open) return;
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); hdrMove(e.key === 'ArrowDown' ? 1 : -1); }
+      else if (e.key === 'Enter') { e.preventDefault(); hdrActivate(hdr.sel); }
+    });
+    /* 失焦后稍等一下再收：点结果项时是先 blur 再 click，立刻收就点空了 */
+    input.addEventListener('blur', function () {
+      setTimeout(function () {
+        if (!hdr.open) return;
+        if (wrap && wrap.contains(document.activeElement)) return;
+        hdrClose();
+      }, 160);
+    });
+    /* 框里还有关键词时再点回来（或按 / 聚焦），结果要重新弹出来 */
+    input.addEventListener('focus', function () {
+      if (norm(input.value)) hdrRender(input.value);
     });
     var clearBtn = $('#headerSearchClear');
     if (clearBtn) clearBtn.addEventListener('click', function () {
-      state.query = ''; input.value = ''; syncHeaderSearch();
+      state.query = ''; input.value = ''; syncHeaderSearch(); hdrClose();
       if (state.route === 'nav') softRender();
       input.focus();
+    });
+    var hitsEl = $('#hdrHits');
+    if (hitsEl) hitsEl.addEventListener('click', function (e) {
+      var t = e.target.closest('[data-idx]');
+      if (!t) return;
+      hdrActivate(+t.getAttribute('data-idx'));
     });
   }
   function setupSpy() {
@@ -1351,10 +1504,43 @@
       });
     });
     // 拼音索引：输入 zh / txsp 也能命中
-    list.forEach(function (it) { it.py = pyInitials(it.name); });
+    list.forEach(function (it) {
+      it.py = pyInitials(it.name);
+      it.hay = norm(it.name + it.sub + it.type);   // 预拼好，输入时只做 indexOf
+    });
     return list;
   }
   var PALETTE_INDEX = buildPaletteIndex();
+
+  /* 全站搜索的唯一匹配逻辑：命令面板（⌘K）和顶栏搜索框共用它，
+     所以"搜得到什么"永远一致 —— 页面 / 分类 / 站点 / 分享 / 文章。
+     中文按包含匹配；纯字母数字再比一遍拼音首字母（输入 txsp 能命中「腾讯视频」） */
+  function searchIndexHits(q, cap) {
+    var n = norm(q);
+    if (!n) return [];
+    var out = [];
+    for (var i = 0; i < PALETTE_INDEX.length; i++) {
+      var it = PALETTE_INDEX[i];
+      var hit = it.hay.indexOf(n) > -1 ||
+                (/^[a-z0-9]+$/.test(n) && !!it.py && it.py.indexOf(n) > -1);
+      if (hit) {
+        out.push(it);
+        if (cap && out.length >= cap) break;
+      }
+    }
+    return out;
+  }
+  /* 每组只取前几条，保证下拉里"每类都露个脸"，不至于全是站点把文章挤没 */
+  function pickByGroup(hits, perGroup) {
+    var out = [], cnt = {};
+    hits.forEach(function (it) {
+      var c = cnt[it.type] || 0;
+      if (c >= perGroup) return;
+      cnt[it.type] = c + 1;
+      out.push(it);
+    });
+    return out;
+  }
 
   function paletteOpen() {
     var el = $('#palette');
@@ -1416,13 +1602,7 @@
     return true;
   }
   function paletteRender(q) {
-    var n = norm(q);
-    var hits = n
-      ? PALETTE_INDEX.filter(function (it) {
-          if (norm(it.name + it.sub + it.type).indexOf(n) > -1) return true;
-          return /^[a-z0-9]+$/.test(n) && !!it.py && it.py.indexOf(n) > -1;
-        })
-      : PALETTE_INDEX.slice(0, 12);
+    var hits = norm(q) ? searchIndexHits(q) : PALETTE_INDEX.slice(0, 12);
     palette.items = hits.slice(0, 40);
     if (palette.sel >= palette.items.length) palette.sel = 0;
 

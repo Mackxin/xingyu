@@ -43,7 +43,7 @@
 <meta name="mobile-web-app-capable" content="yes" />
 <!-- 订阅源：分享页的更新 -->
 <link rel="alternate" type="application/rss+xml" title="星屿 · 灵感与文章" href="feed.xml" />
-<link rel="stylesheet" href="assets/css/style.css?v=87" />
+<link rel="stylesheet" href="assets/css/style.css?v=88" />
 </head>
 <body>
 
@@ -82,10 +82,12 @@
     <div class="header__row">
       <div class="header__search" id="headerSearchWrap">
         <svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M16.5 16.5L21 21"/></svg>
-        <input id="headerSearch" type="search" placeholder="搜索站点、分类…" autocomplete="off" spellcheck="false" aria-label="搜索站点与分类" />
+        <input id="headerSearch" type="search" placeholder="搜全站：站点、分类、分享、文章…" autocomplete="off" spellcheck="false" aria-label="搜索全站内容" />
         <button class="searchbox__clear" type="button" id="headerSearchClear" aria-label="清空搜索" title="清空">
           <svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
         </button>
+        <!-- 全站搜索结果浮层（输入时展开，分组列页面 / 分类 / 站点 / 分享 / 文章） -->
+        <div class="hdr-hits" id="hdrHits" hidden aria-label="全站搜索结果"></div>
       </div>
 
       <!-- 手机 / 平板：分类折叠按钮（导航页置顶显示，点开是分类选择面板） -->
@@ -200,11 +202,11 @@
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="assets/js/config.js?v=87"></script>
-<script src="assets/js/bookmarks.js?v=87"></script>
-<script src="assets/js/data.js?v=87"></script>
-<script src="assets/js/md.js?v=87"></script>
-<script src="assets/js/app.js?v=87"></script>
-<script src="assets/js/admin.js?v=87"></script>
+<script src="assets/js/config.js?v=88"></script>
+<script src="assets/js/bookmarks.js?v=88"></script>
+<script src="assets/js/data.js?v=88"></script>
+<script src="assets/js/md.js?v=88"></script>
+<script src="assets/js/app.js?v=88"></script>
+<script src="assets/js/admin.js?v=88"></script>
 </body>
 </html>
