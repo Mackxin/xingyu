@@ -643,8 +643,13 @@ html[data-theme="light"] .btn--primary{ color:#fff; }
   position:sticky; top:calc(var(--header-h, 96px) + 16px);
   max-height:calc(100vh - var(--header-h, 96px) - 44px);
   overflow-y:auto; overscroll-behavior:contain;
-  scrollbar-width:thin; padding-right:4px;
+  padding-right:4px;
 }
+/* 分类栏不露滚动条：照样能滚（触控板 / 滚轮 / 触屏），只是不画那条竖杠 */
+.cat-rail,
+.cat-rail__list{ scrollbar-width:none; -ms-overflow-style:none; }
+.cat-rail::-webkit-scrollbar,
+.cat-rail__list::-webkit-scrollbar{ width:0; height:0; display:none; }
 .cat-rail__head{
   display:flex; align-items:center; justify-content:space-between; gap:8px;
   margin:0 0 8px 12px;
