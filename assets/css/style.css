@@ -64,7 +64,7 @@ html[data-theme="light"]{
 /* ---------- 基础 ---------- */
 *,*::before,*::after{ box-sizing:border-box; }
 [hidden]{ display:none !important; }
-html{ scroll-behavior:smooth; -webkit-text-size-adjust:100%; }
+html{ scroll-behavior:smooth; -webkit-text-size-adjust:100%; overscroll-behavior-x:none; }
 body{
   margin:0;
   min-height:100vh;
@@ -309,7 +309,10 @@ body.has-pointer .cursor-glow{ opacity:1; }
   border-radius:99px; background:var(--grad-soft);
   border:1px solid rgba(124,156,255,.35);
   box-shadow:0 6px 20px -10px rgba(124,156,255,.9);
-  transition:left .45s var(--ease), width .45s var(--ease),
+  /* 位移走 transform（GPU 合成），不参与布局，滑动切换时更稳 */
+  transform:translate3d(0,0,0);
+  will-change:transform;
+  transition:transform .45s var(--ease), width .45s var(--ease),
              top .45s var(--ease), height .45s var(--ease), opacity .3s ease;
   pointer-events:none;
 }
@@ -1312,7 +1315,9 @@ html[data-theme="light"] .tl-date{ box-shadow:0 14px 34px -22px rgba(30,40,70,.3
   .header .nav{ display:none; }
   .dock{
     display:flex; align-items:center; gap:2px; padding:4px;
-    position:fixed; left:50%; transform:translateX(-50%);
+    /* 居中不用 translateX(-50%)：fixed + transform 在手机上会和浏览器地址栏
+       的收放一起抖，还会偶发上下跳；改成 left/right 撑满 + margin 自动居中 */
+    position:fixed; left:0; right:0; margin-inline:auto; width:max-content;
     bottom:calc(12px + env(safe-area-inset-bottom, 0px));
     z-index:56;
     border-radius:99px;

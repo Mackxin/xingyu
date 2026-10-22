@@ -865,7 +865,9 @@
     return { route: ALL_ROUTES.indexOf(h) > -1 ? h : 'home', postId: '' };
   }
   function scrollTop(smooth) {
-    try { window.scrollTo({ top: 0, behavior: smooth ? 'smooth' : 'auto' }); }
+    /* 注意：html 上有 scroll-behavior:smooth，behavior:'auto' 会跟着 CSS 走变成动画滚动，
+       切页时就会和入场动画一起动、看着抖。这里明确用 'instant' 才是真·瞬间归位。 */
+    try { window.scrollTo({ top: 0, behavior: smooth ? 'smooth' : 'instant' }); }
     catch (e) { window.scrollTo(0, 0); }
   }
   /* 点击内链时直接切换；不依赖 hashchange（预览/iframe 中更可靠） */
@@ -941,19 +943,28 @@
       a.classList.toggle('is-active', a.getAttribute('data-route') === state.route);
     });
   }
+  /* 滑块只动 transform：GPU 合成，不触发布局，切换页面时不会和入场动画抢帧 */
+  var gliderLast = {};
   function updateGlider() {
     // 顶栏胶囊 + 手机端底部 tab 栏各有一个滑块，都跟着当前页面走
     [['#nav', '#navGlider'], ['#dockNav', '#dockGlider']].forEach(function (pair) {
       var nav = $(pair[0]), glider = $(pair[1]);
       if (!nav || !glider) return;
+      // 这一条当前是 display:none（比如手机端的顶栏胶囊）就跳过，别写一堆 0
+      if (!nav.getClientRects().length) return;
       var active = $('.nav__item.is-active', nav);
-      if (!active) { glider.style.width = '0px'; glider.style.opacity = '0'; return; }
+      if (!active) { glider.style.opacity = '0'; return; }
       var nr = nav.getBoundingClientRect(), ar = active.getBoundingClientRect();
-      var bl = nav.clientLeft || 0, bt = nav.clientTop || 0;
-      glider.style.left = (ar.left - nr.left - bl) + 'px';
-      glider.style.top = (ar.top - nr.top - bt) + 'px';
-      glider.style.width = ar.width + 'px';
-      glider.style.height = ar.height + 'px';
+      if (!nr.width || !ar.width) return;                 // 布局还没稳，这一帧不画
+      var x = ar.left - nr.left - (nav.clientLeft || 0);
+      var y = ar.top - nr.top - (nav.clientTop || 0);
+      var sig = [x.toFixed(2), y.toFixed(2), ar.width.toFixed(2), ar.height.toFixed(2)].join('|');
+      if (gliderLast[pair[0]] === sig) { glider.style.opacity = '1'; return; }  // 没变就不写，省一次重绘
+      gliderLast[pair[0]] = sig;
+      glider.style.transform = 'translate3d(' + x.toFixed(2) + 'px,0,0)';
+      glider.style.top = y.toFixed(2) + 'px';
+      glider.style.width = ar.width.toFixed(2) + 'px';
+      glider.style.height = ar.height.toFixed(2) + 'px';
       glider.style.opacity = '1';
     });
   }
