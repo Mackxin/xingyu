@@ -730,7 +730,18 @@ html[data-theme="light"] .btn--primary{ color:#fff; }
 .cat-item__count{ font-size:11.5px; color:var(--text-mute); font-variant-numeric:tabular-nums; }
 
 .nav-body{ min-width:0; }
-.cat-block{ margin-bottom:clamp(26px,4vw,42px); scroll-margin-top:calc(var(--header-h, 96px) + 24px); }
+/* 分类块：现在一次全铺出来（50 类 / 2078 张卡，两万多节点）。
+   content-visibility:auto 让视口外的块直接跳过布局与绘制，滚到哪儿才渲染哪儿 ——
+   相当于浏览器自带的虚拟滚动，不必再自己折叠。contain-intrinsic-size 里的 auto
+   会记住每块的真实高度，滚动条长度不会跳。
+   这些块都带 id（分类栏点击要滚过去），浏览器对 content-visibility:auto 的元素
+   做 scrollIntoView / 锚点跳转时会先按需布局，所以位置照样准。 */
+.cat-block{
+  margin-bottom:clamp(26px,4vw,42px);
+  scroll-margin-top:calc(var(--header-h, 96px) + 24px);
+  content-visibility:auto;
+  contain-intrinsic-size:auto 720px;
+}
 .cat-block__head{
   display:flex; align-items:center; gap:12px; margin-bottom:16px;
 }
@@ -740,22 +751,7 @@ html[data-theme="light"] .btn--primary{ color:#fff; }
   min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
 }
 
-/* ---------- 分类折叠（站点多的分类先露 12 个，剩下的点开才插进 DOM） ---------- */
-.cat-more{
-  display:flex; align-items:center; justify-content:center; gap:6px;
-  width:100%; margin-top:12px; padding:11px 14px;
-  font:inherit; font-size:13px; color:var(--text-dim);
-  background:var(--glass); border:1px dashed var(--border);
-  border-radius:var(--r); cursor:pointer;
-  transition:color .3s var(--ease), border-color .3s var(--ease), background .3s var(--ease);
-}
-.cat-more:hover{ color:var(--text); border-color:var(--border-strong); background:var(--glass-2); }
-.cat-more:focus-visible{ outline:2px solid var(--a1); outline-offset:2px; }
-.cat-more svg{
-  width:15px; height:15px; fill:none; stroke:currentColor; stroke-width:2;
-  stroke-linecap:round; stroke-linejoin:round; transition:transform .3s var(--ease);
-}
-.cat-more[aria-expanded="true"] svg{ transform:rotate(180deg); }
+/* ---------- 分类折叠（已取消：改成默认全部显示，靠 content-visibility 省开销） ---------- */
 
 .link-grid{
   display:grid; gap:12px;

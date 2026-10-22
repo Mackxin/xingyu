@@ -131,8 +131,6 @@
   /* ---------- 状态 ---------- */
   var ROUTES = ['home', 'nav', 'share', 'post'];         // 主导航 / 滑动切换顺序
   var ALL_ROUTES = ['home', 'nav', 'share', 'post', 'admin'];  // 全部可路由页面（admin 不占主导航）
-  var NAV_FOLD = 12;      // 分类里超过这么多站就先折叠，点「展开全部」再看
-  var NAV_REST = {};      // 折叠掉的卡片 HTML，等点开再插进 DOM
   var state = {
     route: 'home',
     query: '',
@@ -435,7 +433,6 @@
   }
 
   function renderNav(recentHtml) {
-    NAV_REST = {};                 // 每次重渲染都重建折叠缓存
     var q = state.query;
     var searching = !!norm(q) || state.favOnly;
     var results = searching
@@ -499,27 +496,13 @@
 
     var blocks = CATS.map(function (c) {
       var sorted = sortPinned(c.links);
-      var headCards = sorted.slice(0, NAV_FOLD);
-      var restCards = sorted.slice(NAV_FOLD);
-      var many = restCards.length > 0;
-      var card = function (l) { return linkCard({ n: l.n, u: l.u, d: l.d, pin: l.pin }); };
-
-      /* 先只渲染前 NAV_FOLD 张，剩下的存进缓存等点开再插进 DOM
-         —— 62 个分类一次铺满会有两万多节点，手机上会明显发涩 */
-      var headHtml = headCards.map(card).join('');
-      if (many) NAV_REST[c.id] = { h: headHtml, r: restCards.map(card).join('') };
-
-      return '<div class="cat-block' + (many ? ' is-folded' : '') + '" id="cat-' + esc(c.id) + '" data-cat-block="' + esc(c.id) + '">' +
+      var cards = sorted.map(function (l) { return linkCard({ n: l.n, u: l.u, d: l.d, pin: l.pin }); }).join('');
+      /* 全部铺出来，不再折叠。视口外的分类块交给 CSS 的 content-visibility 跳过
+         布局与绘制（见 .cat-block），所以要一口气放两万多张卡也不至于卡 */
+      return '<div class="cat-block" id="cat-' + esc(c.id) + '" data-cat-block="' + esc(c.id) + '">' +
         '<div class="cat-block__head"><h2>' + esc(c.icon) + ' ' + esc(c.name) + '</h2>' +
           '<span class="count">' + c.links.length + ' 个站点 · ' + esc(c.desc) + '</span></div>' +
-        '<div class="link-grid" data-grid="' + esc(c.id) + '">' + headHtml + '</div>' +
-        (many
-          ? '<button class="cat-more" type="button" data-more="' + esc(c.id) + '" ' +
-              'data-n="' + c.links.length + '" aria-expanded="false">' +
-              '<span class="cat-more__t">展开全部 ' + c.links.length + ' 个</span>' +
-              '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9.5l6 6 6-6"/></svg>' +
-            '</button>'
-          : '') +
+        '<div class="link-grid" data-grid="' + esc(c.id) + '">' + cards + '</div>' +
         '</div>';
     }).join('');
 
@@ -546,9 +529,9 @@
   function renderNavCached() {
     var recent = recentBlockHtml();                // 很小，先算出来，顺手塞进 key
     var key = navStateKey(recent);
-    if (navMemo && navMemo.k === key) { NAV_REST = navMemo.rest; return navMemo.html; }
+    if (navMemo && navMemo.k === key) return navMemo.html;
     var html = renderNav(recent);
-    navMemo = { k: key, html: html, rest: NAV_REST };  // 连折叠区的剩余卡片一起存
+    navMemo = { k: key, html: html };
     return html;
   }
   /* 空闲时先把导航页备好：这样第一次左右划到导航页也是"秒出" */
@@ -1059,39 +1042,17 @@
         var block = $('#cat-' + id);
         closeCatSheet();
         if (block) {
-          var hh = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--header-h'), 10) || 96;
-          var top = block.getBoundingClientRect().top + window.scrollY - (hh + 20);
-          window.scrollTo({ top: top, behavior: 'smooth' });
+          /* 用 scrollIntoView：它会先把目标块布局好再算位置（分类块用了
+             content-visibility:auto，视口外的块高度是估算值，自己拼 scrollTo
+             容易滚偏）。落点由 CSS 的 scroll-margin-top 留出顶栏的高度。
+             近处平滑滚过去；隔着好几屏就直接跳，免得长距离平滑滚动一路重排、越滑越卡 */
+          var near = Math.abs(block.getBoundingClientRect().top) < window.innerHeight * 1.5;
+          block.scrollIntoView({ behavior: near ? 'smooth' : 'instant', block: 'start' });
           syncCatBtn(id);
         }
       });
     }
     bindCatRail();
-
-    /* 分类块折叠：站点多的分类先只露 12 个，点一下把剩下的插进来 */
-    var navBody = $('.nav-body');
-    if (navBody) navBody.addEventListener('click', function (e) {
-      var btn = e.target.closest ? e.target.closest('.cat-more') : null;
-      if (!btn) return;
-      var id = btn.getAttribute('data-more');
-      var block = $('#cat-' + id);
-      var grid = block && block.querySelector('.link-grid');
-      var cache = NAV_REST[id];
-      if (!block || !grid || !cache) return;
-
-      var open = block.classList.toggle('is-folded') === false;
-      grid.innerHTML = open ? cache.h + cache.r : cache.h;
-      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
-      btn.querySelector('.cat-more__t').textContent =
-        open ? '收起' : ('展开全部 ' + (btn.getAttribute('data-n') || '') + ' 个');
-      if (!open) {
-        // 收起时如果已经滚到很远，先回到这个分类的头部，别让人悬在半空
-        if (block.getBoundingClientRect().top < 0) {
-          var hh = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--header-h'), 10) || 96;
-          window.scrollTo({ top: block.getBoundingClientRect().top + window.scrollY - (hh + 20), behavior: 'smooth' });
-        }
-      }
-    });
 
     setupSpy();
   }
@@ -2023,7 +1984,17 @@
         document.body.classList.add('is-page-move');            // 让顶栏/底部 tab 先关掉毛玻璃
         drag.delta = dx < 0 ? 1 : -1;
         drag.target = stepTarget(drag.delta);
-        if (drag.target) drag.ghost = makeGhost(drag.target, drag.delta);
+        if (drag.target) {
+          /* 造邻页要把两万多个节点塞进 DOM（导航页更是一整套卡片），这一下会占几十毫秒。
+             排到下一帧再干：手指这一下先正常跟手，画面先动起来，构建的代价藏在后面。
+             如果这期间已经松手（drag 归 null），就干脆不造了 —— 提交时没有邻页也能切 */
+          var d0 = drag;
+          requestAnimationFrame(function () {
+            if (drag !== d0 || !d0.target) return;
+            d0.ghost = makeGhost(d0.target, d0.delta);
+            if (d0.ghost) moveGhost(d0.ghost, d0.dx + d0.ghost.off);
+          });
+        }
       }
       e.preventDefault();                                      // 拦下浏览器自己的横滑 / 回弹 / 返回
       var can = !!drag.target;
