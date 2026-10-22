@@ -354,6 +354,7 @@ html[data-theme="light"] #themeBtn .i-moon{ display:block; }
   max-width:var(--maxw); margin:0 auto;
   padding:clamp(20px,4vw,44px) var(--pad-x) 90px;
   outline:none;
+  position:relative;      /* 滑动时的"邻页"要相对它绝对定位 */
 }
 /* 注意：动画不要用 animation-fill-mode:both —— 收尾关键帧里的 transform 会一直留在
    .page 上（计算值是 identity 矩阵而不是 none），于是 .page 成了 position:fixed 后代的
@@ -368,6 +369,16 @@ html[data-theme="light"] #themeBtn .i-moon{ display:block; }
 @keyframes pageInLeft{ from{ opacity:.15; transform:translate3d(-40%,0,0); } to{ opacity:1; transform:none; } }
 /* 手指还按着、页面跟手平移时：关掉入场动画和过渡，直接跟着手指走 */
 .page.is-drag{ animation:none !important; transition:none !important; will-change:transform; }
+/* 滑动时从侧边跟手进来的"邻页"：绝对定位盖在内容区上，不占流、不参与布局，
+   位置取真页的内容区（top/左右都对齐 #app 的 padding），换页时才接得上、看不出替换 */
+.page.is-ghost{
+  position:absolute; top:clamp(20px,4vw,44px); left:var(--pad-x); right:var(--pad-x);
+  animation:none !important; pointer-events:none; will-change:transform;
+}
+/* 跟手期间把溢出的部分裁掉（邻页停在视口外、真页滑出去一半），
+   否则文档会被撑出横向可滚动区，纵向也会多出一截空白 */
+body.is-page-move #app{ overflow:hidden; }
+@supports (overflow:clip){ body.is-page-move #app{ overflow:clip; } }
 /* 切页 / 拖拽期间把毛玻璃先关掉：背面内容在动的时候，backdrop-filter 每一帧都要
    重新采样 + 模糊，是中低端手机掉帧的大头。用更实的底色顶上，静态看几乎没差 */
 body.is-page-move .dock{
@@ -757,18 +768,13 @@ html[data-theme="light"] .btn--primary{ color:#fff; }
   transition:transform .4s var(--ease), border-color .35s var(--ease), box-shadow .4s var(--ease), background .35s var(--ease);
   overflow:hidden;
 }
-.link-card::before{
-  content:""; position:absolute; left:0; top:50%; transform:translateY(-50%);
-  width:3px; height:0; border-radius:0 4px 4px 0; background:var(--grad);
-  transition:height .4s var(--ease);
-}
+/* 高亮只做整体：上浮 + 描边变亮 + 底色 + 柔光。不再在左边竖一条 3px 的渐变条 */
 .link-card:hover{
   transform:translateY(-4px);
   border-color:var(--border-strong);
   background:var(--glass-2);
   box-shadow:var(--shadow-sm), 0 0 0 1px rgba(124,156,255,.16);
 }
-.link-card:hover::before{ height:56%; }
 .link-card__body{ min-width:0; flex:1; }
 .link-card__name{
   display:flex; align-items:center; gap:6px;

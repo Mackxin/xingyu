@@ -930,6 +930,18 @@
       render({ animate: false });
     }
   }
+  /* 只算某个路由的页面 HTML：不碰 DOM、不跑副作用。
+     左右滑动时用它先把"邻页"备好，手指慢慢划就能看到下一页的内容了。
+     postId 显式传 null 表示"文章列表"（邻页不可能是正在读的那一篇）。 */
+  function routeHtml(route, postId) {
+    var pid = postId === undefined ? state.postId : postId;
+    return route === 'admin'
+         ? (window.XY_ADMIN ? window.XY_ADMIN.render() : renderHome())
+         : route === 'nav' ? renderNavCached()
+         : route === 'share' ? renderShare()
+         : route === 'post' ? (pid ? renderPost() : renderPosts())
+         : renderHome();
+  }
   function render(opts) {
     opts = opts || {};
     var animate = opts.animate !== false;      // 是否播放页面入场动画
@@ -938,12 +950,7 @@
     // 供 CSS 用（比如只在导航页显示顶栏的分类按钮）
     document.documentElement.setAttribute('data-route', state.route);
     var app = $('#app');
-    var html = state.route === 'admin'
-             ? (window.XY_ADMIN ? window.XY_ADMIN.render() : renderHome())
-             : state.route === 'nav' ? renderNavCached()
-             : state.route === 'share' ? renderShare()
-             : state.route === 'post' ? (state.postId ? renderPost() : renderPosts())
-             : renderHome();
+    var html = routeHtml(state.route);
     app.innerHTML = html;
     // 原地更新（筛选、收藏、搜索）不重播入场动画，避免视觉抖动
     if (!animate) {
@@ -1955,13 +1962,39 @@
     }
     function pageEl() { var app = $('#app'); return app ? app.firstElementChild : null; }
 
-    /* 1) 触屏滑动：跟手拖拽
-       手指移动时页面实时跟着平移（transform，GPU 合成），松手再决定是切页还是弹回去。
-       之前是"松手才动"，所以手感是一顿一顿的。 */
+    /* 1) 触屏滑动：双页跟手
+       手指移动时，当前页和"隔壁那一页"一起跟着平移 —— 慢慢划就能提前看到下一页的内容，
+       松手再决定是切页还是弹回去。之前只移动当前页，旁边是空的，所以像"拖走一张纸"。 */
     var EDGE = 26;            // 左右边缘这一条留给系统的手势（iOS/安卓的侧滑返回），不去抢
     var COMMIT = 56;          // 松手时超过这个位移就算切页
+    var EASE = 'cubic-bezier(.22,.61,.36,1)';
     var drag = null;
     var moveTimer = null;     // 延后恢复毛玻璃的定时器（连续划动时不能被上一轮的定时器打断）
+
+    /* 把邻页造出来，塞在 #app 里、绝对定位盖在内容区上，初始停在视口外侧。
+       纵向位置要对齐"视口顶部"（而不是文档顶部）：页面已经滚到中间时划过来，
+       看到的就是新页的开头，松手换页正好归零，视觉上才接得住。 */
+    function makeGhost(route, delta) {
+      var app = $('#app');
+      if (!app) return null;
+      var box = document.createElement('div');
+      box.innerHTML = routeHtml(route, null);       // 邻页只可能是"文章列表"，不会是某篇文章
+      var g = box.firstElementChild;
+      if (!g) return null;
+      var pt = parseFloat(getComputedStyle(app).paddingTop) || 0;
+      g.classList.add('is-ghost');
+      g.setAttribute('aria-hidden', 'true');
+      /* 纵向对到"这一页滚到顶时"的位置：页面已经滚到中间再划过来，看到的是新页的开头，
+         松手换页正好归零，前后接得上。top 是相对 #app 的 padding box，所以加的是 scrollY。 */
+      g.style.top = (window.scrollY + pt).toFixed(1) + 'px';
+      var off = delta > 0 ? window.innerWidth : -window.innerWidth;
+      g.style.transform = 'translate3d(' + off + 'px,0,0)';
+      app.appendChild(g);                           // 追加在最后，#app 的第一个子元素仍是真页
+      return { el: g, off: off };
+    }
+    function moveGhost(ghost, x) {
+      if (ghost) ghost.el.style.transform = 'translate3d(' + x.toFixed(1) + 'px,0,0)';
+    }
 
     document.body.addEventListener('touchstart', function (e) {
       drag = null;
@@ -1973,7 +2006,7 @@
       var pg = pageEl();
       if (!pg) return;
       drag = { x: t.clientX, y: t.clientY, dx: 0, decided: false, horiz: false,
-               pg: pg, ok: true, t0: Date.now(), vw: vw };
+               pg: pg, ok: true, t0: Date.now(), vw: vw, ghost: null, target: null, delta: 0 };
     }, { passive: true });
 
     document.body.addEventListener('touchmove', function (e) {
@@ -1988,45 +2021,69 @@
         drag.pg.classList.add('is-drag');                      // 关掉入场动画，直接跟手
         clearTimeout(moveTimer);                               // 上一轮"恢复毛玻璃"的定时器作废
         document.body.classList.add('is-page-move');            // 让顶栏/底部 tab 先关掉毛玻璃
+        drag.delta = dx < 0 ? 1 : -1;
+        drag.target = stepTarget(drag.delta);
+        if (drag.target) drag.ghost = makeGhost(drag.target, drag.delta);
       }
       e.preventDefault();                                      // 拦下浏览器自己的横滑 / 回弹 / 返回
-      var delta = dx < 0 ? 1 : -1;
-      var can = !!stepTarget(delta);
+      var can = !!drag.target;
       var move = can ? dx : dx * 0.28;                          // 已经到头了，给个阻尼
       drag.dx = move;
       drag.pg.style.transform = 'translate3d(' + move.toFixed(1) + 'px,0,0)';
+      if (drag.ghost) moveGhost(drag.ghost, move + drag.ghost.off);
     }, { passive: false });
 
     document.body.addEventListener('touchend', function () {
       if (!drag || !drag.ok) { drag = null; return; }
       var d = drag; drag = null;
-      if (!d.decided || !d.horiz) { cleanup(d.pg); return; }
-      var pg = d.pg, dx = d.dx;
+      if (!d.decided || !d.horiz) { cleanup(d.pg, d.ghost); return; }
+      var pg = d.pg, dx = d.dx, ghost = d.ghost;
       var dt = Math.max(1, Date.now() - d.t0);
-      var fast = Math.abs(dx) / dt > 0.35;                      // 甩得够快也算切页
-      var delta = dx < 0 ? 1 : -1;
-      var commit = !!stepTarget(delta) && Math.abs(dx) > 20 && (Math.abs(dx) > COMMIT || fast);
+      var fast = Math.abs(dx) / dt > 0.35;                       // 甩得够快也算切页
+      var can = !!d.target;
+      /* 两种算切页：拖过 COMMIT 那道线；或者甩得够快、且确实划出去了一小段（12px 以上）。
+         后者是为了"轻甩一下就走"的手感，同时不会把误触（手指抖几像素）当成翻页 */
+      var commit = can && (Math.abs(dx) > COMMIT || (fast && Math.abs(dx) > 12));
       var dur = 170;
-      pg.style.transition = 'transform ' + dur + 'ms cubic-bezier(.22,.61,.36,1)';
-      if (!commit) {                                            // 没过阈值：弹回原位
+
+      if (!commit) {                                            // 没过阈值：两页一起弹回原位
+        pg.style.transition = 'transform ' + dur + 'ms ' + EASE;
         pg.style.transform = 'translate3d(0,0,0)';
-        setTimeout(function () { cleanup(pg); }, dur + 30);
+        if (ghost) {
+          ghost.el.style.transition = 'transform ' + dur + 'ms ' + EASE;
+          moveGhost(ghost, ghost.off);
+        }
+        setTimeout(function () { cleanup(pg, ghost); }, dur + 30);
         return;
       }
-      // 旧页顺着手指方向滑出去，滑完再换页（新页从另一侧进来）
-      pg.style.transform = 'translate3d(' + (dx < 0 ? -1 : 1) * Math.max(d.vw * 0.55, 200) + 'px,0,0)';
-      setTimeout(function () { step(delta, dx < 0 ? 'right' : 'left'); }, dur - 20);
-      // 新页面的入场动画（.26s）走完再恢复毛玻璃，中途恢复会逐帧重采样、白掉帧
-      moveTimer = setTimeout(function () { document.body.classList.remove('is-page-move'); }, dur + 320);
+
+      /* 提交：旧页顺着手指方向滑出去，邻页同时滑进来；
+         等邻页正好走到位的那一帧再换路由 —— 换完之后新页面接在同一位置，看不出来被替换过 */
+      var out = (dx < 0 ? -1 : 1) * Math.max(d.vw, 300);
+      pg.style.transition = 'transform ' + dur + 'ms ' + EASE;
+      pg.style.transform = 'translate3d(' + out + 'px,0,0)';
+      if (ghost) {
+        ghost.el.style.transition = 'transform ' + (dur - 20) + 'ms ' + EASE;
+        moveGhost(ghost, 0);
+      }
+      var target = d.target;
+      setTimeout(function () { navigate(target); }, dur - 20);   // 不传 dir：动画已经播完了
+      // 等这一轮彻底落定再恢复毛玻璃，中途恢复会逐帧重采样、白掉帧
+      moveTimer = setTimeout(function () { document.body.classList.remove('is-page-move'); }, dur + 120);
     }, { passive: true });
 
     document.body.addEventListener('touchcancel', function () {
       if (!drag) return;
-      var pg = drag.pg; drag = null;
-      if (pg) { pg.style.transform = 'translate3d(0,0,0)'; setTimeout(function () { cleanup(pg); }, 220); }
+      var pg = drag.pg, ghost = drag.ghost; drag = null;
+      if (pg) {
+        pg.style.transform = 'translate3d(0,0,0)';
+        if (ghost) moveGhost(ghost, ghost.off);
+        setTimeout(function () { cleanup(pg, ghost); }, 220);
+      }
     }, { passive: true });
 
-    function cleanup(pg) {
+    function cleanup(pg, ghost) {
+      if (ghost && ghost.el && ghost.el.parentNode) ghost.el.parentNode.removeChild(ghost.el);
       if (!pg) return;
       pg.classList.remove('is-drag');
       /* 关键：显式关掉 animation。上一页可能还带着 page--from-right 这个类，
