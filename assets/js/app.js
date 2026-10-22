@@ -434,7 +434,7 @@
       '</div>';
   }
 
-  function renderNav() {
+  function renderNav(recentHtml) {
     NAV_REST = {};                 // 每次重渲染都重建折叠缓存
     var q = state.query;
     var searching = !!norm(q) || state.favOnly;
@@ -525,8 +525,38 @@
 
     return '<section class="page">' + head +
       '<div class="nav-layout">' + rail +
-        '<div class="nav-body">' + recentBlockHtml() + blocks + '</div>' +
+        '<div class="nav-body">' + (recentHtml === undefined ? recentBlockHtml() : recentHtml) + blocks + '</div>' +
       '</div></section>';
+  }
+
+  /* 导航页是全站最重的一页（50 类 / 2078 张卡片），光拼字符串就要几十毫秒。
+     左右划回来这种「状态没变」的重进没必要再算一遍 —— 用一条缓存接住。
+     key 里放齐所有影响输出的东西：搜索词、只看收藏、分类筛选、收藏列表、
+     置顶情况、最近访问那一块。任何一项变了 key 就变，自然失效，不用手动清。 */
+  var navMemo = null;
+  function navStateKey(recentHtml) {
+    var pins = 0;
+    for (var i = 0; i < CATS.length; i++) {
+      var ls = CATS[i].links;
+      for (var j = 0; j < ls.length; j++) if (ls[j].pin) pins++;
+    }
+    return [state.query, state.favOnly ? 1 : 0, state.catFilter, state.fav.join(','),
+            pins, recentHtml].join('\u0001');
+  }
+  function renderNavCached() {
+    var recent = recentBlockHtml();                // 很小，先算出来，顺手塞进 key
+    var key = navStateKey(recent);
+    if (navMemo && navMemo.k === key) { NAV_REST = navMemo.rest; return navMemo.html; }
+    var html = renderNav(recent);
+    navMemo = { k: key, html: html, rest: NAV_REST };  // 连折叠区的剩余卡片一起存
+    return html;
+  }
+  /* 空闲时先把导航页备好：这样第一次左右划到导航页也是"秒出" */
+  function warmNav() {
+    if (navMemo) return;
+    var run = function () { if (!navMemo) renderNavCached(); };
+    if (window.requestIdleCallback) requestIdleCallback(run, { timeout: 2500 });
+    else setTimeout(run, 1200);
   }
 
   function navHead(meta) {
@@ -910,7 +940,7 @@
     var app = $('#app');
     var html = state.route === 'admin'
              ? (window.XY_ADMIN ? window.XY_ADMIN.render() : renderHome())
-             : state.route === 'nav' ? renderNav()
+             : state.route === 'nav' ? renderNavCached()
              : state.route === 'share' ? renderShare()
              : state.route === 'post' ? (state.postId ? renderPost() : renderPosts())
              : renderHome();
@@ -2098,6 +2128,7 @@
     window.addEventListener('resize', onResize);
     window.addEventListener('orientationchange', onResize);
     setTimeout(function () { if (header) header.classList.add('is-stuck'); syncHeaderVar(); }, 400);
+    warmNav();   // 空闲时把最重的导航页先备好，等会儿划过去就是秒出
 
     // 字体就绪后重新校准导航高亮位置
     updateGlider();
