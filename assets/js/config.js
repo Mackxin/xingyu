@@ -84,7 +84,11 @@
       entries: [],             // 首页快捷卡片；空 = 用 data.js 的 entries
       featuredTitle: '今日精选',
       featuredDesc: '这一阵子遇见的好东西，随手记在这里。',
-      featuredCount: 6
+      featuredCount: 6,
+      /* 今日精选指定哪几条（存 feedKey：日期|标题）。
+         空数组 = 自动取「分享」里最新的 featuredCount 条；
+         有值 = 只显示这几条，条数由勾选数量决定。 */
+      featuredPicks: []
     }
   };
 
@@ -93,6 +97,7 @@
   var AUTO_KEYS = ['cats', 'links', 'feed', 'days', 'posts'];
   var MAX_STATS = 6;
   var MAX_ENTRIES = 8;
+  var MAX_FEATURED_PICKS = 12;      // 「今日精选」最多指定几条，和 featuredCount 上限一致
   var MAX_IMG_CHARS = 2200000;   // 图片 data URL 上限（约 1.6MB 二进制）
   var ACCENTS = ['aurora', 'ocean', 'sunset', 'forest', 'grape', 'sakura', 'ink', 'custom'];
   var MAX_PRESETS = 8;             // 自己存的配色（「我的配色 A/B/C…」）最多几套
@@ -155,6 +160,17 @@
     });
   }
 
+  /* 「今日精选」指定了哪几条：存的是 feedKey（日期|标题），去重、最多 12 条 */
+  function normPicks(list) {
+    if (!Array.isArray(list)) return [];
+    var out = [];
+    list.forEach(function (k) {
+      var s = String(k == null ? '' : k).slice(0, 200);
+      if (s && out.indexOf(s) < 0 && out.length < MAX_FEATURED_PICKS) out.push(s);
+    });
+    return out;
+  }
+
   /* 首页配置：逐字段合并，保证老配置 / 局部配置也能用 */
   function normHome(src) {
     src = (src && typeof src === 'object') ? src : {};
@@ -179,7 +195,8 @@
       entries: normEntries(src.entries),
       featuredTitle: str(src.featuredTitle, d.featuredTitle, 24),
       featuredDesc: str(src.featuredDesc, d.featuredDesc, 80),
-      featuredCount: intIn(src.featuredCount, 3, 12, d.featuredCount)
+      featuredCount: intIn(src.featuredCount, 3, 12, d.featuredCount),
+      featuredPicks: normPicks(src.featuredPicks)
     };
   }
 
@@ -329,6 +346,7 @@
     MAX_LINKS: MAX_LINKS,
     MAX_STATS: MAX_STATS,
     MAX_ENTRIES: MAX_ENTRIES,
+    MAX_FEATURED_PICKS: MAX_FEATURED_PICKS,
     MAX_IMG_CHARS: MAX_IMG_CHARS,
     AUTO_KEYS: AUTO_KEYS,
     ACCENTS: ACCENTS,
@@ -604,6 +622,13 @@
     },
 
     /* ---------- 分享条目（#/share 时间线） ---------- */
+    /* 一条分享的稳定标识：日期 + 标题。没有 id 字段，就用它当钥匙 ——
+       「今日精选」靠它记住"选了哪几条"，所以改了标题/日期就等于换了一条。 */
+    feedKey: function (f) {
+      f = f || {};
+      return String(f.date == null ? '' : f.date) + '|' + String(f.title == null ? '' : f.title);
+    },
+
     /* 后台用：始终返回独立副本（已按日期倒序，和前台分组顺序一致） */
     feedAll: function () {
       var raw = null;

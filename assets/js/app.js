@@ -213,6 +213,12 @@
     });
     PALETTE_INDEX = buildPaletteIndex();
   }
+  /* 一条分享的钥匙：日期 + 标题。首页「今日精选」和后台选择器共用这把钥匙 */
+  function feedKey(f) {
+    if (window.XYStore && window.XYStore.feedKey) return window.XYStore.feedKey(f);
+    f = f || {};
+    return String(f.date || '') + '|' + String(f.title || '');
+  }
 
   /* ---------- 索引 / 搜索 ---------- */
   /* 字母按顺序出现即算命中：gh → GitHub，mdn → MDN（只用于 2–5 位的短查询） */
@@ -318,7 +324,19 @@
         '</a>';
     }).join('');
 
-    var featuredHtml = FEED.slice(0, Math.max(1, h.featuredCount || 6)).map(function (f) {
+    /* 今日精选：后台勾了哪几条就显示哪几条（按「分享」页的顺序）；
+       一条都没勾时，退回"自动取最新 featuredCount 条"。 */
+    var picks = (h.featuredPicks || []);
+    var featuredList;
+    if (picks.length) {
+      var byKey = {};
+      FEED.forEach(function (f) { byKey[feedKey(f)] = f; });
+      featuredList = picks.map(function (k) { return byKey[k]; }).filter(Boolean);
+    } else {
+      featuredList = FEED.slice(0, Math.max(1, h.featuredCount || 6));
+    }
+
+    var featuredHtml = featuredList.map(function (f) {
       var isHash = f.url.charAt(0) === '#';
       return '<a class="card card--hover feature-card" href="' + esc(f.url) + '"' + (isHash ? '' : ' target="_blank" rel="noopener"') + '>' +
         '<span class="feature-card__top"><span class="glyph glyph--sm" style="background:linear-gradient(135deg,rgba(124,156,255,.35),rgba(180,124,255,.3))">' + esc(f.icon) + '</span>' +
@@ -327,6 +345,15 @@
         '<span class="feature-card__meta">📅 ' + esc(f.date) + '</span>' +
         '</a>';
     }).join('');
+
+    /* 勾选的条目全被删掉时会一条不剩：整块收起来，别留个空标题在那 */
+    var featuredBlock = featuredHtml
+      ? '<div class="featured">' +
+          '<div class="section-head"><div><h2>' + esc(h.featuredTitle) + '</h2><p>' + esc(h.featuredDesc) + '</p></div>' +
+            '<a class="pill pill--btn" href="#/share">查看全部 ' + I.arrow + '</a></div>' +
+          '<div class="track">' + featuredHtml + '</div>' +
+        '</div>'
+      : '';
 
     var cta1Ext = !isInternal(h.cta1Url);
 
@@ -358,11 +385,7 @@
       '</div>' +
       (statsHtml ? '<div class="stats">' + statsHtml + '</div>' : '') +
       (entriesHtml ? '<div class="bento">' + entriesHtml + '</div>' : '') +
-      '<div class="featured">' +
-        '<div class="section-head"><div><h2>' + esc(h.featuredTitle) + '</h2><p>' + esc(h.featuredDesc) + '</p></div>' +
-          '<a class="pill pill--btn" href="#/share">查看全部 ' + I.arrow + '</a></div>' +
-        '<div class="track">' + featuredHtml + '</div>' +
-      '</div>' +
+      featuredBlock +
     '</section>';
   }
 

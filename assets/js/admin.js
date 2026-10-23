@@ -1976,6 +1976,34 @@
       '</div>';
   }
 
+  /* 「今日精选」勾选列表：把「分享」里的条目全摆出来，勾上哪条首页就显示哪条 */
+  function picksListHtml(h) {
+    var list = Store.feedAll();
+    if (!list.length) {
+      return '<p class="admin-empty">「分享」页还没有内容，先去加几条再回来挑。</p>';
+    }
+    var picked = h.featuredPicks || [];
+    var full = picked.length >= Store.MAX_FEATURED_PICKS;
+    var rows = list.map(function (f) {
+      var key = Store.feedKey(f);
+      var on = picked.indexOf(key) > -1;
+      return '<label class="pick-row' + (on ? ' is-on' : '') + '">' +
+          '<input type="checkbox" data-pick="' + esc(key) + '"' + (on ? ' checked' : '') +
+            ((!on && full) ? ' disabled' : '') + ' />' +
+          '<i class="pick-row__icon">' + esc(f.icon || '✨') + '</i>' +
+          '<span class="pick-row__title">' + esc(f.title) + '</span>' +
+          '<span class="pick-row__date">' + esc(f.date || '—') + '</span>' +
+        '</label>';
+    }).join('');
+    return '<div class="pick-list" id="adminPicks">' + rows + '</div>' +
+      '<div class="admin-actions">' +
+        '<button class="btn btn--ghost" type="button" id="adminPicksClear"' +
+          (picked.length ? '' : ' disabled') + '>全不选（回到自动）</button>' +
+        '<span class="admin-tip" style="margin-top:0">已勾 ' + picked.length + ' / ' +
+          Store.MAX_FEATURED_PICKS + ' 条</span>' +
+      '</div>';
+  }
+
   function homePanel() {
     var h = Store.home();
     var stats = h.stats || [];
@@ -2043,12 +2071,18 @@
       '</div>' +
 
       '<div class="admin-card">' +
-        '<h2>今日精选</h2>' +
-        '<p>首页最下面那条横向卡片，内容取自「分享」页的最新几条。</p>' +
+        '<div class="admin-card__head">' +
+          '<div><h2>今日精选</h2>' +
+            '<p>首页最下面那条横向卡片。勾哪几条，首页就显示哪几条；一条都不勾 = 自动取「分享」里最新的几条。</p></div>' +
+          '<span class="admin-count" id="picksCount">' +
+            (h.featuredPicks.length ? h.featuredPicks.length + ' 条指定' : '自动') + '</span>' +
+        '</div>' +
         hfield('标题', 'featuredTitle', h.featuredTitle, '') +
         hfield('副标题', 'featuredDesc', h.featuredDesc, '') +
-        '<label class="admin-field"><span class="admin-field__label">显示条数<em>3 – 12</em></span>' +
+        '<label class="admin-field"><span class="admin-field__label">自动时的条数<em>3 – 12，只在下面一条都没勾时生效</em></span>' +
           '<input type="number" min="3" max="12" data-home="featuredCount" value="' + h.featuredCount + '" /></label>' +
+        '<div class="admin-sub">显示哪几条<em>顺序跟「分享」页一致，新的在前；删掉的条目会自动从首页消失</em></div>' +
+        picksListHtml(h) +
       '</div>' +
 
       '<div class="admin-card">' +
@@ -2707,6 +2741,52 @@
       el.addEventListener('input', apply);
       el.addEventListener('change', apply);
     });
+
+    /* 今日精选：勾上哪条，首页就显示哪条（勾的顺序不管，页面上统一按分享页顺序排） */
+    var picksBox = body.querySelector('#adminPicks');
+    if (picksBox) {
+      var syncPicks = function () {
+        var picked = Store.home().featuredPicks || [];
+        var full = picked.length >= Store.MAX_FEATURED_PICKS;
+        var cnt = root.querySelector('#picksCount');
+        if (cnt) cnt.textContent = picked.length ? picked.length + ' 条指定' : '自动';
+        var clear = root.querySelector('#adminPicksClear');
+        if (clear) clear.disabled = !picked.length;
+        var tip = picksBox.parentNode.querySelector('.admin-actions .admin-tip');
+        if (tip) tip.textContent = '已勾 ' + picked.length + ' / ' + Store.MAX_FEATURED_PICKS + ' 条';
+        picksBox.querySelectorAll('[data-pick]').forEach(function (cb) {
+          var on = cb.checked;
+          cb.closest('.pick-row').classList.toggle('is-on', on);
+          cb.disabled = !on && full;
+        });
+      };
+      picksBox.addEventListener('change', function (e) {
+        var cb = e.target.closest('[data-pick]');
+        if (!cb) return;
+        var key = cb.getAttribute('data-pick');
+        var cur = (Store.home().featuredPicks || []).slice();
+        var i = cur.indexOf(key);
+        if (cb.checked && i < 0) {
+          if (cur.length >= Store.MAX_FEATURED_PICKS) {
+            cb.checked = false;
+            toast('最多指定 ' + Store.MAX_FEATURED_PICKS + ' 条');
+            return;
+          }
+          cur.push(key);
+        } else if (!cb.checked && i > -1) {
+          cur.splice(i, 1);
+        }
+        Store.setHome({ featuredPicks: cur });
+        syncPicks();
+      });
+      var picksClear = root.querySelector('#adminPicksClear');
+      if (picksClear) picksClear.addEventListener('click', function () {
+        Store.setHome({ featuredPicks: [] });
+        picksBox.querySelectorAll('[data-pick]').forEach(function (cb) { cb.checked = false; });
+        syncPicks();
+        toast('已回到自动：首页取最新的几条');
+      });
+    }
 
     var statsWrap = body.querySelector('#adminStats');
     if (statsWrap) {
