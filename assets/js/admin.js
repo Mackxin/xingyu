@@ -18,7 +18,8 @@
     { id: 'links',    label: '自定义链接', icon: '🔗', badge: 'adminTabLinksN' },
     { id: 'site',     label: '站点信息', icon: '🌌' },
     { id: 'backup',   label: '备份',     icon: '💾' },
-    { id: 'security', label: '口令',     icon: '🔐' }
+    { id: 'security', label: '口令',     icon: '🔐' },
+    { id: 'guide',    label: '手册 / 参数', icon: '📖' }
   ];
 
   var tab = 'sites';
@@ -169,6 +170,7 @@
     if (tab === 'site') return sitePanel();
     if (tab === 'backup') return backupPanel();
     if (tab === 'security') return securityPanel();
+    if (tab === 'guide') return guidePanel();
     return sitesPanel();
   }
 
@@ -2544,6 +2546,249 @@
       '</div>';
   }
 
+  /* ======================= 使用手册 / 技术参数 ======================= */
+  function fmtBytes(n) {
+    if (!n) return '0 KB';
+    if (n < 1024) return n + ' B';
+    if (n < 1024 * 1024) return (n / 1024).toFixed(1) + ' KB';
+    return (n / 1024 / 1024).toFixed(2) + ' MB';
+  }
+  /* localStorage 里本站占了多少（按 UTF-16 估算，只是给个量级） */
+  function storageStat() {
+    var bytes = 0, n = 0;
+    try {
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i) || '';
+        if (k.indexOf('xingyu.') !== 0) continue;
+        bytes += (k.length + String(localStorage.getItem(k) || '').length) * 2;
+        n++;
+      }
+    } catch (e) {}
+    return { n: n, bytes: bytes };
+  }
+  /* 缓存版本号从 <script src="app.js?v=..."> 上取，跟 sw.js 的 VERSION 是同一个 */
+  function cacheVer() {
+    try {
+      var s = document.querySelector('script[src*="app.js?v="]');
+      var m = s && /[?&]v=([\w.]+)/.exec(s.getAttribute('src') || '');
+      return m ? 'v' + m[1] : '—';
+    } catch (e) { return '—'; }
+  }
+  function bootMs() {
+    try {
+      var n = performance.getEntriesByType('navigation')[0];
+      return n && n.domContentLoadedEventEnd ? Math.round(n.domContentLoadedEventEnd) + ' ms' : '—';
+    } catch (e) { return '—'; }
+  }
+  function kv(k, v) {
+    return '<div class="guide-kv"><b>' + k + '</b><span>' + v + '</span></div>';
+  }
+  function gRow(a, b) {
+    return '<div class="guide-row"><b>' + a + '</b><span>' + b + '</span></div>';
+  }
+
+  function guidePanel() {
+    var d = counts();
+    var fed = Store.feedAll().length;
+    var pos = Store.postsAll().length;
+    var lnk = Store.allLinks().length;
+    var ss = storageStat();
+    var ver = cacheVer();
+
+    /* ---------- 使用手册 ---------- */
+    var pagesRows = [
+      ['🏝 首页', '站点门面：标语、统计、几个入口卡、今日精选横轨'],
+      ['🧭 导航', '全部分类 + 站点卡片，' + d.links + ' 个站点；顶栏可搜、可只看收藏、可随机漫游'],
+      ['📰 分享', '按日期分组的时间线，' + fed + ' 条；点标签筛选，点卡片直接开原链接'],
+      ['✍️ 文章', '列表 + 阅读页（右侧目录、上一篇/下一篇、代码高亮）'],
+      ['🔐 后台', '就是这里：改完立刻生效，但只存在本机浏览器']
+    ].map(function (r) { return gRow(r[0], r[1]); }).join('');
+
+    var keysRows = [
+      ['<code>⌘K</code> / <code>Ctrl+K</code> / <code>/</code>', '呼出全站搜索面板，跨页面 / 分类 / 站点 / 分享 / 文章一起搜'],
+      ['<code>1</code> <code>2</code> <code>3</code> <code>4</code>', '直达 首页 / 导航 / 分享 / 文章'],
+      ['<code>←</code> <code>→</code>', '上一页 / 下一页'],
+      ['<code>T</code>', '切明暗主题'],
+      ['<code>R</code>', '随机漫游一个站点'],
+      ['<code>F</code>', '导航页「只看收藏」'],
+      ['<code>?</code>', '弹出快捷键说明'],
+      ['<code>Esc</code>', '关掉任何打开的面板']
+    ].map(function (r) { return gRow(r[0], r[1]); }).join('');
+
+    var adminRows = [
+      ['🗂 站点数据', '增删分类与站点、拖拽排序、改图标与描述。这是「导航」页和全站搜索的数据源'],
+      ['📰 分享', '发一条分享（日期 / 图标 / 标题 / 链接 / 标签 / 描述），列表里可搜索、可编辑'],
+      ['✍️ 文章', '写文章、导入 <code>.md</code>、存草稿、预览正文'],
+      ['🏠 首页内容', '改标语、统计数字、入口卡、今日精选（勾哪几条显示哪几条，最多 12 条）'],
+      ['🎨 主题', '7 套配色 + 自己敲 <code>#ff1d55</code> 这类色值 + 「我的配色」存多套；还有极光强度、圆角、默认主题、卡片密度、正文字号行高'],
+      ['🔗 自定义链接', '顶栏/页脚那种自己加的链接，最多 ' + MAX + ' 个'],
+      ['🌌 站点信息', '站名、标语、建站日期、Logo、Favicon、分享卡片图'],
+      ['💾 备份', '把全部设置导出成 JSON / JS；也能导入回来、恢复默认'],
+      ['🔐 口令', '改访问口令。注意这是纯前端门禁，只防误入，不是真安全'],
+      ['📖 手册 / 参数', '就是这一页']
+    ].map(function (r) { return gRow(r[0], r[1]); }).join('');
+
+    var usageCard = '<div class="admin-card" id="guideUsage">' +
+        '<div class="admin-card__head guide-head">' +
+          '<div><h2>使用手册</h2><p>五分钟摸清这个站怎么用、后台每个面板管什么。</p></div>' +
+          '<button class="btn btn--ghost" type="button" data-guide-copy>⧉ 复制这份手册</button>' +
+        '</div>' +
+
+        '<div class="admin-sub"><b>前台四个页面</b><em>顶栏 tab / 快捷键 / 手机左右滑都能切</em></div>' +
+        '<div class="guide-list">' + pagesRows + '</div>' +
+
+        '<div class="admin-sub"><b>快捷键</b><em>输入框里打字时不会误触发</em></div>' +
+        '<div class="guide-list">' + keysRows + '</div>' +
+
+        '<div class="admin-sub"><b>手机上</b><em>窄屏自动换一套交互</em></div>' +
+        '<div class="guide-list">' +
+          gRow('左右滑', '切页面，隔壁页会跟着滑进来，松手按位移 / 速度决定去留') +
+          gRow('双击顶栏空白', '一下到底，再双击回顶部（长页面很省事）') +
+          gRow('长按卡片', '弹出收藏 / 复制链接 / 打开') +
+          gRow('底部 tab 栏', '导航胶囊移到屏幕底部，单手拇指够得着') +
+          gRow('🏷 顶栏按钮', '窄屏时标签 / 分类收成按钮，点开是底部面板') +
+        '</div>' +
+
+        '<div class="admin-sub"><b>后台每个面板管什么</b><em>左侧那一列从上到下</em></div>' +
+        '<div class="guide-list">' + adminRows + '</div>' +
+
+        '<div class="admin-sub"><b>五个最常见的操作</b><em>照着点就行</em></div>' +
+        '<ol class="guide-steps">' +
+          '<li><b>加一个站点</b>：站点数据 → 展开分类 → 「＋ 添加站点」→ 填名字和网址 → 回车保存</li>' +
+          '<li><b>发一条分享</b>：分享 → 「＋ 新建」→ 日期默认今天，填标题和链接，标签用逗号隔开</li>' +
+          '<li><b>写一篇文章</b>：文章 → 「＋ 新建」→ 支持 Markdown，右边能实时预览 → 保存</li>' +
+          '<li><b>换个配色</b>：主题 → 点色板，或在 <code>HEX</code> 框里敲 <code>#ff1d55</code> → 回车，全站立刻变</li>' +
+          '<li><b>给别人看</b>：这里改的都只在你本机。想让所有访客看到，去「备份」导出，或者直接改源文件后重新发布</li>' +
+        '</ol>' +
+
+        '<div class="admin-sub"><b>三件要注意的事</b><em>不然容易白折腾</em></div>' +
+        '<div class="guide-list">' +
+          gRow('改动只在本机', '后台所有设置存在浏览器 <code>localStorage</code> 里。换设备、清缓存、换浏览器都不会跟过去') +
+          gRow('发布 ≠ 同步设置', '发布上线的是代码，你在后台改的内容仍然只在这台机器上。两份东西要分开维护') +
+          gRow('口令不是安全', '纯前端门禁，只挡误入。真正的私密内容别放在这个站里') +
+        '</div>' +
+      '</div>';
+
+    /* ---------- 技术参数 ---------- */
+    var liveGrid = [
+      kv('缓存版本', ver + '（与 <code>sw.js</code> 的 VERSION 同步）'),
+      kv('分类 / 站点', d.cats + ' 类 · ' + d.links + ' 个'),
+      kv('分享条目', fed + ' 条（内置 + 导入）'),
+      kv('文章', pos + ' 篇'),
+      kv('自定义链接', lnk + ' / ' + MAX),
+      kv('本机存储', ss.n
+        ? fmtBytes(ss.bytes) + '（' + ss.n + ' 个 key）'
+        : '还没有本机改动（都用 <code>data.js</code> 里的默认值）'),
+      kv('首屏 DOM 就绪', bootMs()),
+      kv('运行模式', /^https?:$/.test(location.protocol) ? '静态托管' : '本地文件')
+    ].join('');
+
+    var stackGrid = [
+      kv('形态', '零依赖单页应用（SPA），<b>没有构建步骤</b>，文件写完就是成品'),
+      kv('语言', '原生 JavaScript（ES5 语法 + 少量 ES6 API），不用任何框架 / 打包器'),
+      kv('路由', 'hash 路由 <code>#/route</code> + <code>history.pushState</code>，监听 <code>hashchange</code> / <code>popstate</code>'),
+      kv('渲染', '手写模板字符串拼 HTML，一次性 <code>innerHTML</code>；长列表用 <code>content-visibility</code> 跳过屏外渲染'),
+      kv('样式', '原生 CSS + CSS 变量双主题；无边框、无阴影、无框架 UI 库'),
+      kv('图标', '内联 SVG / emoji，零图片请求（Logo 与分享图除外）'),
+      kv('离线', 'Service Worker 预缓存整站，Cache-first，版本号变了才换新缓存'),
+      kv('搜索', '自己建索引：页面 / 分类 / 站点 / 分享 / 文章，纯内存匹配，无后端'),
+      kv('数据来源', '<code>assets/js/data.js</code>（内置）+ <code>assets/js/feed-import.js</code>（从壹号讯息导入的 662 条）'),
+      kv('后端', '无。所有数据在浏览器本地，没有账号、没有服务端'),
+      kv('第三方', '没有任何 CDN / 统计 / 广告脚本')
+    ].join('');
+
+    var filesRows = [
+      ['<code>index.html</code>', '唯一入口：骨架、顶栏、搜索面板、脚本引入（<code>?v=</code> 就是缓存版本）'],
+      ['<code>assets/css/style.css</code>', '全部样式：设计变量在顶部 <code>:root</code>，之后是各页面与后台'],
+      ['<code>assets/js/config.js</code>', '配置层 + <code>XYStore</code>：默认值、规范化、localStorage 读写'],
+      ['<code>assets/js/data.js</code>', '内置的分类 / 站点 / 分享 / 文章数据'],
+      ['<code>assets/js/feed-import.js</code>', '导入的那批分享，单独一个文件，不想要就删掉 index.html 里那行 script'],
+      ['<code>assets/js/app.js</code>', '路由、渲染、搜索、手势、主题、文章阅读'],
+      ['<code>assets/js/admin.js</code>', '这一整套后台面板'],
+      ['<code>assets/js/md.js</code>', 'Markdown 渲染 + 代码高亮'],
+      ['<code>assets/js/bookmarks.js</code>', '收藏夹'],
+      ['<code>sw.js</code>', 'Service Worker；<code>VERSION</code> 要和 index.html 的 <code>?v=</code> 一起改'],
+      ['<code>tools/gen-feed.js</code>', '生成 RSS <code>feed.xml</code> 的小脚本（可选）']
+    ].map(function (r) { return gRow(r[0], r[1]); }).join('');
+
+    var storeGrid = [
+      kv('<code>xingyu.config.v1</code>', '整站设置：站名、首页文案、主题配色、阅读排版、显示项、口令'),
+      kv('<code>xingyu.data.v1</code>', '分类与站点（「导航」页的数据）'),
+      kv('<code>xingyu.feed.v1</code>', '分享条目；没改过就用 <code>data.js</code> 里的'),
+      kv('<code>xingyu.posts.v1</code>', '文章；没写过就用 <code>data.js</code> 里的'),
+      kv('<code>xingyu.bookmarks.v1</code>', '收藏夹'),
+      kv('<code>xingyu.recent.v1</code>', '最近访问')
+    ].join('');
+
+    var deployGrid = [
+      kv('GitHub Pages', '<code>mackxin.github.io/xingyu</code>'),
+      kv('WorkBuddy Sites', '<code>xingyu-44428.app.workbuddy.host</code>'),
+      kv('发布方式', '改代码 → 提版本号（index.html 的 <code>?v=</code> 与 <code>sw.js</code> 的 <code>VERSION</code>）→ 推送'),
+      kv('缓存坑', 'Pages 构建完成后 CDN 还会吐一阵旧 HTML，硬刷一次就好')
+    ].join('');
+
+    var techCard = '<div class="admin-card" id="guideTech">' +
+        '<div class="admin-card__head guide-head">' +
+          '<div><h2>技术参数</h2><p>这个站现在到底是怎么搭的、数据在哪、多少东西。左边数字是实时读出来的。</p></div>' +
+          '<button class="btn btn--ghost" type="button" data-guide-copy>⧉ 复制这份参数</button>' +
+        '</div>' +
+
+        '<div class="admin-sub"><b>实时数据</b><em>每次打开这一页重新读</em></div>' +
+        '<div class="guide-grid">' + liveGrid + '</div>' +
+
+        '<div class="admin-sub"><b>技术栈</b><em>没有后端，也没有依赖</em></div>' +
+        '<div class="guide-grid">' + stackGrid + '</div>' +
+
+        '<div class="admin-sub"><b>文件结构</b><em>根目录下的东西</em></div>' +
+        '<div class="guide-list">' + filesRows + '</div>' +
+
+        '<div class="admin-sub"><b>数据存在哪</b><em>浏览器 localStorage，按 key 分开</em></div>' +
+        '<div class="guide-list">' + storeGrid + '</div>' +
+
+        '<div class="admin-sub"><b>部署</b><em>同一个代码库，两个地方同时在跑</em></div>' +
+        '<div class="guide-list">' + deployGrid + '</div>' +
+      '</div>';
+
+    return usageCard + techCard;
+  }
+
+  function bindGuide(body) {
+    /* 老办法：临时 textarea + execCommand。剪贴板 API 不可用、
+       或者被浏览器以「文档没焦点 / 没权限」拒掉时兜底 */
+    function legacyCopy(txt) {
+      try {
+        var ta = document.createElement('textarea');
+        ta.value = txt;
+        ta.setAttribute('readonly', '');
+        ta.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;';
+        document.body.appendChild(ta);
+        ta.select();
+        ta.setSelectionRange(0, txt.length);
+        var okc = document.execCommand('copy');
+        document.body.removeChild(ta);
+        return okc;
+      } catch (e) { return false; }
+    }
+
+    body.querySelectorAll('[data-guide-copy]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var card = b.closest('.admin-card');
+        var txt = (card ? card.innerText : '').trim();
+        if (!txt) return;
+        var done = function () { toast('已复制到剪贴板'); };
+        var fail = function () { toast('复制失败，手动选中复制吧'); };
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(txt).then(done, function () {
+            if (legacyCopy(txt)) done(); else fail();
+          });
+          return;
+        }
+        if (legacyCopy(txt)) done(); else fail();
+      });
+    });
+  }
+
   /* ======================= 绑定 ======================= */
   function bind(root) {
     bindDragOnce();
@@ -2655,6 +2900,7 @@
     bindPosts(root, body);
     bindFeed(root, body);
     bindLook(root, body);
+    bindGuide(body);
 
     /* ---------- 站点数据 ---------- */
     var catsWrap = body.querySelector('#adminCats');

@@ -2621,3 +2621,44 @@ html[data-readfont="serif"] .look-paper{
   transform:none; box-shadow:none; border-color:transparent;
 }
 .feed-preview .feed-card__title{ font-size:15.5px; }
+
+/* =========================================================
+   后台 · 手册 / 技术参数
+   没有描边可用，靠 2px 的间隙 + 极淡底色把一行一行分开
+   ========================================================= */
+.guide-list{
+  display:flex; flex-direction:column; gap:2px; margin-top:10px;
+}
+.guide-row{
+  display:grid; grid-template-columns:136px minmax(0,1fr); gap:12px;
+  align-items:baseline; padding:7px 11px; border-radius:9px; font-size:13px;
+}
+.guide-list > .guide-row:nth-child(odd){ background:var(--glass); }
+.guide-row b{ color:var(--text); font-weight:600; }
+.guide-row span{ color:var(--text-dim); line-height:1.75; }
+.guide-row code, .guide-kv code{
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12px;
+  padding:1px 5px; border-radius:5px; background:var(--glass-hi); color:var(--text);
+}
+.guide-grid{
+  display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:3px; margin-top:10px;
+}
+.guide-kv{
+  display:flex; flex-direction:column; gap:3px; padding:9px 12px; border-radius:10px;
+  background:var(--glass);
+}
+.guide-kv b{ font-size:11.5px; letter-spacing:.05em; color:var(--text-mute); font-weight:600; }
+.guide-kv span{ font-size:13px; color:var(--text); line-height:1.7; }
+.guide-steps{ margin:10px 0 0; padding-left:20px; }
+.guide-steps li{ margin:7px 0; font-size:13px; color:var(--text-dim); line-height:1.75; }
+.guide-steps b{ color:var(--text); }
+/* 复制按钮在窄屏下换到标题下面，别把副标题挤成一条 */
+.guide-head .btn{ flex:0 0 auto; }
+@media (max-width:760px){
+  .guide-grid{ grid-template-columns:minmax(0,1fr); }
+  .guide-row{ grid-template-columns:minmax(0,1fr); gap:3px; }
+}
+@media (max-width:640px){
+  .guide-head{ flex-direction:column; align-items:stretch; gap:10px; }
+  .guide-head .btn{ align-self:flex-start; height:34px; font-size:12.5px; }
+}
