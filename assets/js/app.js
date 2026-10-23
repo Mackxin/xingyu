@@ -1263,11 +1263,67 @@
     });
   }
 
+  /* ---------- 分类栏自适应：一屏装下全部分类，不用滚动条 ----------
+     左栏高度锁在一屏内（见 .cat-rail 的 max-height），但 50 个分类排两列要 1100+px，
+     矮一点的屏幕上就被裁掉、还得在栏里滚（滚动条虽然是隐形的，但也看不全）。
+     这里按「屏幕到底能用多高」反算：先少加列，行高压到 30～34px 之间；
+     实在放不下再加到 3～4 列。最终行数×行高 + 间距一定 ≤ 可用高度，所以不出滚动条。
+     只在左栏真正可见（>960px）时算；手机端那栏是底部面板，不参与。 */
+  var RAIL_ROW_MAX = 34, RAIL_ROW_MIN = 26, RAIL_GAP = 4, RAIL_COLS_MAX = 4, RAIL_COL_W = 100;
+
+  function fitCatRail() {
+    var rail = $('#catRail'), list = $('#catRailList');
+    if (!rail || !list) return;
+    var layout = rail.closest ? rail.closest('.nav-layout') : null;
+    if (window.innerWidth <= 960) {
+      list.style.removeProperty('--rail-cols');
+      list.style.removeProperty('--rail-row');
+      if (layout) layout.style.removeProperty('--rail-w');
+      return;
+    }
+
+    var items = $$('.cat-item:not(.is-hidden)', list).length;
+    if (!items) return;
+
+    /* 可用高度跟 CSS 里 .cat-rail 的 max-height 用同一个口径：视口 - 顶栏 - 44 */
+    var header = $('#header');
+    var avail = window.innerHeight - (header ? header.offsetHeight : 88) - 44;
+
+    /* 扣掉本来就占在栏里的：标题一行 + 筛选框 */
+    var head = $('.cat-rail__head', rail);
+    if (head) avail -= head.offsetHeight;
+    var filter = $('#catFilter');
+    if (filter) {
+      var box = filter.closest ? filter.closest('.cat-filter') : filter.parentNode;
+      avail -= (box ? box.offsetHeight : 40) + 10;
+    }
+
+    /* 一列最少能放几行（行高按最挤的 26px 算）→ 不够就加列，最多 4 列 */
+    var rowsFit = Math.max(1, Math.floor((avail + RAIL_GAP) / (RAIL_ROW_MIN + RAIL_GAP)));
+    var cols = Math.max(2, Math.min(Math.ceil(items / rowsFit), RAIL_COLS_MAX));
+
+    /* 用定下来的列数反算行高：在 26～34 之间取，让总高刚好塞满可用空间 */
+    var rows = Math.ceil(items / cols);
+    var rowH = Math.floor((avail - (rows - 1) * RAIL_GAP) / rows);
+    rowH = Math.max(RAIL_ROW_MIN, Math.min(RAIL_ROW_MAX, rowH));
+
+    list.style.setProperty('--rail-cols', cols);
+    list.style.setProperty('--rail-row', rowH + 'px');
+
+    /* 列一多，原来 300～410px 的栏宽就不够分，分类名会被省略号吃掉 → 按列数把栏放宽 */
+    if (layout) {
+      var base = Math.max(300, Math.min(window.innerWidth * 0.23, 410));
+      var need = cols * RAIL_COL_W + (cols - 1) * 6 + 10;
+      layout.style.setProperty('--rail-w', Math.round(Math.max(base, Math.min(need, window.innerWidth * 0.4))) + 'px');
+    }
+  }
+
   /* ---------- 分类栏：手机端底部选择面板 + 筛选（分类上百个也好找） ---------- */
   function bindCatRail() {
     var rail = $('#catRail'), list = $('#catRailList');
     if (!rail || !list) return;
 
+    fitCatRail();
     var close = $('#catRailClose'), scrim = $('#catRailScrim');
     if (close) close.addEventListener('click', function () { closeCatSheet(); });
     if (scrim) scrim.addEventListener('click', function () { closeCatSheet(); });
@@ -1287,6 +1343,7 @@
       });
       state.catFilter = input.value;
       if (emptyEl) emptyEl.hidden = !(q && !hits);
+      fitCatRail();          /* 筛完只剩几个时，列数跟着收回来 */
     };
     run();
     input.addEventListener('input', run);
@@ -1875,7 +1932,7 @@
     if (h > 0) document.documentElement.style.setProperty('--header-h', h + 'px');
   }
   /* 窗口尺寸变化（含旋转）后重新量一次顶栏高度，保证吸顶元素对齐 */
-  var onResize = debounce(function () { syncHeaderVar(); }, 140);
+  var onResize = debounce(function () { syncHeaderVar(); fitCatRail(); }, 140);
   function onScroll() {
     var y = window.scrollY || document.documentElement.scrollTop;
     if (header) header.classList.toggle('is-stuck', y > 12);

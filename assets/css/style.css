@@ -718,7 +718,7 @@ html[data-theme="light"] .btn--primary{ color:#fff; }
    用 grid-template-areas 命名摆位，DOM 顺序仍是 标题 → 分类栏 → 正文，
    读屏和手机端拿到的顺序不变。 */
 .nav-layout{
-  display:grid; grid-template-columns:clamp(300px,23vw,410px) minmax(0,1fr);
+  display:grid; grid-template-columns:var(--rail-w, clamp(300px,23vw,410px)) minmax(0,1fr);
   grid-template-areas:
     "rail head"
     "rail body";
@@ -761,7 +761,14 @@ html[data-theme="light"] .btn--primary{ color:#fff; }
 .cat-rail__scrim,
 .cat-rail__bar,
 .cat-rail__sheethead{ display:none; }
-.cat-rail__list{ display:grid; grid-template-columns:1fr 1fr; gap:4px; align-content:start; }
+/* 分类胶囊：列数（--rail-cols）和行高（--rail-row）由 JS 按「屏幕能放几行」算，
+   保证一屏装下全部分类、左栏不需要滚动条。 */
+.cat-rail__list{
+  display:grid;
+  grid-template-columns:repeat(var(--rail-cols, 2), minmax(0,1fr));
+  grid-auto-rows:var(--rail-row, 34px);
+  gap:4px 6px; align-content:start;
+}
 .cat-filter{
   display:flex; align-items:center; gap:8px; height:36px; padding:0 11px;
   margin:0 0 8px; border-radius:var(--r-sm);
@@ -782,8 +789,8 @@ html[data-theme="light"] .btn--primary{ color:#fff; }
   font-size:12.5px; color:var(--text-mute);
 }
 .cat-item{
-  display:flex; align-items:center; gap:9px; width:100%; min-width:0;
-  padding:9px 11px; border-radius:12px; font-size:13.5px; color:var(--text-dim);
+  display:flex; align-items:center; gap:8px; width:100%; min-width:0;
+  padding:6px 9px; border-radius:10px; font-size:13px; color:var(--text-dim);
   border:1px solid transparent; transition:all .3s var(--ease); text-align:left;
 }
 .cat-item.is-hidden{ display:none; }
