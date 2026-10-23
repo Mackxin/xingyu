@@ -26,8 +26,11 @@ function loadData() {
   var sandbox = { window: {} };
   sandbox.window.window = sandbox.window;
   vm.createContext(sandbox);
-  ['assets/js/data.js', 'assets/js/config.js'].forEach(function (rel) {
-    var code = fs.readFileSync(path.join(ROOT, rel), 'utf8');
+  /* feed-import.js 要在 data.js 之前：data.js 会读 window.XY_FEED_IMPORT 拼进 feed */
+  ['assets/js/feed-import.js', 'assets/js/data.js', 'assets/js/config.js'].forEach(function (rel) {
+    var abs = path.join(ROOT, rel);
+    if (!fs.existsSync(abs)) return;      // 没导入过就没有这个文件，跳过
+    var code = fs.readFileSync(abs, 'utf8');
     vm.runInContext(code, sandbox, { filename: rel });
   });
   var w = sandbox.window;

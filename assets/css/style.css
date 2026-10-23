@@ -1831,6 +1831,7 @@ body.is-dragging-row, body.is-dragging-row *{ cursor:grabbing !important; }
 .admin-sub + .admin-switch{ margin-top:10px; }
 
 /* 今日精选的勾选列表：一行一条，勾上的整行提亮；列表自己滚，别把后台撑太长 */
+.pick-search{ margin-top:10px; max-width:none; }
 .pick-list{
   display:flex; flex-direction:column; gap:3px;
   margin-top:10px; padding:6px; max-height:330px; overflow-y:auto;
@@ -1853,6 +1854,7 @@ body.is-dragging-row, body.is-dragging-row *{ cursor:grabbing !important; }
 .pick-row__icon{ font-style:normal; font-size:15px; line-height:1; flex-shrink:0; }
 .pick-row__title{ flex:1 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .pick-row__date{ flex-shrink:0; font-size:12px; color:var(--text-mute); font-variant-numeric:tabular-nums; }
+.pick-more{ margin:6px 4px 2px; font-size:12px; color:var(--text-mute); text-align:center; }
 
 .admin-json{
   width:100%; margin-top:12px; padding:13px 15px; border-radius:12px; resize:vertical;

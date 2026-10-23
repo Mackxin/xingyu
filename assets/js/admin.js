@@ -1247,18 +1247,32 @@
       '</div>';
   }
 
+  /* 分享条数可能几百上千（含「壹号讯息」导入的那批），一次全铺进 DOM 又长又慢，
+     所以只渲染前 FEED_RENDER_MAX 条，剩下的靠上面的搜索框找 */
+  var FEED_RENDER_MAX = 60;
+
   function feedListHtml() {
     var list = Store.feedAll();
     if (!list.length) {
       return '<p class="admin-empty">还没有分享条目。点上面的「＋ 新增分享」，或者到「备份」页恢复默认数据。</p>';
     }
     var q = norm(feedQuery);
-    var rows = q ? list.map(function (f, i) {
-      var hay = norm(f.title + f.desc + f.url + (f.tags || []).join(''));
-      return hay.indexOf(q) > -1 ? feedRowHtml(f, i) : '';
-    }).join('') : list.map(feedRowHtml).join('');
-    if (q && !rows) return '<p class="admin-empty">没有匹配「' + esc(feedQuery) + '」的分享。</p>';
-    return '<div class="post-admin-list">' + rows + '</div>';
+    /* 保留原数组下标：编辑靠它定位，不能因为筛选就错位 */
+    var hits = [];
+    list.forEach(function (f, i) {
+      if (q) {
+        var hay = norm(f.title + f.desc + f.url + (f.tags || []).join(''));
+        if (hay.indexOf(q) < 0) return;
+      }
+      hits.push({ f: f, i: i });
+    });
+    var shown = hits.slice(0, FEED_RENDER_MAX);
+    var rows = shown.map(function (x) { return feedRowHtml(x.f, x.i); }).join('');
+    if (!rows) return '<p class="admin-empty">没有匹配「' + esc(feedQuery) + '」的分享。</p>';
+    var more = hits.length > shown.length
+      ? '<p class="pick-more">还有 ' + (hits.length - shown.length) + ' 条没列出来，用上面的搜索框找</p>'
+      : '';
+    return '<div class="post-admin-list">' + rows + '</div>' + more;
   }
 
   /* 预览用的是一张真卡片（和前台同一套 .feed-card 样式，只是换成 div 防止误点跳走） */
@@ -1976,15 +1990,22 @@
       '</div>';
   }
 
-  /* 「今日精选」勾选列表：把「分享」里的条目全摆出来，勾上哪条首页就显示哪条 */
-  function picksListHtml(h) {
+  /* 「今日精选」勾选列表：把「分享」里的条目全摆出来，勾上哪条首页就显示哪条。
+     笔记一条：分享现在有几百条（含「壹号讯息」导入的那批），一次全铺进 DOM 太重，
+     所以带个搜索框，最多只渲染 80 行，剩下的靠搜。 */
+  var picksQuery = '';
+  var PICKS_RENDER_MAX = 80;
+
+  function picksRowsHtml(h) {
     var list = Store.feedAll();
-    if (!list.length) {
-      return '<p class="admin-empty">「分享」页还没有内容，先去加几条再回来挑。</p>';
-    }
     var picked = h.featuredPicks || [];
     var full = picked.length >= Store.MAX_FEATURED_PICKS;
-    var rows = list.map(function (f) {
+    var q = norm(picksQuery);
+    var hits = q ? list.filter(function (f) {
+      return norm(f.title + ' ' + f.desc + ' ' + (f.tags || []).join('')).indexOf(q) > -1;
+    }) : list;
+    var shown = hits.slice(0, PICKS_RENDER_MAX);
+    var rows = shown.map(function (f) {
       var key = Store.feedKey(f);
       var on = picked.indexOf(key) > -1;
       return '<label class="pick-row' + (on ? ' is-on' : '') + '">' +
@@ -1995,7 +2016,28 @@
           '<span class="pick-row__date">' + esc(f.date || '—') + '</span>' +
         '</label>';
     }).join('');
-    return '<div class="pick-list" id="adminPicks">' + rows + '</div>' +
+    if (!rows) {
+      return '<p class="admin-empty">没有匹配「' + esc(picksQuery) + '」的条目。</p>';
+    }
+    if (hits.length > shown.length) {
+      rows += '<p class="pick-more">还有 ' + (hits.length - shown.length) +
+        ' 条没列出来，输入关键词缩小范围</p>';
+    }
+    return rows;
+  }
+
+  function picksListHtml(h) {
+    var list = Store.feedAll();
+    if (!list.length) {
+      return '<p class="admin-empty">「分享」页还没有内容，先去加几条再回来挑。</p>';
+    }
+    var picked = h.featuredPicks || [];
+    return '<div class="admin-search pick-search">' +
+        '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M16.5 16.5L21 21"/></svg>' +
+        '<input type="search" id="picksSearch" placeholder="搜标题 / 描述 / 标签…（共 ' + list.length + ' 条）"' +
+          ' value="' + esc(picksQuery) + '" autocomplete="off" aria-label="搜索分享条目" />' +
+      '</div>' +
+      '<div class="pick-list" id="adminPicks">' + picksRowsHtml(h) + '</div>' +
       '<div class="admin-actions">' +
         '<button class="btn btn--ghost" type="button" id="adminPicksClear"' +
           (picked.length ? '' : ' disabled') + '>全不选（回到自动）</button>' +
@@ -2779,6 +2821,12 @@
         Store.setHome({ featuredPicks: cur });
         syncPicks();
       });
+      var picksSearch = root.querySelector('#picksSearch');
+      if (picksSearch) picksSearch.addEventListener('input', function () {
+        picksQuery = picksSearch.value;
+        picksBox.innerHTML = picksRowsHtml(Store.home());
+      });
+
       var picksClear = root.querySelector('#adminPicksClear');
       if (picksClear) picksClear.addEventListener('click', function () {
         Store.setHome({ featuredPicks: [] });

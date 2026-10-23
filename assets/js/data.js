@@ -125,6 +125,12 @@ window.SITE_DATA = (function () {
     }
   ];
 
+  /* 从「壹号讯息」时间线导入的那批条目另放一个文件（assets/js/feed-import.js），
+     这里拼在后面；不想要了就把 index.html 里引入它的那行 <script> 删掉 */
+  if (window.XY_FEED_IMPORT && window.XY_FEED_IMPORT.length) {
+    feed = feed.concat(window.XY_FEED_IMPORT);
+  }
+
   /* ---------------- 首页快捷入口 ---------------- */
   var entries = [
     { route: '#/nav',   icon: '🧭', title: '星屿导航',   desc: '攒了多年的书签全收在这一页，随时一键盘点。', wide: false, spark: true },

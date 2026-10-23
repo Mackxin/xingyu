@@ -5,9 +5,77 @@
     <link>https://mackxin.github.io/xingyu/</link>
     <description>以星为图，以屿为家 —— 每天一小条，记录遇见的工具、灵感与小发现，也写点长一点的文章。</description>
     <language>zh-cn</language>
-    <lastBuildDate>Tue, 20 Oct 2026 14:58:04 GMT</lastBuildDate>
+    <lastBuildDate>Fri, 23 Oct 2026 14:52:51 GMT</lastBuildDate>
     <generator>XINGYU gen-feed</generator>
     <atom:link href="https://mackxin.github.io/xingyu/feed.xml" rel="self" type="application/rss+xml" />
+  <item>
+    <title>ComfyUI 无限画布</title>
+    <link>https://canvas.imihoo.com/</link>
+    <guid isPermaLink="true">https://canvas.imihoo.com/</guid>
+    <pubDate>Thu, 22 Oct 2026 01:00:00 GMT</pubDate>
+    <description>一个无限画布创作工具 · 在无限画布中生成、连接和重组图片、文字与图形，让创作从单次生成变成连续推演</description>
+    <category>AI</category>
+    <category>设计</category>
+  </item>
+  <item>
+    <title>pdoomvideo</title>
+    <link>https://pdoomvideo.com/zh/</link>
+    <guid isPermaLink="true">https://pdoomvideo.com/zh/</guid>
+    <pubDate>Thu, 22 Oct 2026 01:00:00 GMT</pubDate>
+    <description>10步用Claude Code做出自己的Opus 5.5视频，附可复制提示词、精选二创和歌词解读</description>
+    <category>AI</category>
+    <category>视频</category>
+  </item>
+  <item>
+    <title>玄印写作</title>
+    <link>https://shake.ink/</link>
+    <guid isPermaLink="true">https://shake.ink/</guid>
+    <pubDate>Thu, 22 Oct 2026 01:00:00 GMT</pubDate>
+    <description>让灵感成章，让故事生长 · 把人物、世界、灵感与 AI，放进同一间书房 · 一款陪你从第一句，写到最后一章的本地创作工作台</description>
+    <category>AI</category>
+    <category>写作</category>
+  </item>
+  <item>
+    <title>OpenFilm</title>
+    <link>https://github.com/openfilm/openfilm/blob/main/README.zh-CN.md</link>
+    <guid isPermaLink="true">https://github.com/openfilm/openfilm/blob/main/README.zh-CN.md</guid>
+    <pubDate>Wed, 21 Oct 2026 01:00:00 GMT</pubDate>
+    <description>开源的AI视频智能体 · 一个HTML文件，一个函数，一个真正的剪辑器 · 让你的编程智能体来做视频，也让你亲手修改</description>
+    <category>AI</category>
+    <category>开发</category>
+  </item>
+  <item>
+    <title>bilibili-douyin-notes</title>
+    <link>https://github.com/lucky-Luor/bilibili-douyin-notes</link>
+    <guid isPermaLink="true">https://github.com/lucky-Luor/bilibili-douyin-notes</guid>
+    <pubDate>Wed, 21 Oct 2026 01:00:00 GMT</pubDate>
+    <description>把B站/抖音/YouTube/小红书视频一键整理成Markdown课堂笔记的AI Agent Skill · 四平台视频 · 字幕抓取 · 本地语音识别 · 重点截图 · 笔记模板 · 免登录可用，不调任何付费API</description>
+    <category>AI</category>
+    <category>开发</category>
+  </item>
+  <item>
+    <title>ChineseBQB</title>
+    <link>https://zhaoolee.com/ChineseBQB/</link>
+    <guid isPermaLink="true">https://zhaoolee.com/ChineseBQB/</guid>
+    <pubDate>Wed, 21 Oct 2026 01:00:00 GMT</pubDate>
+    <description>中国人的表情包 · 按分类找图，搜索、预览、保存，随时接住每一种情绪</description>
+  </item>
+  <item>
+    <title>晨笙阅读</title>
+    <link>https://read.cearl.cc/</link>
+    <guid isPermaLink="true">https://read.cearl.cc/</guid>
+    <pubDate>Tue, 20 Oct 2026 01:00:00 GMT</pubDate>
+    <description>通过单本书籍解读与跨书主题阅读，帮助你在阅读前判断是否值得精读，在阅读后复盘核心框架 · 并围绕真实问题建立阅读路径。内容由AI辅助整理，并经过人工校审</description>
+    <category>AI</category>
+    <category>开发</category>
+  </item>
+  <item>
+    <title>LinkSwift</title>
+    <link>https://github.com/hmjz100/LinkSwift</link>
+    <guid isPermaLink="true">https://github.com/hmjz100/LinkSwift</guid>
+    <pubDate>Tue, 20 Oct 2026 01:00:00 GMT</pubDate>
+    <description>一个基于JavaScript的网盘文件下载地址获取工具 · 基于【网盘直链下载助手】修改，支持百度网盘/阿里云盘/中国移动云盘/天翼云盘/迅雷云盘/夸克网盘/UC网盘/123云盘八大网盘</description>
+  </item>
   <item>
     <title>📝 从这里开始写第一篇</title>
     <link>https://mackxin.github.io/xingyu/#/post/hello-xingyu</link>
@@ -18,11 +86,56 @@
     <category>建站</category>
   </item>
   <item>
+    <title>Thaw</title>
+    <link>https://www.getthaw.app/</link>
+    <guid isPermaLink="true">https://www.getthaw.app/</guid>
+    <pubDate>Mon, 19 Oct 2026 01:00:00 GMT</pubDate>
+    <description>让Mac菜单栏告别杂乱，打造清爽高效的桌面体验 · 能帮你隐藏不常用的菜单栏图标、自由调整排列方式，并在需要时快速调出，让桌面更整洁，日常操作更高效</description>
+    <category>设计</category>
+  </item>
+  <item>
+    <title>KulmanLab</title>
+    <link>https://kulmanlab.com/zh/</link>
+    <guid isPermaLink="true">https://kulmanlab.com/zh/</guid>
+    <pubDate>Mon, 19 Oct 2026 01:00:00 GMT</pubDate>
+    <description>免费在线DXF2D编辑器在您的浏览器中运行，可以打开DXF文件、绘制几何图形、添加标注并导出PDF · 无需安装任何软件。桌面CAD的免费替代品，在任何现代浏览器中均可运行</description>
+  </item>
+  <item>
+    <title>Tendedero</title>
+    <link>https://tendedero.app/</link>
+    <guid isPermaLink="true">https://tendedero.app/</guid>
+    <pubDate>Mon, 19 Oct 2026 01:00:00 GMT</pubDate>
+    <description>你每截一张图，它都会挂到屏幕顶上的一根绳上。 把指针停在菜单栏，绳子就滑下来；移开，它就收起</description>
+  </item>
+  <item>
+    <title>携程酒店对比助手</title>
+    <link>https://github.com/greenzorro/hotel-comparer</link>
+    <guid isPermaLink="true">https://github.com/greenzorro/hotel-comparer</guid>
+    <pubDate>Sun, 18 Oct 2026 01:00:00 GMT</pubDate>
+    <description>携程多酒店房型参数横向对比工具，可从酒店详情页提取酒店名称、评分、评论数、差评率，以及房间名称、面积、窗户、床型、吸烟信息等数据 · 支持同时对比多家酒店，并一键导出 Excel 表格，适合经常出差和旅行的用户，免费开源，提供油猴脚本和浏览器插件两种方式使用</description>
+    <category>开发</category>
+  </item>
+  <item>
+    <title>红果短剧电脑版</title>
+    <link>https://channel-ai-practice-wj.waligoraamodio288.chatgpt.site/</link>
+    <guid isPermaLink="true">https://channel-ai-practice-wj.waligoraamodio288.chatgpt.site/</guid>
+    <pubDate>Sun, 18 Oct 2026 01:00:00 GMT</pubDate>
+    <description>第三方红果短剧Windows客户端，无需安卓模拟器，打开后可直接浏览分类或搜索剧名进行播放 · 支持搜索、收藏、本机观看进度、选集、倍速、自动连播以及老板键等功能，界面简约美观，上班摸鱼看短剧非常方便，免费使用，适用于Windows10/11系统</description>
+  </item>
+  <item>
+    <title>OpenTheRank</title>
+    <link>https://opentherank.com/zh/</link>
+    <guid isPermaLink="true">https://opentherank.com/zh/</guid>
+    <pubDate>Sun, 18 Oct 2026 01:00:00 GMT</pubDate>
+    <description>监测AI、流媒体、游戏与Apple硬件的全球定价，提供实时的区域价格排名 · 同一个产品，换一个国家，价格天差地别</description>
+    <category>AI</category>
+  </item>
+  <item>
     <title>星屿导航 · 新版上线</title>
     <link>https://mackxin.github.io/xingyu/#/nav</link>
     <guid isPermaLink="true">https://mackxin.github.io/xingyu/#/nav</guid>
     <pubDate>Sat, 17 Oct 2026 01:00:00 GMT</pubDate>
-    <description>把散落在浏览器书签栏里的网址重新收拢成 12 个主题岛屿，支持拼音与关键词即时搜索、收藏置顶，以及 ⌘K 一键盘点所有站点。</description>
+    <description>把散落在浏览器书签栏里的网址重新收拢成 50 个主题岛屿，支持拼音与关键词即时搜索、收藏置顶，以及 ⌘K 一键盘点所有站点。</description>
     <category>本站</category>
     <category>导航</category>
   </item>
@@ -36,121 +149,28 @@
     <category>CSS</category>
   </item>
   <item>
-    <title>纯前端单页路由的极简写法</title>
-    <link>https://developer.mozilla.org/zh-CN/docs/Web/API/Window/hashchange</link>
-    <guid isPermaLink="true">https://developer.mozilla.org/zh-CN/docs/Web/API/Window/hashchange</guid>
-    <pubDate>Fri, 16 Oct 2026 01:00:00 GMT</pubDate>
-    <description>不引入任何框架，用 hashchange 事件配合模块化的 render 函数，就能让一个 html 文件拥有流畅的多页面体验，刷新还能停在原地。</description>
-    <category>前端</category>
-    <category>技巧</category>
+    <title>高速实时路况查询</title>
+    <link>https://guoqiangai.com/</link>
+    <guid isPermaLink="true">https://guoqiangai.com/</guid>
+    <pubDate>Sat, 17 Oct 2026 01:00:00 GMT</pubDate>
+    <description>全国高速交通信息查询工具，支持按高速编号（如G4）、道路名称（如京昆高速）以及收费站和服务区名称精准检索 · 还可分别查看各省高速和国家高速，路况汇总呈现近期的道路事故、施工、拥堵及交通管制信息，经常开车出行的小伙伴可以收藏一下，免费使用，无需注册</description>
   </item>
   <item>
-    <title>用色彩指纹代替加载图标</title>
-    <link>https://mackxin.github.io/xingyu/#/nav</link>
-    <guid isPermaLink="true">https://mackxin.github.io/xingyu/#/nav</guid>
-    <pubDate>Thu, 15 Oct 2026 01:00:00 GMT</pubDate>
-    <description>担心外链图标拖慢首屏？把站点名做一次哈希映射到固定色相，生成渐变字母徽标——零请求、不闪烁、永远在线，视觉上也更统一。</description>
+    <title>ShiftBar</title>
+    <link>https://shiftbar.0x01.build/</link>
+    <guid isPermaLink="true">https://shiftbar.0x01.build/</guid>
+    <pubDate>Sat, 17 Oct 2026 01:00:00 GMT</pubDate>
+    <description>macOS27菜单栏图标折叠与隐藏工具，补充系统原生折叠仅在空间挤满时触发的局限，支持用户主动设置隐藏范围并一键展开或收起 · 图标隐藏后后台应用仍正常运行，无Dock占用与账号限制，支持外接显示器配置防护，免费开源</description>
     <category>设计</category>
-    <category>性能</category>
-  </item>
-  <item>
-    <title>命令面板：让键盘成为第一入口</title>
-    <link>https://cmdk.paco.me</link>
-    <guid isPermaLink="true">https://cmdk.paco.me</guid>
-    <pubDate>Wed, 14 Oct 2026 01:00:00 GMT</pubDate>
-    <description>⌘K 唤起全局搜索后，可以跨页面、跨分类、跨站点直接跳转。一次输入，四条通路——页面、分类、站内收藏与分享条目全部命中。</description>
-    <category>交互</category>
-    <category>效率</category>
-  </item>
-  <item>
-    <title>Claude</title>
-    <link>https://claude.ai</link>
-    <guid isPermaLink="true">https://claude.ai</guid>
-    <pubDate>Tue, 13 Oct 2026 01:00:00 GMT</pubDate>
-    <description>长文档理解依旧是它最稳的能力，格式复杂的合同、论文丢进去，能给出条理清晰的结构化摘要，写作时的语气也拿捏得住。</description>
-    <category>AI</category>
-    <category>工具</category>
-  </item>
-  <item>
-    <title>📝 星屿是怎么搭起来的</title>
-    <link>https://mackxin.github.io/xingyu/#/post/how-xingyu-built</link>
-    <guid isPermaLink="true">https://mackxin.github.io/xingyu/#/post/how-xingyu-built</guid>
-    <pubDate>Mon, 12 Oct 2026 01:00:00 GMT</pubDate>
-    <description>一个不打包、不依赖、不联网也能打开的静态站点，是怎么组织的。</description>
-    <category>建站</category>
-    <category>技术</category>
-  </item>
-  <item>
-    <title>小宇宙播客</title>
-    <link>https://www.xiaoyuzhoufm.com</link>
-    <guid isPermaLink="true">https://www.xiaoyuzhoufm.com</guid>
-    <pubDate>Sun, 11 Oct 2026 01:00:00 GMT</pubDate>
-    <description>中文播客里少见的「干净」体验：没有过度推荐，评论区气质友好，通勤路上挑一档聊技术或聊生活的节目，时间会过得很快。</description>
-    <category>播客</category>
-    <category>生活</category>
-  </item>
-  <item>
-    <title>Excalidraw</title>
-    <link>https://excalidraw.com</link>
-    <guid isPermaLink="true">https://excalidraw.com</guid>
-    <pubDate>Fri, 09 Oct 2026 01:00:00 GMT</pubDate>
-    <description>手绘风格的无限白板，画架构图、梳理思路都不必登录。最舒服的是它刻意&quot;画不直&quot;的线条，反而让人更愿意动笔。</description>
-    <category>工具</category>
-    <category>绘图</category>
-  </item>
-  <item>
-    <title>Project Gutenberg</title>
-    <link>https://www.gutenberg.org</link>
-    <guid isPermaLink="true">https://www.gutenberg.org</guid>
-    <pubDate>Wed, 07 Oct 2026 01:00:00 GMT</pubDate>
-    <description>七万余本版权过期的经典著作，纯文本即可下载。想安静读完一本英文原著，这里是几乎不会消失的入口。</description>
-    <category>阅读</category>
-    <category>资源</category>
-  </item>
-  <item>
-    <title>Radio Garden</title>
-    <link>https://radio.garden</link>
-    <guid isPermaLink="true">https://radio.garden</guid>
-    <pubDate>Mon, 05 Oct 2026 01:00:00 GMT</pubDate>
-    <description>拖动地球仪上的绿点，就能实时收听那个城市此刻在播的电台。换个坐标，像换一个世界的背景音。</description>
-    <category>音乐</category>
-    <category>有趣</category>
-  </item>
-  <item>
-    <title>今日热榜</title>
-    <link>https://tophub.today</link>
-    <guid isPermaLink="true">https://tophub.today</guid>
-    <pubDate>Fri, 02 Oct 2026 01:00:00 GMT</pubDate>
-    <description>把各大平台的热搜榜单聚合到一页，临时想看看&quot;今天大家在聊什么&quot;的时候很好用，省去反复切换 App 的功夫。</description>
-    <category>资讯</category>
-    <category>聚合</category>
-  </item>
-  <item>
-    <title>Anki</title>
-    <link>https://apps.ankiweb.net</link>
-    <guid isPermaLink="true">https://apps.ankiweb.net</guid>
-    <pubDate>Wed, 30 Sep 2026 01:00:00 GMT</pubDate>
-    <description>间隔重复的经典实现。把要背的东西做成卡片，系统会在你&quot;快忘但还没忘&quot;的时刻推给你——长期记忆这件事，它确实认真。</description>
-    <category>学习</category>
-    <category>工具</category>
-  </item>
-  <item>
-    <title>关于「专注」的一点记录</title>
-    <link>https://mackxin.github.io/xingyu/#/share</link>
-    <guid isPermaLink="true">https://mackxin.github.io/xingyu/#/share</guid>
-    <pubDate>Mon, 28 Sep 2026 01:00:00 GMT</pubDate>
-    <description>关掉通知、清空桌面、只留一个待办，效率反而更高。工具越多不代表越自由，把入口收窄，注意力才会重新聚拢。</description>
-    <category>随笔</category>
-    <category>思考</category>
-  </item>
-  <item>
-    <title>IT Tools</title>
-    <link>https://it-tools.tech</link>
-    <guid isPermaLink="true">https://it-tools.tech</guid>
-    <pubDate>Fri, 25 Sep 2026 01:00:00 GMT</pubDate>
-    <description>开发者常用小工具的合集站点：格式化、编码转换、哈希计算、时间戳互转……完全本地运行，用完即走。</description>
     <category>开发</category>
-    <category>工具</category>
+  </item>
+  <item>
+    <title>WinTray</title>
+    <link>https://github.com/OUBIGFA/WinTray</link>
+    <guid isPermaLink="true">https://github.com/OUBIGFA/WinTray</guid>
+    <pubDate>Sat, 17 Oct 2026 01:00:00 GMT</pubDate>
+    <description>Windows应用静默启动工具，可将任意Windows程序自启动后自动最小化到系统托盘 · 也支持让.bat、.cmd、.ps1、.py 和 .pyw等脚本在后台无窗口启动，还支持即时后台启动和任务完成后自动退出，不在托盘残留，免费开源，便携版无需安装</description>
+    <category>开发</category>
   </item>
   </channel>
 </rss>
