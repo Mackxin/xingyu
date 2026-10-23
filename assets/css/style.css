@@ -819,13 +819,13 @@ html[data-theme="light"] .btn--primary{ color:#fff; }
    这些块都带 id（分类栏点击要滚过去），浏览器对 content-visibility:auto 的元素
    做 scrollIntoView / 锚点跳转时会先按需布局，所以位置照样准。 */
 .cat-block{
-  margin-bottom:clamp(26px,4vw,42px);
+  margin-bottom:clamp(20px,3vw,32px);
   scroll-margin-top:calc(var(--header-h, 96px) + 24px);
   content-visibility:auto;
   contain-intrinsic-size:auto 720px;
 }
 .cat-block__head{
-  display:flex; align-items:center; gap:12px; margin-bottom:16px;
+  display:flex; align-items:center; gap:12px; margin-bottom:12px;
 }
 .cat-block__head h2{ margin:0; font-size:18px; font-weight:700; flex-shrink:0; }
 .cat-block__head .count{
@@ -836,12 +836,12 @@ html[data-theme="light"] .btn--primary{ color:#fff; }
 /* ---------- 分类折叠（已取消：改成默认全部显示，靠 content-visibility 省开销） ---------- */
 
 .link-grid{
-  display:grid; gap:12px;
-  grid-template-columns:repeat(auto-fill,minmax(242px,1fr));
+  display:grid; gap:10px;
+  grid-template-columns:repeat(auto-fill,minmax(232px,1fr));
 }
 .link-card{
-  position:relative; display:flex; align-items:center; gap:13px;
-  padding:14px 15px; border-radius:var(--r);
+  position:relative; display:flex; align-items:center; gap:12px;
+  padding:13px 14px; border-radius:var(--r);
   /* 不画底色、不描边：卡片直接贴在页面的极光背景上，靠间距和留白分组。
      边框留着但是透明色，只为让排版尺寸和以前一模一样（不会因为去掉 1px 而挪位）。 */
   background:none; border:1px solid transparent;
@@ -879,9 +879,9 @@ html[data-cat-icon="off"] #headerCatEmoji{ display:none; }
 /* 图标和介绍都关掉时，卡片就是一行名字：把内边距收一点、格子排密一点。
    只在宽屏生效 —— 手机端固定一行两个（见下面 max-width:640px 那段），别顶掉它。 */
 @media (min-width:641px){
-  html[data-icons="off"][data-desc="off"] .link-card{ padding:11px 14px; }
+  html[data-icons="off"][data-desc="off"] .link-card{ padding:8px 12px; }
   html[data-icons="off"][data-desc="off"] .link-grid{
-    grid-template-columns:repeat(auto-fill,minmax(196px,1fr)); gap:10px;
+    grid-template-columns:repeat(auto-fill,minmax(186px,1fr)); gap:7px;
   }
 }
 
@@ -921,12 +921,12 @@ html[data-cat-icon="off"] #headerCatEmoji{ display:none; }
    只在宽屏生效：手机端固定一行两个（见 max-width:640px 那条规则），
    否则这里的选择器优先级更高，会把手机端的双列布局顶掉。 */
 @media (min-width:641px){
-  html[data-density="compact"] .link-grid{ grid-template-columns:repeat(auto-fill,minmax(196px,1fr)); gap:8px; }
-  html[data-density="compact"] .link-card{ padding:9px 11px; gap:9px; border-radius:12px; }
+  html[data-density="compact"] .link-grid{ grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:6px; }
+  html[data-density="compact"] .link-card{ padding:7px 10px; gap:8px; border-radius:12px; }
   html[data-density="compact"] .link-card__name{ font-size:13.5px; }
   html[data-density="compact"] .link-card__desc{ font-size:11px; }
-  html[data-density="comfy"] .link-grid{ grid-template-columns:repeat(auto-fill,minmax(360px,1fr)); gap:16px; }
-  html[data-density="comfy"] .link-card{ padding:18px; gap:15px; }
+  html[data-density="comfy"] .link-grid{ grid-template-columns:repeat(auto-fill,minmax(348px,1fr)); gap:13px; }
+  html[data-density="comfy"] .link-card{ padding:16px 17px; gap:14px; }
   html[data-density="comfy"] .link-card__name{ font-size:15.5px; }
   html[data-density="comfy"] .link-card__desc{ font-size:12.5px; margin-top:4px; }
 }
@@ -1462,7 +1462,7 @@ html[data-theme="light"] .tl-date{ box-shadow:none; }
   body.no-scroll .dock{ opacity:0; visibility:hidden; }   /* 搜索 / 快捷键面板打开时让位 */
   .footer__inner{ padding-bottom:calc(74px + env(safe-area-inset-bottom, 0px)); }  /* 别被底部 tab 栏压住 */
   /* 链接卡片：手机端一行两个，改成上下结构；右上角的收藏/复制图标去掉，改为长按卡片弹菜单 */
-  .link-grid{ grid-template-columns:repeat(2, minmax(0,1fr)); gap:10px; }
+  .link-grid{ grid-template-columns:repeat(2, minmax(0,1fr)); gap:8px; }
   .link-card{
     /* 卡片没有底色了，内边距再留 13px 就只是白白的空行，收一点排得紧些 */
     display:block; padding:9px 10px;
@@ -1607,6 +1607,9 @@ html[data-theme="light"] .tl-date{ box-shadow:none; }
 .admin-card--danger{ background:color-mix(in srgb, #ff6e6e 7%, transparent); }
 .admin-count{ font-size:12.5px; color:var(--text-mute); font-variant-numeric:tabular-nums; white-space:nowrap; }
 .admin-count.is-full{ color:#ffb27a; }
+/* 「发布到虚拟主机」的状态角标：橙色 = 有改动还没导出，绿色 = 已是最新 */
+.admin-count.is-dirty{ color:#ffb27a; }
+.admin-count.is-ok{ color:#7ee0a8; }
 .admin-tip{ font-size:12.5px; color:var(--text-mute); margin-top:12px !important; }
 .admin-empty{ font-size:13.5px; color:var(--text-mute); padding:16px 0; }
 

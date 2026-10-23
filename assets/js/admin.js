@@ -2220,13 +2220,133 @@
   }
 
   /* ======================= 备份 ======================= */
+  /* ======================= 发布到虚拟主机 ======================= */
+  /* 后台改的东西只躺在你这台浏览器的 localStorage 里。要让**所有访客**看到，
+     就得把它「烤」成一个静态文件。这里烤的就是这一个：
+
+       assets/js/site-data.js
+         ├─ window.XY_PASS    口令校验值（只有你自己设过口令时才有）
+         ├─ window.XY_CONFIG  站点设置 / 主题 / 首页文案 / 自定义链接 …
+         └─ window.SITE_DATA  分类 · 站点 · 分享 · 文章
+
+     它在 index.html 里排所有脚本的第一个，后面的 config.js / data.js
+     看见「已经有了」就只做兜底。所以覆盖这一个文件，整站内容就整体换掉，
+     不用再碰 index.html / data.js / config.js —— 对虚拟主机上传来说最省事。 */
+  var SNAP_KEY = 'xingyu.export.v1';
+
+  function nowText() {
+    var d = new Date();
+    function p(n) { return (n < 10 ? '0' : '') + n; }
+    return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) +
+           ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+  }
+
+  function snapRecord() {
+    try { return JSON.parse(localStorage.getItem(SNAP_KEY)) || null; } catch (e) { return null; }
+  }
+  function snapSave(rec) {
+    try { localStorage.setItem(SNAP_KEY, JSON.stringify(rec)); } catch (e) {}
+  }
+
+  /* 便宜好用的字符串签名：内容一动，签名必变，用来判断「有没有没导出的改动」 */
+  function snapSig(s) {
+    var h = 5381, i = s.length;
+    while (i) h = (h * 33 ^ s.charCodeAt(--i)) >>> 0;
+    return h.toString(36) + '-' + s.length;
+  }
+
+  /* 把对象写成一行合法的 JS 字面量 */
+  function jsLit(v) {
+    return JSON.stringify(v)
+      .replace(/\u2028/g, '\\u2028')
+      .replace(/\u2029/g, '\\u2029')
+      .replace(/<\//g, '<\\/');
+  }
+
+  function staticJs() {
+    var cfg = Store.get();
+    var data = Store.dataAll();
+    var feed = Store.feedAll();
+    var posts = Store.postsAll();
+    var entries = (window.SITE_DATA && window.SITE_DATA.entries) || [];
+    var pass = Store.isDefaultPasscode() ? '' : Store.passHash();
+
+    var out = [];
+    out.push('/* 星屿 · 站点数据快照');
+    out.push('   由后台「备份 → 发布到虚拟主机」导出，导出于 ' + nowText());
+    out.push('   上传位置：assets/js/site-data.js（覆盖同名文件即可，index.html 已经引入它）');
+    out.push('   想回到源码里的默认内容：把这个文件清空，只留注释。 */');
+    if (pass) out.push('window.XY_PASS = ' + jsLit(pass) + ';');
+    out.push('window.XY_CONFIG = ' + jsLit(cfg) + ';');
+    out.push('window.SITE_DATA = ' + jsLit({
+      categories: data,
+      feed: feed,
+      entries: entries,
+      posts: posts
+    }) + ';');
+    return out.join('\n') + '\n';
+  }
+
+  function staticStat() {
+    var text = staticJs();
+    var rec = snapRecord();
+    var sig = snapSig(text);
+    var d = counts();
+    var bytes;
+    try { bytes = new Blob([text]).size; } catch (e) { bytes = text.length * 2; }
+    return {
+      sig: sig,
+      bytes: bytes,
+      dirty: !rec || rec.sig !== sig,
+      at: (rec && rec.at) || '',
+      pass: !Store.isDefaultPasscode(),
+      summary: d.cats + ' 个分类 · ' + d.links + ' 个站点 · ' +
+        Store.feedAll().length + ' 条分享 · ' + Store.postsAll().length + ' 篇文章 · 文件约 ' +
+        Math.max(1, Math.round(bytes / 1024)) + ' KB'
+    };
+  }
+
+  function staticCard() {
+    var s = staticStat();
+    return '<div class="admin-card">' +
+        '<div class="admin-card__head">' +
+          '<div><h2>发布到虚拟主机</h2>' +
+            '<p>把后台现在的内容打包成一个 <code>site-data.js</code>，' +
+            '传到你虚拟主机的 <code>assets/js/</code> 里，访客看到的就是这个版本。</p></div>' +
+          '<span class="admin-count ' + (s.dirty ? 'is-dirty' : 'is-ok') + '">' +
+            (s.dirty ? '有改动没导出' : '已是最新') + '</span>' +
+        '</div>' +
+        '<p class="admin-tip">' + esc(s.summary) + '</p>' +
+        '<div class="admin-actions">' +
+          '<button class="btn btn--primary" type="button" id="snDownload">⬇ 下载 site-data.js</button>' +
+          '<button class="btn btn--ghost" type="button" id="snCopy">复制内容</button>' +
+        '</div>' +
+        '<ol class="guide-steps">' +
+          '<li>点上面的按钮，文件会存进「下载」文件夹。</li>' +
+          '<li>用 FTP 或主机商的文件管理器，把它传到网站的 <code>assets/js/</code> 目录，' +
+            '<b>覆盖</b>同名的 site-data.js。</li>' +
+          '<li>浏览器按 <kbd>Ctrl</kbd> / <kbd>⌘</kbd> + <kbd>Shift</kbd> + <kbd>R</kbd> 强刷一次，就能看到新内容。</li>' +
+        '</ol>' +
+        '<p class="admin-tip">当前 <code>index.html</code> 已经引入了这个文件，所以以后<b>只换它一个</b>就够了，' +
+          'index.html、data.js、config.js 都不用动。它排在所有脚本最前面，' +
+          '后面的 data.js / config.js 看到「已经有了」就只做兜底。</p>' +
+        (s.pass
+          ? '<p class="admin-tip">⚠️ 你设过自定义访问口令，导出的文件里会带上它的<b>校验值</b>' +
+            '（不是明文），这样线上也认同一个口令。这个文件相当于你的钥匙，别传到公开的地方。</p>'
+          : '<p class="admin-tip">你还没设过自己的访问口令，所以线上仍然用默认口令 ' +
+            '<code>xingyu</code>。想换成自己的：先去「口令」页设一个，再回来导一次。</p>') +
+        (s.at ? '<p class="admin-tip">上次导出：' + esc(s.at) + '</p>' : '') +
+      '</div>';
+  }
+
   function backupPanel() {
     var d = counts();
     var lc = Store.allLinks().length;
     var pc = Store.postsAll().length;
     var fc = Store.feedAll().length;
     var prc = Store.presets().length;
-    return '<div class="admin-card">' +
+    return staticCard() +
+      '<div class="admin-card">' +
         '<h2>备份到文件</h2>' +
         '<p>把 <b>站点数据</b>（' + d.cats + ' 个分类 · ' + d.links + ' 个站点）、' +
         '<b>分享</b>（' + fc + ' 条）、<b>文章</b>（' + pc + ' 篇）和 <b>站点设置</b>' +
@@ -2280,9 +2400,9 @@
       '</div>' +
 
       '<details class="admin-adv">' +
-        '<summary>进阶：让改动对所有访客生效</summary>' +
-        '<p>后台改动只保存在你这台浏览器里。想让所有访客都看到，需要把内容写进源码文件——' +
-        '下面两个按钮会把内容复制到剪贴板，你粘到对应文件里就行。</p>' +
+        '<summary>进阶：不要打包文件，手动写进源码</summary>' +
+        '<p>平常不用看这里 —— 上面的「发布到虚拟主机」已经能一次搞定。' +
+        '只有在你想把内容直接写死进源码时才用：下面两个按钮会把内容复制到剪贴板，你粘到对应文件里就行。</p>' +
         '<div class="admin-actions">' +
           '<button class="btn btn--ghost" type="button" id="bkCopyData">复制站点数据</button>' +
           '<button class="btn btn--ghost" type="button" id="bkCopyCfg">复制站点设置</button>' +
@@ -2623,7 +2743,7 @@
       ['🎨 主题', '7 套配色 + 自己敲 <code>#ff1d55</code> 这类色值 + 「我的配色」存多套；还有极光强度、圆角、默认主题、卡片密度、正文字号行高'],
       ['🔗 自定义链接', '顶栏/页脚那种自己加的链接，最多 ' + MAX + ' 个'],
       ['🌌 站点信息', '站名、标语、建站日期、Logo、Favicon、分享卡片图'],
-      ['💾 备份', '把全部设置导出成 JSON / JS；也能导入回来、恢复默认'],
+      ['💾 备份', '「发布到虚拟主机」导出 <code>site-data.js</code>；也能整站打包成 JSON、导入回来、恢复默认'],
       ['🔐 口令', '改访问口令。注意这是纯前端门禁，只防误入，不是真安全'],
       ['📖 手册 / 参数', '就是这一页']
     ].map(function (r) { return gRow(r[0], r[1]); }).join('');
@@ -2658,13 +2778,14 @@
           '<li><b>发一条分享</b>：分享 → 「＋ 新建」→ 日期默认今天，填标题和链接，标签用逗号隔开</li>' +
           '<li><b>写一篇文章</b>：文章 → 「＋ 新建」→ 支持 Markdown，右边能实时预览 → 保存</li>' +
           '<li><b>换个配色</b>：主题 → 点色板，或在 <code>HEX</code> 框里敲 <code>#ff1d55</code> → 回车，全站立刻变</li>' +
-          '<li><b>给别人看</b>：这里改的都只在你本机。想让所有访客看到，去「备份」导出，或者直接改源文件后重新发布</li>' +
+          '<li><b>给别人看</b>：这里改的都只在你本机。想让所有访客看到，去「备份 → 发布到虚拟主机」下载 <code>site-data.js</code>，' +
+            '传到网站的 <code>assets/js/</code> 覆盖同名文件就行</li>' +
         '</ol>' +
 
         '<div class="admin-sub"><b>三件要注意的事</b><em>不然容易白折腾</em></div>' +
         '<div class="guide-list">' +
           gRow('改动只在本机', '后台所有设置存在浏览器 <code>localStorage</code> 里。换设备、清缓存、换浏览器都不会跟过去') +
-          gRow('发布 ≠ 同步设置', '发布上线的是代码，你在后台改的内容仍然只在这台机器上。两份东西要分开维护') +
+          gRow('发布 ≠ 同步设置', '发布上线的是代码，你在后台改的内容仍然只在这台机器上。要让它上线，走「备份 → 发布到虚拟主机」那一份 <code>site-data.js</code>') +
           gRow('口令不是安全', '纯前端门禁，只挡误入。真正的私密内容别放在这个站里') +
         '</div>' +
       '</div>';
@@ -2692,7 +2813,7 @@
       kv('图标', '内联 SVG / emoji，零图片请求（Logo 与分享图除外）'),
       kv('离线', 'Service Worker 预缓存整站，Cache-first，版本号变了才换新缓存'),
       kv('搜索', '自己建索引：页面 / 分类 / 站点 / 分享 / 文章，纯内存匹配，无后端'),
-      kv('数据来源', '<code>assets/js/data.js</code>（内置）+ <code>assets/js/feed-import.js</code>（从壹号讯息导入的 662 条）'),
+      kv('数据来源', '<code>assets/js/data.js</code>（内置）+ <code>assets/js/feed-import.js</code>（导入的那批分享）；后台导出后由 <code>assets/js/site-data.js</code> 整体接管'),
       kv('后端', '无。所有数据在浏览器本地，没有账号、没有服务端'),
       kv('第三方', '没有任何 CDN / 统计 / 广告脚本')
     ].join('');
@@ -2706,7 +2827,8 @@
       ['<code>assets/js/app.js</code>', '路由、渲染、搜索、手势、主题、文章阅读'],
       ['<code>assets/js/admin.js</code>', '这一整套后台面板'],
       ['<code>assets/js/md.js</code>', 'Markdown 渲染 + 代码高亮'],
-      ['<code>assets/js/bookmarks.js</code>', '收藏夹'],
+      ['<code>assets/js/bookmarks.js</code>', '收藏夹的原始数据（50 个分类 / 2000+ 链接）'],
+      ['<code>assets/js/site-data.js</code>', '空文件。后台「发布到虚拟主机」导出的快照就覆盖它 —— 有内容时，整站数据以它为准'],
       ['<code>sw.js</code>', 'Service Worker；<code>VERSION</code> 要和 index.html 的 <code>?v=</code> 一起改'],
       ['<code>tools/gen-feed.js</code>', '生成 RSS <code>feed.xml</code> 的小脚本（可选）']
     ].map(function (r) { return gRow(r[0], r[1]); }).join('');
@@ -2717,12 +2839,14 @@
       kv('<code>xingyu.feed.v1</code>', '分享条目；没改过就用 <code>data.js</code> 里的'),
       kv('<code>xingyu.posts.v1</code>', '文章；没写过就用 <code>data.js</code> 里的'),
       kv('<code>xingyu.bookmarks.v1</code>', '收藏夹'),
-      kv('<code>xingyu.recent.v1</code>', '最近访问')
+      kv('<code>xingyu.recent.v1</code>', '最近访问'),
+      kv('<code>xingyu.export.v1</code>', '上次「发布到虚拟主机」导出的时间与签名，用来判断有没有没导出的改动')
     ].join('');
 
     var deployGrid = [
       kv('GitHub Pages', '<code>mackxin.github.io/xingyu</code>'),
       kv('WorkBuddy Sites', '<code>xingyu-44428.app.workbuddy.host</code>'),
+      kv('虚拟主机', '后台「备份 → 发布到虚拟主机」导出 <code>site-data.js</code>，覆盖 <code>assets/js/</code> 里的同名文件即可'),
       kv('发布方式', '改代码 → 提版本号（index.html 的 <code>?v=</code> 与 <code>sw.js</code> 的 <code>VERSION</code>）→ 推送'),
       kv('缓存坑', 'Pages 构建完成后 CDN 还会吐一阵旧 HTML，硬刷一次就好')
     ].join('');
@@ -3293,6 +3417,22 @@
       if (withData) { openCats = {}; firstRun = true; }
       refreshBody(root);
     }
+
+    /* 发布到虚拟主机：下载 site-data.js */
+    var snDownload = body.querySelector('#snDownload');
+    if (snDownload) snDownload.addEventListener('click', function () {
+      var text = staticJs();
+      download('site-data.js', text, 'application/javascript');
+      snapSave({ at: nowText(), sig: snapSig(text) });
+      toast('site-data.js 已下载，传到 assets/js/ 覆盖同名文件 ⬆');
+      refreshBody(root);
+    });
+    var snCopy = body.querySelector('#snCopy');
+    if (snCopy) snCopy.addEventListener('click', function () {
+      var text = staticJs();
+      copyText(text);
+      snapSave({ at: nowText(), sig: snapSig(text) });
+    });
 
     /* 下载一个包含全部内容的备份文件 */
     var bkDownload = body.querySelector('#bkDownload');
@@ -3885,9 +4025,9 @@
     } else fail();
   }
 
-  function download(name, text) {
+  function download(name, text, mime) {
     try {
-      var blob = new Blob([text], { type: 'application/json' });
+      var blob = new Blob([text], { type: mime || 'application/json' });
       var a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
       a.download = name;

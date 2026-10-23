@@ -21,6 +21,17 @@
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
+  /* 链接要直接进 href：esc() 只挡尖括号，挡不住 javascript: / data: 这类协议。
+     正常站点（http/https、站内 #/、相对路径）原样返回；带别的协议一律变 '#'，
+     免得后台里手滑粘进来一个 javascript: 就把自己点出脚本。 */
+  function hrefOf(u) {
+    var s = String(u == null ? '' : u).trim();
+    if (!s) return '#';
+    if (s.charAt(0) === '#' || s.charAt(0) === '/' || s.charAt(0) === '.') return esc(s);
+    if (/^(https?|mailto|tel):/i.test(s)) return esc(s);
+    if (/^[a-z][a-z0-9+.\-]*:/i.test(s)) return '#';
+    return esc(s);
+  }
   /* 把命中的那段字高亮出来（不区分大小写，忽略空格差异已由 norm 处理，
      这里只按原串位置找，找不到就原样返回） */
   function textMarkHtml(text, q) {
@@ -314,7 +325,7 @@
 
     var entriesHtml = (h.entries || []).map(function (e) {
       var ext = !isInternal(e.route);
-      return '<a class="card card--hover bento__item' + (e.wide ? ' bento__item--wide' : '') + '" href="' + esc(e.route) + '"' +
+      return '<a class="card card--hover bento__item' + (e.wide ? ' bento__item--wide' : '') + '" href="' + hrefOf(e.route) + '"' +
         (ext ? ' target="_blank" rel="noopener"' : '') + '>' +
         (e.spark ? '<span class="bento__spark"></span>' : '') +
         '<span class="bento__icon">' + esc(e.icon) + '</span>' +
@@ -338,7 +349,7 @@
 
     var featuredHtml = featuredList.map(function (f) {
       var isHash = f.url.charAt(0) === '#';
-      return '<a class="card card--hover feature-card" href="' + esc(f.url) + '"' + (isHash ? '' : ' target="_blank" rel="noopener"') + '>' +
+      return '<a class="card card--hover feature-card" href="' + hrefOf(f.url) + '"' + (isHash ? '' : ' target="_blank" rel="noopener"') + '>' +
         '<span class="feature-card__top"><span class="glyph glyph--sm" style="background:linear-gradient(135deg,rgba(124,156,255,.35),rgba(180,124,255,.3))">' + esc(f.icon) + '</span>' +
         '<h4>' + esc(f.title) + '</h4></span>' +
         '<p>' + esc(f.desc) + '</p>' +
@@ -437,7 +448,7 @@
 
   function linkCard(l) {
     var fav = isFav(l.u);
-    return '<a class="link-card' + (l.pin ? ' is-pinned' : '') + '" href="' + esc(l.u) + '" target="_blank" rel="noopener"' +
+    return '<a class="link-card' + (l.pin ? ' is-pinned' : '') + '" href="' + hrefOf(l.u) + '" target="_blank" rel="noopener"' +
       ' data-n="' + esc(l.n) + '" data-u="' + esc(l.u) + '" data-d="' + esc(l.d || '') + '">' +
       glyph(l.n, 'sm') +
       '<span class="link-card__body">' +
@@ -457,7 +468,7 @@
     if (!list.length) return '';
     var chips = list.map(function (v) {
       var badge = state.recentMode === 'top' && v.c > 1 ? '<i class="recent-chip__n">' + v.c + '</i>' : '';
-      return '<a class="recent-chip" href="' + esc(v.u) + '" target="_blank" rel="noopener"' +
+      return '<a class="recent-chip" href="' + hrefOf(v.u) + '" target="_blank" rel="noopener"' +
         ' data-n="' + esc(v.n) + '" data-u="' + esc(v.u) + '" data-d="' + esc(v.d || '') + '"' +
         ' title="' + esc(v.n + (v.d ? ' · ' + v.d : '')) + '">' +
         '<span class="recent-chip__name">' + esc(v.n) + '</span>' + badge + '</a>';
@@ -622,7 +633,7 @@
 
   function feedCardHtml(f) {
     var isHash = f.url.charAt(0) === '#';
-    return '<a class="feed-card" href="' + esc(f.url) + '"' + (isHash ? '' : ' target="_blank" rel="noopener"') + '>' +
+    return '<a class="feed-card" href="' + hrefOf(f.url) + '"' + (isHash ? '' : ' target="_blank" rel="noopener"') + '>' +
       '<span class="feed-card__icon">' + esc(f.icon) + '</span>' +
       '<span>' +
         '<span class="feed-card__title">' + esc(f.title) + ' ' + (isHash ? '' : I.out) + '</span>' +

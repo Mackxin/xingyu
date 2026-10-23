@@ -676,10 +676,15 @@
     },
 
     /* ---------- 口令 ---------- */
+    /* 优先级：本机设的 > site-data.js 里带来的（后台导出时打包）> 默认口令。
+       在后台改 passwords 只影响本机；想让线上也用同一个口令，
+       靠「备份 → 发布到虚拟主机」把 window.XY_PASS 一起带出去。 */
     passHash: function () {
       var h = null;
       try { h = localStorage.getItem(PASS_KEY); } catch (e) {}
-      return h || hash(DEFAULT_PASS);
+      if (h) return h;
+      if (window.XY_PASS) return String(window.XY_PASS);
+      return hash(DEFAULT_PASS);
     },
     setPasscode: function (p) {
       p = String(p || '').trim();
@@ -690,7 +695,9 @@
     isDefaultPasscode: function () {
       var h = null;
       try { h = localStorage.getItem(PASS_KEY); } catch (e) {}
-      return !h;
+      if (h) return false;
+      if (window.XY_PASS && String(window.XY_PASS) !== hash(DEFAULT_PASS)) return false;
+      return true;
     },
     unlock: function (p) {
       if (hash(String(p || '').trim()) !== Store.passHash()) return false;

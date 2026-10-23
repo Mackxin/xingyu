@@ -5,18 +5,20 @@
 
    策略：
      · 页面导航请求 → 先走网络（拿到最新版本），断网才用缓存
+     · site-data.js（站点数据快照）→ 永远先走网络，换数据立刻生效
      · 静态资源（css / js / 图片）→ 先用缓存（快），后台顺手更新
      · 每次改版本号 VERSION，旧缓存会在 activate 时被清掉
 
    ⚠️ 发布新版本时，把 VERSION 和 index.html 里的 ?v= 一起改。
    ========================================================================= */
-var VERSION = 'v101';
+var VERSION = 'v102';
 var CACHE = 'xingyu-' + VERSION;
 
 /* 断网兜底：至少这几个文件必须是可用的 */
 var CORE = [
   './',
   './index.html',
+  './assets/js/site-data.js',
   './assets/icon-192.png',
   './assets/icon-512.png'
 ];
@@ -66,6 +68,26 @@ self.addEventListener('fetch', function (e) {
             '<h1>星屿暂时离线</h1><p>请连上网络后再试。</p>',
             { headers: { 'Content-Type': 'text/html; charset=utf-8' } }
           );
+        });
+      })
+    );
+    return;
+  }
+
+  // 站点数据快照：永远先问网络（后台刚导出的数据要立刻生效），断网才用缓存。
+  // 它不带 ?v= 版本号，光靠「缓存优先」会被旧文件卡住，所以单独走这一条。
+  if (url.pathname.indexOf('site-data.js') > -1) {
+    e.respondWith(
+      fetch(req).then(function (res) {
+        if (res && res.status === 200) {
+          var copy = res.clone();
+          caches.open(CACHE).then(function (c) { c.put(req, copy); });
+        }
+        return res;
+      }).catch(function () {
+        return caches.match(req).then(function (hit) {
+          return hit || new Response('window.XY_SNAPSHOT_OFFLINE = 1;',
+            { headers: { 'Content-Type': 'application/javascript; charset=utf-8' } });
         });
       })
     );
