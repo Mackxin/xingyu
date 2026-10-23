@@ -2297,6 +2297,7 @@
     return {
       sig: sig,
       bytes: bytes,
+      never: !rec,
       dirty: !rec || rec.sig !== sig,
       at: (rec && rec.at) || '',
       pass: !Store.isDefaultPasscode(),
@@ -2313,8 +2314,8 @@
           '<div><h2>发布到虚拟主机</h2>' +
             '<p>把后台现在的内容打包成一个 <code>site-data.js</code>，' +
             '传到你虚拟主机的 <code>assets/js/</code> 里，访客看到的就是这个版本。</p></div>' +
-          '<span class="admin-count ' + (s.dirty ? 'is-dirty' : 'is-ok') + '">' +
-            (s.dirty ? '有改动没导出' : '已是最新') + '</span>' +
+          '<span class="admin-count ' + (s.never ? '' : s.dirty ? 'is-dirty' : 'is-ok') + '">' +
+            (s.never ? '还没导出过' : s.dirty ? '有改动没导出' : '已是最新') + '</span>' +
         '</div>' +
         '<p class="admin-tip">' + esc(s.summary) + '</p>' +
         '<div class="admin-actions">' +
