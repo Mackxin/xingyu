@@ -611,6 +611,35 @@
       '</a>';
   }
 
+  /* 标签筛选栏（分享页 / 文章列表共用一套）
+     宽屏是一条铺在标题下的横条；窄屏（≤960）收进顶栏「标签」按钮 + 底部面板。
+     两个页面用各自的 data 属性（data-tag / data-post-tag），筛选状态互不干扰。 */
+  function tagRailHtml(cfg) {
+    var chipHtml = cfg.tags.map(function (t) {
+      var label = t === 'all' ? '全部' : t;
+      return '<button class="tag' + (cfg.current === t ? ' is-active' : '') +
+        '" type="button" ' + cfg.attr + '="' + esc(t) + '">' + esc(label) + '</button>';
+    }).join('');
+    return '<div class="tag-rail" id="tagRail">' +
+        '<div class="tag-rail__scrim" id="tagRailScrim"></div>' +
+        '<div class="tag-rail__sheet" id="tagSheet">' +
+          '<span class="tag-rail__bar"></span>' +
+          '<div class="tag-rail__head">' +
+            '<b>按标签筛选</b>' +
+            '<span class="tag-rail__n">' + Math.max(0, cfg.tags.length - 1) + ' 个</span>' +
+            '<button class="tag-rail__x" type="button" id="tagSheetClose" aria-label="关闭">' +
+              '<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>' +
+            '</button>' +
+          '</div>' +
+          '<div class="tag-bar" id="tagBar">' +
+            '<span class="tag-bar__lead" aria-hidden="true">标签</span>' +
+            '<div class="tag-bar__chips">' + chipHtml + '</div>' +
+            cfg.stat +
+          '</div>' +
+        '</div>' +
+      '</div>';
+  }
+
   function renderShare() {
     var tags = ['all'];
     var dateSet = {};
@@ -623,11 +652,6 @@
       return state.feedTag === 'all' || (f.tags || []).indexOf(state.feedTag) > -1;
     });
 
-    var chipHtml = tags.map(function (t) {
-      var label = t === 'all' ? '全部' : t;
-      return '<button class="tag' + (state.feedTag === t ? ' is-active' : '') + '" type="button" data-tag="' + esc(t) + '">' + esc(label) + '</button>';
-    }).join('');
-
     /* 筛选条右侧的实时计数：点了标签立刻知道筛出多少条 */
     var statHtml = '<span class="tag-bar__stat">' +
         (state.feedTag === 'all'
@@ -636,24 +660,9 @@
       '</span>';
 
     /* 宽屏直接铺在标题下；窄屏（≤960）变成顶栏「标签」按钮 + 底部面板 */
-    var tagBar = '<div class="tag-rail" id="tagRail">' +
-        '<div class="tag-rail__scrim" id="tagRailScrim"></div>' +
-        '<div class="tag-rail__sheet" id="tagSheet">' +
-          '<span class="tag-rail__bar"></span>' +
-          '<div class="tag-rail__head">' +
-            '<b>按标签筛选</b>' +
-            '<span class="tag-rail__n">' + Math.max(0, tags.length - 1) + ' 个</span>' +
-            '<button class="tag-rail__x" type="button" id="tagSheetClose" aria-label="关闭">' +
-              '<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>' +
-            '</button>' +
-          '</div>' +
-          '<div class="tag-bar" id="tagBar">' +
-            '<span class="tag-bar__lead" aria-hidden="true">标签</span>' +
-            '<div class="tag-bar__chips">' + chipHtml + '</div>' +
-            statHtml +
-          '</div>' +
-        '</div>' +
-      '</div>';
+    var tagBar = tagRailHtml({
+      attr: 'data-tag', current: state.feedTag, tags: tags, stat: statHtml
+    });
 
     /* 标题右侧的概览数字，把整行撑满 */
     var statsHtml = '<div class="head-stats">' +
@@ -770,20 +779,13 @@
       '<div class="head-stat"><b>' + Math.max(0, tags.length - 1) + '</b><span>个标签</span></div>' +
       '</div>';
 
-    /* 标签筛选条：和分享页同一套外观，但走 data-post-tag，互不干扰 */
+    /* 标签筛选条：和分享页同一个组件（宽屏横条 / 窄屏收进顶栏），走 data-post-tag */
     var tagBar = '';
     if (tags.length > 1) {
-      tagBar = '<div class="tag-bar post-tagbar">' +
-          '<span class="tag-bar__lead" aria-hidden="true">标签</span>' +
-          '<div class="tag-bar__chips">' +
-            tags.map(function (t) {
-              var label = t === 'all' ? '全部' : t;
-              return '<button class="tag' + (state.postTag === t ? ' is-active' : '') +
-                '" type="button" data-post-tag="' + esc(t) + '">' + esc(label) + '</button>';
-            }).join('') +
-          '</div>' +
-          '<span class="tag-bar__stat">共 <b>' + items.length + '</b> 篇</span>' +
-        '</div>';
+      tagBar = tagRailHtml({
+        attr: 'data-post-tag', current: state.postTag, tags: tags,
+        stat: '<span class="tag-bar__stat">共 <b>' + items.length + '</b> 篇</span>'
+      });
     }
 
     /* 按年份分组，翻旧文章时有个时间坐标 */
@@ -960,6 +962,8 @@
     var app = $('#app');
     var html = routeHtml(state.route);
     app.innerHTML = html;
+    // 顶栏「标签」按钮只在这页真的有标签栏时露面（分享页 / 文章列表；阅读页没有）
+    document.documentElement.setAttribute('data-tagbar', app.querySelector('#tagRail') ? 'on' : 'off');
     // 原地更新（筛选、收藏、搜索）不重播入场动画，避免视觉抖动
     if (!animate) {
       var page = app.firstElementChild;
@@ -975,7 +979,7 @@
     syncHeaderSearch();
     if (state.route === 'home') { startRotator(); animateCounters(); }
     if (state.route === 'nav') { bindNavPage(); }
-    if (state.route === 'share') { bindTagRail(); syncTagBtn(); }
+    if (state.route === 'share' || state.route === 'post') { bindTagRail(); syncTagBtn(); }
     if (state.route === 'admin' && window.XY_ADMIN) window.XY_ADMIN.bind(app);
     if (resetScroll) scrollTop(false);
   }
@@ -1085,11 +1089,16 @@
     nm.textContent = c ? c.name : '全部分类';
   }
 
-  /* ---------- 分享页：顶栏「标签」按钮 + 底部标签面板 ---------- */
+  /* ---------- 分享页 / 文章页：顶栏「标签」按钮 + 底部标签面板 ---------- */
+  /* 两个页面各自记着自己的筛选状态，取哪个看当前路由 */
+  function curTag() {
+    return state.route === 'post' ? state.postTag : state.feedTag;
+  }
   function syncTagBtn() {
     var nm = $('#headerTagName'), btn = $('#headerTag');
     if (!nm) return;
-    nm.textContent = state.feedTag === 'all' ? '全部标签' : '#' + state.feedTag;
+    var t = curTag();
+    nm.textContent = t === 'all' ? '全部标签' : '#' + t;
     if (btn) {
       var rail = $('#tagRail');
       btn.setAttribute('aria-expanded', rail && rail.classList.contains('is-sheet') ? 'true' : 'false');

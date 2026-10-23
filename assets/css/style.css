@@ -325,10 +325,10 @@ html[data-theme="light"] .hdr-hits{ box-shadow:var(--shadow-sm), 0 24px 64px rgb
   transition:transform .3s var(--ease);
 }
 .hcat[aria-expanded="true"] .hcat__chev{ transform:rotate(180deg); }
-.hcat--tag{ display:none; }   /* 分享页的标签筛选按钮：窄屏才出现 */
+.hcat--tag{ display:none; }   /* 标签筛选按钮：窄屏且当前页真的有标签栏时才出现 */
 @media (max-width:960px){
   html[data-route="nav"] #headerCat{ display:inline-flex; }
-  html[data-route="share"] #headerTag{ display:inline-flex; }
+  html[data-tagbar="on"] #headerTag{ display:inline-flex; }
   /* 搜索框 + 「分类」按钮装进一个真盒子，宽屏下再退回 display:contents */
   .header__row{ display:flex; align-items:center; gap:10px; flex:1 1 auto; min-width:0; }
   .header__row .header__search{ flex:1 1 auto; min-width:0; max-width:none; margin:0; }
@@ -1438,9 +1438,11 @@ html[data-theme="light"] .tl-date{ box-shadow:0 14px 34px -22px rgba(30,40,70,.3
     bottom:calc(12px + env(safe-area-inset-bottom, 0px));
     z-index:56;
     border-radius:99px;
-    background:color-mix(in srgb, var(--bg-soft) 80%, transparent);
-    border:1px solid var(--border-strong);
-    box-shadow:0 20px 44px -20px rgba(0,0,0,.85), 0 0 0 1px rgba(124,156,255,.08);
+    /* 不描边了，底色就得多承担一点"我是一块浮起来的"——85% 比 80% 稳，浅色主题下不至于糊成一片 */
+    background:color-mix(in srgb, var(--bg-soft) 85%, transparent);
+    /* 不要最外面那圈描边（含 box-shadow 里的 1px 高光环）：只留一层下沉投影，
+       药丸看起来是浮在内容上的，而不是被框起来的 */
+    box-shadow:0 20px 44px -20px rgba(0,0,0,.85);
     backdrop-filter:blur(22px) saturate(160%);
     -webkit-backdrop-filter:blur(22px) saturate(160%);
     transition:opacity .25s var(--ease), visibility .25s var(--ease);
@@ -1987,7 +1989,10 @@ html[data-theme="light"] .admin-card--danger{ border-color:rgba(210,60,55,.26); 
    ========================================================= */
 
 /* --- 列表页 --- */
-.page--posts .post-tagbar{ margin-top:22px; }
+/* 标签条下面紧接按年份分组的列表，比分享页的时间线收得紧一点 */
+@media (min-width:961px){
+  .page--posts .tag-bar{ margin-bottom:12px; }
+}
 .post-group{ margin-top:34px; }
 .post-group:first-of-type{ margin-top:2px; }
 .post-year{ display:flex; align-items:baseline; gap:10px; margin:0 0 12px 2px; }
