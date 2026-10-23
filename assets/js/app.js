@@ -1955,6 +1955,48 @@
   }
 
   /* ---------- 全局事件 ---------- */
+  /* ---------- 双击顶栏空白处：一键到页面底部 ----------
+     导航页三万多像素长，鼠标滚到底要滚半天；双击顶栏那条最省事。
+     落在链接 / 按钮 / 输入框上就放行，让它们照常工作；
+     已经到底了再双击一次回顶部（不然只能去点右下角那个按钮）。 */
+  var bottomTimer = null;
+
+  function bindHeaderDblClick() {
+    var h = $('#header');
+    if (!h) return;
+    h.addEventListener('dblclick', function (e) {
+      var t = e.target;
+      if (t.closest && t.closest('a, button, input, label, textarea, select, [role="dialog"]')) return;
+
+      if (bottomTimer) { clearInterval(bottomTimer); bottomTimer = null; }
+
+      var vh = window.innerHeight;
+      var max = Math.max(0, document.documentElement.scrollHeight - vh);
+      if (max <= 40) return;                       // 这一页本来就不用滚
+
+      /* 已经在最底下了 → 回顶部 */
+      if (window.scrollY >= max - 40) {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        toast('回到顶部 ↑');
+        return;
+      }
+
+      /* 距离太远（好几屏）就直接跳，别让人等一段长长的滚动动画 */
+      var far = max - window.scrollY;
+      window.scrollTo({ top: max, behavior: far > vh * 3 ? 'instant' : 'smooth' });
+      toast('已到页面底部 ↓');
+
+      /* 导航页的分类块是 content-visibility:auto —— 视口外还没排版，
+         一路跳下来页高会被撑大，所以要再补几下，直到真的到底 */
+      var tries = 0;
+      bottomTimer = setInterval(function () {
+        var m = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+        if (window.scrollY < m - 4) window.scrollTo({ top: m, behavior: 'instant' });
+        if (++tries >= 4) { clearInterval(bottomTimer); bottomTimer = null; }
+      }, 220);
+    });
+  }
+
   function bindGlobal() {
     window.addEventListener('hashchange', syncFromHash);
     window.addEventListener('popstate', syncFromHash);
@@ -2026,6 +2068,8 @@
     });
     // 手机端长按卡片 → 收藏 / 复制
     bindLongPress();
+    // 双击顶栏空白处 → 到页面底部（已在底部则回顶部）
+    bindHeaderDblClick();
 
     // 返回顶部：往下滚过一屏才浮出来
     var toTop = $('#toTop');
