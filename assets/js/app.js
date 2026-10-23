@@ -1961,40 +1961,67 @@
      已经到底了再双击一次回顶部（不然只能去点右下角那个按钮）。 */
   var bottomTimer = null;
 
+  /* 到页面底部 / 已在底部就回顶部。双击和手机双击（两次点按）共用这一段 */
+  function togglePageBottom() {
+    if (bottomTimer) { clearInterval(bottomTimer); bottomTimer = null; }
+
+    var vh = window.innerHeight;
+    var max = Math.max(0, document.documentElement.scrollHeight - vh);
+    if (max <= 40) return;                       // 这一页本来就不用滚
+
+    /* 已经在最底下了 → 回顶部 */
+    if (window.scrollY >= max - 40) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      toast('回到顶部 ↑');
+      return;
+    }
+
+    /* 距离太远（好几屏）就直接跳，别让人等一段长长的滚动动画 */
+    var far = max - window.scrollY;
+    window.scrollTo({ top: max, behavior: far > vh * 3 ? 'instant' : 'smooth' });
+    toast('已到页面底部 ↓');
+
+    /* 导航页的分类块是 content-visibility:auto —— 视口外还没排版，
+       一路跳下来页高会被撑大，所以要再补几下，直到真的到底 */
+    var tries = 0;
+    bottomTimer = setInterval(function () {
+      var m = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+      if (window.scrollY < m - 4) window.scrollTo({ top: m, behavior: 'instant' });
+      if (++tries >= 4) { clearInterval(bottomTimer); bottomTimer = null; }
+    }, 220);
+  }
+
+  /* 顶栏上「不是按钮 / 链接 / 输入框」的地方 = 空白处 */
+  function onBlankChrome(t) {
+    return !(t && t.closest && t.closest('a, button, input, label, textarea, select, [role="dialog"]'));
+  }
+
   function bindHeaderDblClick() {
     var h = $('#header');
     if (!h) return;
+
+    /* 电脑：双击空白处 */
     h.addEventListener('dblclick', function (e) {
-      var t = e.target;
-      if (t.closest && t.closest('a, button, input, label, textarea, select, [role="dialog"]')) return;
-
-      if (bottomTimer) { clearInterval(bottomTimer); bottomTimer = null; }
-
-      var vh = window.innerHeight;
-      var max = Math.max(0, document.documentElement.scrollHeight - vh);
-      if (max <= 40) return;                       // 这一页本来就不用滚
-
-      /* 已经在最底下了 → 回顶部 */
-      if (window.scrollY >= max - 40) {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-        toast('回到顶部 ↑');
-        return;
-      }
-
-      /* 距离太远（好几屏）就直接跳，别让人等一段长长的滚动动画 */
-      var far = max - window.scrollY;
-      window.scrollTo({ top: max, behavior: far > vh * 3 ? 'instant' : 'smooth' });
-      toast('已到页面底部 ↓');
-
-      /* 导航页的分类块是 content-visibility:auto —— 视口外还没排版，
-         一路跳下来页高会被撑大，所以要再补几下，直到真的到底 */
-      var tries = 0;
-      bottomTimer = setInterval(function () {
-        var m = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
-        if (window.scrollY < m - 4) window.scrollTo({ top: m, behavior: 'instant' });
-        if (++tries >= 4) { clearInterval(bottomTimer); bottomTimer = null; }
-      }, 220);
+      if (!onBlankChrome(e.target)) return;
+      togglePageBottom();
     });
+
+    /* 手机：触屏没有 dblclick，自己认「两次点按」—— 320ms 内、位置基本没动 */
+    var lastTap = 0, lastX = 0, lastY = 0;
+    h.addEventListener('touchend', function (e) {
+      if (!onBlankChrome(e.target)) return;
+      var t = e.changedTouches && e.changedTouches[0];
+      if (!t) return;
+      var now = Date.now();
+      var near = Math.abs(t.clientX - lastX) < 32 && Math.abs(t.clientY - lastY) < 32;
+      if (lastTap && now - lastTap < 320 && near) {
+        lastTap = 0;
+        if (e.cancelable) e.preventDefault();    // 别让浏览器顺手把页面放大
+        togglePageBottom();
+      } else {
+        lastTap = now; lastX = t.clientX; lastY = t.clientY;
+      }
+    }, { passive: false });
   }
 
   function bindGlobal() {

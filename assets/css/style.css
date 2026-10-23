@@ -1405,6 +1405,8 @@ html[data-theme="light"] .tl-date{ box-shadow:0 14px 34px -22px rgba(30,40,70,.3
   /* 搜索框与「分类」按钮共用一整行 */
   .header__row{ flex:1 1 100%; order:9; }
   .header__links{ flex:1 1 100%; justify-content:center; margin-top:8px; order:10; }
+  /* 手机端：主题（白天 / 暗黑）按钮靠到第一行最右边，别紧贴 logo */
+  .header__actions{ margin-left:auto; }
 }
 @media (max-width:640px){
   body{ font-size:14.5px; }
