@@ -1582,9 +1582,15 @@
         '<div class="look-color' + (isCustom ? ' is-active' : '') + '">' +
           '<input type="color" data-theme-f="accentColor" value="' + esc(t.accentColor) + '" aria-label="自定义主色" />' +
           '<div class="look-color__txt"><b>自定义主色</b>' +
-            '<em>从调色盘里挑一个，另外两个渐变色会自动配出来</em></div>' +
+            '<em>点左边的色块挑，或右边直接敲色值</em></div>' +
           '<div class="look-color__side">' +
-            '<code id="lookHex">' + esc(t.accentColor) + '</code>' +
+            /* 直接敲色值：支持 #ff1d55 / ff1d55 / #f15，回车或失焦生效 */
+            '<label class="look-hex" title="直接输入色值，比如 #ff1d55（也可以只敲 ff1d55 或 #f15）">' +
+              '<span aria-hidden="true">HEX</span>' +
+              '<input id="lookHexInput" type="text" inputmode="text" autocomplete="off" spellcheck="false"' +
+                ' maxlength="7" placeholder="#ff1d55" aria-label="直接输入色值"' +
+                ' value="' + esc(t.accentColor) + '" />' +
+            '</label>' +
             '<button class="btn btn--ghost look-save" type="button" id="lookSavePreset"' +
               (full ? ' disabled title="已经存满 ' + (Store.MAX_PRESETS || 8) + ' 套了，先删一套再存"'
                     : ' title="把这个颜色存进「我的配色」"') +
@@ -1703,19 +1709,94 @@
       refreshBody(root);
     });
 
-    var color = body.querySelector('[data-theme-f="accentColor"]');
-    if (color) {
+    /* 改主色：色块点击和手敲色值走同一条路，两边互相同步 */
+    var colorIn = body.querySelector('[data-theme-f="accentColor"]');
+    var hexIn = body.querySelector('#lookHexInput');
+    var hexBox = hexIn ? hexIn.closest('.look-hex') : null;
+
+    /* 手敲的色值收拾成 #rrggbb：吃掉空格和多余 #，三位简写自动补全 */
+    function normalHex(raw) {
+      var s = String(raw == null ? '' : raw).trim().toLowerCase().replace(/[\s#]/g, '');
+      if (/^[0-9a-f]{3}$/.test(s)) s = s[0] + s[0] + s[1] + s[1] + s[2] + s[2];
+      return /^[0-9a-f]{6}$/.test(s) ? '#' + s : '';
+    }
+    /* 敲错了给个红字提示，不弹窗打断 */
+    function markHex(bad) {
+      if (hexBox) hexBox.classList.toggle('is-bad', !!bad);
+    }
+    function paintAccent(color, keepTyped) {
+      color = normalHex(color);
+      if (!color) return;                 // 半截色值不往配置里写，避免把主色冲成默认值
+      Store.setTheme({ accent: 'custom', accentColor: color });
+      if (colorIn && colorIn.value !== color) colorIn.value = color;
+      if (hexIn && !keepTyped && hexIn.value.toLowerCase() !== color) hexIn.value = color;
+      body.querySelectorAll('.look-swatch').forEach(function (x) { x.classList.remove('is-active'); });
+      var row = colorIn ? colorIn.closest('.look-color') : body.querySelector('.look-color');
+      if (row) row.classList.add('is-active');
+      paintPresetActive(color);
+      paintAccentName();
+    }
+
+    if (colorIn) {
       var onColor = debounce(function () {
-        Store.setTheme({ accent: 'custom', accentColor: color.value });
-        var hex = body.querySelector('#lookHex');
-        if (hex) hex.textContent = color.value;
-        body.querySelectorAll('.look-swatch').forEach(function (x) { x.classList.remove('is-active'); });
-        var row = color.closest('.look-color');
-        if (row) row.classList.add('is-active');
-        paintPresetActive(color.value);
-        paintAccentName();
+        markHex(false);
+        paintAccent(colorIn.value);
       }, 140);
-      color.addEventListener('input', onColor);
+      colorIn.addEventListener('input', onColor);
+    }
+
+    if (hexIn) {
+      /* 敲满 6 位就跟着变，不用等回车。色值在调用时就定住，
+         否则延迟期间又敲了半截，会拿半截值去写配置 */
+      var liveHex = debounce(function (v) {
+        paintAccent(v, true);
+      }, 200);
+
+      hexIn.addEventListener('input', function () {
+        /* 只留下 # 和十六进制字符，别的一律挡掉（粘贴进来的也一起清） */
+        var raw = hexIn.value.replace(/[^#0-9a-fA-F]/g, '');
+        if (raw !== hexIn.value) hexIn.value = raw;
+        var hex = normalHex(raw);
+        /* 只敲 1~3 位不算敲错（三位是合法的简写），4~5 位才提示 */
+        markHex(!hex && raw.replace(/#/g, '').length > 3);
+        /* 只有敲满 6 位才实时生效：三位简写留到回车/失焦再应用，
+           不然打 #ff1d55 的半路上会先闪一下 #ff1155 */
+        if (hex && raw.replace(/#/g, '').length === 6) liveHex(hex);
+      });
+
+      hexIn.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          var hex = normalHex(hexIn.value);
+          if (!hex) { markHex(true); toast('色值要 6 位十六进制，比如 #ff1d55'); return; }
+          markHex(false);
+          paintAccent(hex);
+          toast('主色已换成 ' + hex);
+          return;
+        }
+        /* 框里已经是完整的 7 位、又没选中任何东西时，直接敲新字符会顶掉旧的整段
+           （不然 maxlength 会把它默默吞掉，看着像"打不进去"） */
+        var printable = e.key.length === 1 && !e.metaKey && !e.ctrlKey && !e.altKey;
+        if (printable && hexIn.value.length >= 7 && hexIn.selectionStart === hexIn.selectionEnd) {
+          hexIn.select();
+        }
+      });
+
+      /* 失焦收尾：敲对了就应用并规整成 #rrggbb，没敲对就退回当前色 */
+      hexIn.addEventListener('blur', function () {
+        var hex = normalHex(hexIn.value);
+        markHex(false);
+        if (hex) paintAccent(hex);
+        else hexIn.value = Store.theme().accentColor;
+      });
+
+      /* 点整块也能focus到输入框（HEX 标签那点地方别白占） */
+      if (hexBox) hexBox.addEventListener('click', function (e) {
+        if (e.target !== hexIn) hexIn.focus();
+      });
+
+      /* 一聚焦就全选：框里本来就有 7 位的旧色值，不选中的话新敲的字符会被 maxlength 挡掉 */
+      hexIn.addEventListener('focus', function () { hexIn.select(); });
     }
 
     /* ---------- 我的配色 ---------- */

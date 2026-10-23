@@ -2479,11 +2479,31 @@ html[data-toc="off"] .post-toc{ display:none; }
   margin-left:auto; flex:0 0 auto; font-size:12px; color:var(--text-dim);
   font-family:ui-monospace, SFMono-Regular, Menlo, monospace;
 }
-/* 自定义主色右侧：色值 + 「存为配色」 */
+/* 自定义主色右侧：色值输入 + 「存为配色」 */
 .look-color__side{
   margin-left:auto; flex:0 0 auto;
   display:flex; align-items:center; gap:10px;
 }
+/* 直接敲色值（#ff1d55 / ff1d55 / #f15 都认） */
+.look-hex{
+  display:flex; align-items:center; gap:7px; height:32px; padding:0 10px;
+  border-radius:9px; background:var(--glass-hi); cursor:text;
+  transition:background .22s var(--ease);
+}
+.look-hex:hover{ background:color-mix(in srgb, var(--a1) 14%, transparent); }
+.look-hex:focus-within{ background:color-mix(in srgb, var(--a1) 18%, transparent); }
+.look-hex span{
+  font-size:9.5px; font-weight:700; letter-spacing:.14em;
+  color:var(--text-mute); flex:0 0 auto; user-select:none;
+}
+.look-hex input{
+  width:78px; height:100%; padding:0; border:0; outline:none; background:none;
+  color:var(--text); font-family:ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size:12.5px; letter-spacing:.02em;
+}
+.look-hex input::placeholder{ color:var(--text-mute); }
+.look-hex.is-bad{ background:rgba(255,110,110,.14); }
+.look-hex.is-bad input{ color:#ff9c9c; }
 .look-color__side code{ margin-left:0; }
 .look-color__side .look-save{
   height:32px; padding:0 12px; border-radius:9px; font-size:12px; font-weight:600;
@@ -2497,6 +2517,8 @@ html[data-toc="off"] .post-toc{ display:none; }
   .look-color{ flex-wrap:wrap; row-gap:12px; }
   .look-color__txt{ flex:1 1 auto; }
   .look-color__side{ margin-left:0; width:100%; justify-content:space-between; }
+  .look-hex{ flex:1 1 auto; }
+  .look-hex input{ width:100%; }
 }
 
 /* 我的配色（可以自己存几套） */
