@@ -836,16 +836,18 @@ html[data-theme="light"] .btn--primary{ color:#fff; }
 .link-card{
   position:relative; display:flex; align-items:center; gap:13px;
   padding:14px 15px; border-radius:var(--r);
-  background:var(--glass); border:1px solid var(--border);
-  transition:transform .4s var(--ease), border-color .35s var(--ease), box-shadow .4s var(--ease), background .35s var(--ease);
+  /* 不画底色、不描边：卡片直接贴在页面的极光背景上，靠间距和留白分组。
+     边框留着但是透明色，只为让排版尺寸和以前一模一样（不会因为去掉 1px 而挪位）。 */
+  background:none; border:1px solid transparent;
+  transition:background .3s var(--ease), border-color .3s var(--ease);
   overflow:hidden;
 }
-/* 高亮只做整体：上浮 + 描边变亮 + 底色 + 柔光。不再在左边竖一条 3px 的渐变条 */
+/* 高亮只加一点点蓝调底色 + 标题变色，绝不做位移/放大 */
 .link-card:hover{
-  transform:translateY(-4px);
-  border-color:var(--border-strong);
-  background:var(--glass-2);
-  box-shadow:var(--shadow-sm), 0 0 0 1px rgba(124,156,255,.16);
+  background:rgba(124,156,255,.085);
+  border-color:transparent;
+  box-shadow:none;
+  transform:none;
 }
 .link-card__body{ min-width:0; flex:1; }
 .link-card__name{
@@ -878,7 +880,8 @@ html[data-cat-icon="off"] #headerCatEmoji{ display:none; }
 }
 
 /* ---------- 置顶 ---------- */
-.link-card.is-pinned{ border-color:var(--border-strong); }
+/* 卡片已经没有描边了，置顶改用一层很淡的底 + 那个 📌 小图钉来区分 */
+.link-card.is-pinned{ background:rgba(124,156,255,.06); }
 .link-card .pin{ font-style:normal; font-size:10px; line-height:1; flex-shrink:0; opacity:.9; }
 
 /* ---------- 最近访问 / 最常去 ---------- */
@@ -1044,13 +1047,15 @@ html[data-theme="light"] .tl-date{ box-shadow:0 14px 34px -22px rgba(30,40,70,.3
   display:grid; grid-template-columns:auto minmax(0,1fr); gap:16px;
   padding:20px 22px;
   border-radius:var(--r-lg);
-  background:var(--glass); border:1px solid var(--border);
-  transition:transform .45s var(--ease), border-color .35s var(--ease), box-shadow .45s var(--ease);
+  /* 同上：不铺白底、不描边，hover 只换一层淡蓝底 */
+  background:none; border:1px solid transparent;
+  transition:background .35s var(--ease), border-color .3s var(--ease);
 }
 .feed-card:hover{
-  transform:translateY(-4px);
-  border-color:var(--border-strong);
-  box-shadow:var(--shadow-sm), 0 0 0 1px rgba(124,156,255,.16);
+  background:rgba(124,156,255,.075);
+  border-color:transparent;
+  box-shadow:none;
+  transform:none;
 }
 .feed-card__icon{
   display:grid; place-items:center; width:46px; height:46px; border-radius:14px;
@@ -1063,7 +1068,7 @@ html[data-theme="light"] .tl-date{ box-shadow:0 14px 34px -22px rgba(30,40,70,.3
 .feed-card__title svg{ width:14px; height:14px; fill:none; stroke:currentColor; stroke-width:2;
   opacity:.45; transition:all .3s var(--ease); }
 .feed-card:hover .feed-card__title{ color:var(--a1); }
-.feed-card:hover .feed-card__title svg{ opacity:1; transform:translate(2px,-2px); }
+.feed-card:hover .feed-card__title svg{ opacity:1; transform:none; }
 .feed-card__desc{ margin:8px 0 0; color:var(--text-dim); font-size:13.8px; line-height:1.8; }
 .feed-card__tags{ display:flex; flex-wrap:wrap; gap:7px; margin-top:13px; }
 .tag{
@@ -1453,7 +1458,8 @@ html[data-theme="light"] .tl-date{ box-shadow:0 14px 34px -22px rgba(30,40,70,.3
   /* 链接卡片：手机端一行两个，改成上下结构；右上角的收藏/复制图标去掉，改为长按卡片弹菜单 */
   .link-grid{ grid-template-columns:repeat(2, minmax(0,1fr)); gap:10px; }
   .link-card{
-    display:block; padding:13px;
+    /* 卡片没有底色了，内边距再留 13px 就只是白白的空行，收一点排得紧些 */
+    display:block; padding:9px 10px;
     -webkit-touch-callout:none;   /* 长按时别弹系统自带的链接菜单 */
   }
   .link-card .glyph{ display:none; }   /* 手机端卡片不带左侧图标，只留名称 + 简介 */
@@ -2047,13 +2053,15 @@ html[data-theme="light"] .admin-card--danger{ border-color:rgba(210,60,55,.26); 
 .post-card{
   display:grid; grid-template-columns:62px minmax(0,1fr) 30px; gap:18px; align-items:center;
   padding:18px 20px; border-radius:var(--r);
-  background:var(--glass); border:1px solid var(--border);
-  transition:transform .4s var(--ease), border-color .3s var(--ease), box-shadow .4s var(--ease);
+  /* 和分享页、导航页一致：不铺底、不描边，hover 只换淡蓝底，不位移 */
+  background:none; border:1px solid transparent;
+  transition:background .3s var(--ease), border-color .3s var(--ease);
 }
 .post-card:hover{
-  transform:translateY(-2px);
-  border-color:var(--border-strong);
-  box-shadow:var(--shadow-sm), 0 0 0 1px rgba(124,156,255,.14);
+  background:rgba(124,156,255,.075);
+  border-color:transparent;
+  box-shadow:none;
+  transform:none;
 }
 .post-card__date{
   display:flex; flex-direction:column; align-items:center; gap:0;
