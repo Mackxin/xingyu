@@ -2574,7 +2574,9 @@
       var m = /导出于\s*(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2})/.exec(txt);
       var bytes;
       try { bytes = new Blob([txt]).size; } catch (e) { bytes = txt.length * 2; }
-      cb(null, { at: m ? m[1] : '', bytes: bytes, empty: !/window\.SITE_DATA/.test(txt) });
+      /* 「空文件」要认真正的赋值语句 —— 出厂那个空文件里，注释也写着
+         window.XY_CONFIG / window.SITE_DATA，光搜单词会误判成"有内容" */
+      cb(null, { at: m ? m[1] : '', bytes: bytes, empty: !/window\.SITE_DATA\s*=/.test(txt) });
     }).catch(function (e) {
       cb((e && e.message) || '网络错误');
     });
@@ -3895,7 +3897,8 @@
           : '';
         var msg;
         if (info.empty) {
-          msg = '线上那份还是<b>空文件</b> —— site-data.js 还没传上去，访客看到的是 data.js 里的默认内容。';
+          msg = '线上那份还是<b>出厂的空文件</b>（' + fmtBytes(info.bytes) + '）—— ' +
+            'site-data.js 还没传上去，访客现在看到的是 data.js 里的默认内容。';
         } else if (!info.at) {
           msg = '线上文件读到了（' + fmtBytes(info.bytes) + '），但没认出导出时间，可能被改过。';
         } else if (mine && info.at === mine) {
