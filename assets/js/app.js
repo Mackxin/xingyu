@@ -158,6 +158,14 @@
   /* ---------- 状态 ---------- */
   var ROUTES = ['home', 'nav', 'share', 'post'];         // 主导航 / 滑动切换顺序
   var ALL_ROUTES = ['home', 'nav', 'share', 'post', 'about', 'admin'];  // 全部可路由页面（about/admin 不占主导航）
+
+  /* 这两个 key 必须在 state 之前赋值：state 的初始化里会调用 loadFav()，
+     var 只提升声明不提升值 —— 放在下面的话那一刻 FAV_KEY 还是 undefined，
+     读的就是 localStorage.getItem("undefined")，永远是空数组。
+     （曾经就踩过：收藏能写进去，一刷新全没了） */
+  var FAV_KEY = 'xingyu.fav.v1';
+  var THEME_KEY = 'xingyu.theme.v1';
+
   var state = {
     route: 'home',
     query: '',
@@ -171,22 +179,50 @@
     postTag: 'all',     // 文章列表的标签筛选
     fav: loadFav()
   };
-  var FAV_KEY = 'xingyu.fav.v1';
-  var THEME_KEY = 'xingyu.theme.v1';
-
   function loadFav() {
-    try { return JSON.parse(localStorage.getItem(FAV_KEY)) || []; } catch (e) { return []; }
+    try {
+      var raw = localStorage.getItem(FAV_KEY);
+      var arr = JSON.parse(raw);
+      return Array.isArray(arr) ? arr.filter(function (x) { return typeof x === 'string' && x; }) : [];
+    } catch (e) { return []; }
   }
   function saveFav() {
     try { localStorage.setItem(FAV_KEY, JSON.stringify(state.fav)); } catch (e) {}
   }
   function isFav(url) { return state.fav.indexOf(url) > -1; }
+
+  /* 收藏变了：只更新那一颗星和顶部计数，不整页重渲。
+     导航页一次铺两千多张卡，点一下星就重渲一遍太贵；更要紧的是重渲会把
+     刚点过的那排按钮换掉，连点第二颗星时点击就落空了（只存进去一个）。 */
+  function refreshFavUI(url) {
+    var on = isFav(url);
+    var nodes = document.querySelectorAll('[data-fav]');
+    for (var i = 0; i < nodes.length; i++) {
+      var el = nodes[i];
+      if (el.getAttribute('data-fav') !== url) continue;
+      el.setAttribute('aria-pressed', on ? 'true' : 'false');
+      if (el.classList.contains('mini-btn')) el.setAttribute('title', on ? '取消收藏' : '收藏');
+      if (el.classList.contains('card-menu__i')) {
+        if (on) el.classList.add('is-on'); else el.classList.remove('is-on');
+        var lb = el.querySelector('span');
+        if (lb) lb.textContent = on ? '取消收藏' : '收藏';
+      }
+    }
+    var btn = document.getElementById('favToggle');
+    if (btn) {
+      var n = btn.querySelector('span');
+      if (n) n.textContent = state.fav.length;
+    }
+  }
+
   function toggleFav(url) {
     var i = state.fav.indexOf(url);
     if (i > -1) { state.fav.splice(i, 1); toast('已取消收藏'); }
     else { state.fav.push(url); toast('已加入收藏 ⭐'); }
     saveFav();
-    softRender();
+    /* 正在「只看收藏」时列表要真的增删那一张卡，才值得重渲 */
+    if (state.favOnly) softRender();
+    else refreshFavUI(url);
   }
 
   var allLinks = [];
@@ -574,7 +610,10 @@
             '<span class="count">' + results.length + ' 个站点</span></div>' +
           (results.length
             ? '<div class="link-grid">' + results.map(linkCard).join('') + '</div>'
-            : emptyHtml('🔍', '没有找到相关站点', '换个关键词试试，或清空搜索查看全部。')) +
+            : (state.favOnly && !norm(q)
+                ? emptyHtml('⭐', '还没有收藏任何站点',
+                    '在任意站点卡片右侧点一下 ☆，它就会住进这里。收藏存在这台浏览器里 —— 换设备、清缓存之前，到后台「备份」导一份带走就行。')
+                : emptyHtml('🔍', '没有找到相关站点', '换个关键词试试，或清空搜索查看全部。'))) +
         '</div>';
       return '<section class="page">' + head +
         '<div class="nav-layout nav-layout--solo"><div class="nav-body">' + body + '</div></div></section>';

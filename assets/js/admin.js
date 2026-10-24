@@ -3431,7 +3431,7 @@
       kv('<code>xingyu.data.v1</code>', '分类与站点（「导航」页的数据）'),
       kv('<code>xingyu.feed.v1</code>', '分享条目；没改过就用 <code>data.js</code> 里的'),
       kv('<code>xingyu.posts.v1</code>', '文章；没写过就用 <code>data.js</code> 里的'),
-      kv('<code>xingyu.bookmarks.v1</code>', '收藏夹'),
+      kv('<code>xingyu.fav.v1</code>', '收藏夹（星标过的站点网址）；和最近访问一起会进「云备份」'),
       kv('<code>xingyu.recent.v1</code>', '最近访问'),
       kv('<code>xingyu.export.v1</code>', '上次「发布到虚拟主机」导出的时间与签名，用来判断有没有没导出的改动'),
       kv('<code>xingyu.hist.v1</code>', '版本历史：改动前的旧版本 + 手动快照，最多 14 份 / 1.6 MB。手动快照不会被自动记录挤掉，最多留 5 份')
