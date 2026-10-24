@@ -1423,6 +1423,23 @@ html[data-theme="light"] .tl-date{ box-shadow:none; }
 }
 @media (max-width:640px){
   body{ font-size:14.5px; }
+  /* 标题区整体居中：首页 hero + 导航 / 分享 / 文章 三个列表页的 page-head。
+     手机一屏窄，左对齐的长标题会显得偏；居中之后 eyebrow、大标题、说明、
+     下面那排统计 / 按钮都对齐到同一条中轴线上。 */
+  .hero{ text-align:center; }
+  .hero__desc{ margin-left:auto; margin-right:auto; }
+  .hero__cta{ justify-content:center; }
+  .page-head{ text-align:center; }
+  .page-head--nav,
+  .page-head--share{ display:block; }
+  .page-head p{ margin-left:auto; margin-right:auto; }
+  .page-head__side{
+    justify-content:center; width:100%; padding-bottom:0; margin-top:16px;
+  }
+  /* 顺手修一个窄屏老毛病：分享正文里塞着 MP3/WAV/OGG/… 或 CleanMyMac+App… 这种
+     不带空格的斜杠串、加号串，默认只在空格处折行，于是一行能顶到 366px，
+     把小屏（320px）整页撑出横向滚动、浏览器还会缩一档字号。允许任意处断行即可。 */
+  .feed-card__desc{ overflow-wrap:anywhere; }
   .header__inner{ gap:10px; padding:7px 8px 7px 12px; }
   .brand__text em{ display:none; }
   .nav{ padding:3px; }
