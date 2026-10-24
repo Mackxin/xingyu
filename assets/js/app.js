@@ -530,7 +530,8 @@
       ' data-n="' + esc(l.n) + '" data-u="' + esc(l.u) + '" data-d="' + esc(l.d || '') + '">' +
       glyph(l.n, 'sm') +
       '<span class="link-card__body">' +
-        '<span class="link-card__name">' + esc(l.n) + (l.pin ? '<i class="pin" aria-label="置顶" title="置顶">📌</i>' : '') + '</span>' +
+        '<span class="link-card__name"><span class="link-card__nmtxt">' + esc(l.n) + '</span>' +
+          (l.pin ? '<i class="pin" aria-label="置顶" title="置顶">📌</i>' : '') + '</span>' +
         '<span class="link-card__desc">' + esc(l.d || hostOf(l.u)) + '</span>' +
       '</span>' +
       '<span class="link-card__act">' +
