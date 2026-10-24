@@ -2384,7 +2384,11 @@
     var today = new Date(); today.setHours(0, 0, 0, 0);
     (feed || []).forEach(function (f) {
       var title = String(f.title || '').trim();
-      if (!title) push('err', '分享没标题', (f.date || '（无日期）') + ' 有一条分享是空的');
+      /* 保存时会把空标题填成「未命名分享」，所以这两种都算没填 */
+      if (!title || title === '未命名分享') {
+        push('err', '分享没标题', (f.date || '（无日期）') + ' 有一条分享还是'
+          + (title ? '默认的「未命名分享」' : '空的'));
+      }
       if (!f.date) push('warn', '分享没日期', '「' + (title || '未命名') + '」没有日期，排不进时间线');
       else {
         var d = new Date(String(f.date) + 'T00:00:00');
@@ -2400,7 +2404,10 @@
 
     (posts || []).forEach(function (p) {
       var title = String(p.title || '').trim();
-      if (!title) push('err', '文章没标题', 'id = ' + (p.id || '（空）'));
+      if (!title || title === '未命名文章') {
+        push('err', '文章没标题', 'id = ' + (p.id || '（空）') +
+          (title ? '，标题还是默认的「未命名文章」' : ''));
+      }
       if (!p.date) push('warn', '文章没日期', '「' + (title || '未命名') + '」');
       if (!p.draft && !String(p.body || '').trim()) {
         push('warn', '文章没正文', '「' + (title || '未命名') + '」是空的，但没标草稿，会出现在列表里');
@@ -2527,7 +2534,8 @@
       dirty: !rec || rec.sig !== sig,
       at: (rec && rec.at) || '',
       pass: !Store.isDefaultPasscode(),
-      issues: healthIssues(Store.dataAll(), Store.feedAll(), Store.postsAll()),
+      issues: healthIssues(Store.dataAll(), Store.feedAll(), Store.postsAll())
+        .sort(function (a, b) { return (a.lv === 'err' ? 0 : 1) - (b.lv === 'err' ? 0 : 1); }),
       summary: d.cats + ' 个分类 · ' + d.links + ' 个站点 · ' +
         Store.feedAll().length + ' 条分享 · ' + Store.postsAll().length + ' 篇文章 · 文件约 ' +
         Math.max(1, Math.round(bytes / 1024)) + ' KB' +
@@ -2542,7 +2550,7 @@
     var errs = issues.filter(function (i) { return i.lv === 'err'; }).length;
     var warns = issues.length - errs;
     var head = '<p class="admin-tip sn-warn">🔍 体检发现 <b>' + issues.length + '</b> 处问题' +
-      (errs ? '（<b>' + errs + ' 处建议先改</b>' + (warns ? '，' + warns + ' 处可忽略' : '') + '）'
+      (errs ? '（<b>' + errs + ' 处会先拦住导出</b>' + (warns ? '，' + warns + ' 处可以忽略' : '') + '）'
             : '（都不影响使用，看到就顺手改改）') + '：</p>';
     var rows = issues.slice(0, 8).map(function (i) {
       return '<li class="sn-issue sn-issue--' + i.lv + '"><b>' + esc(i.t) + '</b>　' + esc(i.d) + '</li>';
@@ -2551,6 +2559,33 @@
       ? '<li class="sn-issue sn-issue--more">…… 还有 ' + (issues.length - 8) + ' 处，改完再点一次导出会重新检查</li>'
       : '';
     return head + '<ul class="sn-issues">' + rows + more + '</ul>';
+  }
+
+  /* 只有「err」级别的才算真错误：空链接、站点没名字、文章没标题 —— 这些传上去访客直接看到空缺 */
+  function snapErrs() {
+    return healthIssues(Store.dataAll(), Store.feedAll(), Store.postsAll())
+      .filter(function (i) { return i.lv === 'err'; });
+  }
+
+  /* 导出闸门：标红的错误先拦一下。
+     不是死拦 —— 有些错你心里有数就是要导，所以留了「仍然导出」的出口，
+     但必须自己明确点一次，避免手滑把半成品推上线。 */
+  function snapGate(cb) {
+    var errs = snapErrs();
+    if (!errs.length) { cb(); return; }
+    var top = errs.slice(0, 4).map(function (i) {
+      return '· <b>' + esc(i.t) + '</b>　' + esc(i.d);
+    }).join('<br>');
+    askConfirm({
+      title: '还有 ' + errs.length + ' 处错误没改',
+      desc: '导出去访客会直接看到这些空缺：<br>' + top +
+        (errs.length > 4 ? '<br>…还有 ' + (errs.length - 4) + ' 处' : '') +
+        '<br><br>建议先回去改完再导。真要现在导，也不是不行。',
+      ok: '知道，仍然导出',
+      cancel: '回去改',
+      safe: true,
+      icon: '🔍'
+    }, cb);
   }
 
   /* ---------- 核对线上版本 ----------
@@ -2584,6 +2619,7 @@
 
   function staticCard() {
     var s = staticStat();
+    var errN = s.issues.filter(function (i) { return i.lv === 'err'; }).length;
     var imgRow = '';
     if (s.imgs.length) {
       var names = s.imgs.map(function (im) { return im.name; }).join('、');
@@ -2610,9 +2646,10 @@
         healthHtml(s.issues) +
         imgRow +
         '<div class="admin-actions">' +
-          '<button class="btn btn--primary" type="button" id="snDownload">⬇ 下载 site-data.js</button>' +
+          '<button class="btn btn--primary' + (errN ? ' is-blocked' : '') + '" type="button" id="snDownload"' +
+            (errN ? ' data-errs="' + errN + '"' : '') + '>⬇ 下载 site-data.js</button>' +
           '<button class="btn btn--ghost" type="button" id="snFeed">⬇ 下载 feed.xml</button>' +
-          '<button class="btn btn--ghost" type="button" id="snCopy">复制内容</button>' +
+          '<button class="btn btn--ghost' + (errN ? ' is-blocked' : '') + '" type="button" id="snCopy">复制内容</button>' +
           '<button class="btn btn--ghost" type="button" id="snLive">🔍 核对线上版本</button>' +
         '</div>' +
         '<p class="admin-tip" id="snLiveOut" hidden></p>' +
@@ -2647,12 +2684,16 @@
   var HIST_KEY = 'xingyu.hist.v1';
   var HIST_MAX = 14;
   var HIST_BUDGET = 1600 * 1024;
+  var HIST_PIN_MAX = 5;
   var HIST_KINDS = {
     data:   { store: 'xingyu.data.v1',   name: '站点数据' },
     feed:   { store: 'xingyu.feed.v1',   name: '分享' },
     posts:  { store: 'xingyu.posts.v1',  name: '文章' },
-    config: { store: 'xingyu.config.v1', name: '站点设置' }
+    config: { store: 'xingyu.config.v1', name: '站点设置' },
+    /* 手动快照：一条装下上面四样，恢复时一起回去。没有 store，因为它不对应单个 key */
+    all:    { name: '整站快照' }
   };
+  var HIST_LIVE = ['data', 'feed', 'posts', 'config'];
 
   function histAll() {
     try {
@@ -2671,6 +2712,23 @@
   function histTrim(list) {
     var total = 0;
     list.forEach(function (r) { total += r.bytes || 0; });
+    /* 先丢自动记录（从最旧往上），手动快照尽量留着 —— 那是人特意按下的锚点，
+       被「刚好改了两个字」挤掉就太冤了 */
+    for (var i = list.length - 1; i >= 0; i--) {
+      if (list.length <= HIST_MAX && total <= HIST_BUDGET) break;
+      if (list[i].pin) continue;
+      total -= list[i].bytes || 0;
+      list.splice(i, 1);
+    }
+    /* 还是超：从最旧的手动快照开始丢，但至少留一份 */
+    while (list.length > HIST_MAX || total > HIST_BUDGET) {
+      var pins = list.filter(function (r) { return r.pin; });
+      if (pins.length <= 1) break;
+      var pi = list.indexOf(pins[pins.length - 1]);
+      total -= list[pi].bytes || 0;
+      list.splice(pi, 1);
+    }
+    /* 兜底：只剩快照还超预算，那就按时间丢，总比把浏览器存储撑爆好 */
     while (list.length && (list.length > HIST_MAX || total > HIST_BUDGET)) {
       var gone = list.pop();
       total -= gone.bytes || 0;
@@ -2692,14 +2750,56 @@
     list.unshift({ t: now, kind: kind, json: raw, bytes: raw ? raw.length * 2 : 0 });
     histWrite(histTrim(list));
   }
+  /* 手动打一个快照：把「现在这一版」整个存下来，起个名字方便以后认。
+     跟自动记录的区别有两点 —— ① 它记的是现在，不是改之前；② 自动记录挤不掉它。 */
+  function histSnapshot(name) {
+    var obj = {}, bytes = 0, canRead = false;
+    HIST_LIVE.forEach(function (k) {
+      var raw = null;
+      try { raw = localStorage.getItem(HIST_KINDS[k].store); canRead = true; } catch (e) {}
+      obj[k] = raw;
+      bytes += raw ? raw.length * 2 : 0;
+    });
+    if (!canRead) return false;
+
+    var list = histAll();
+    list.unshift({
+      t: Date.now(), kind: 'all', json: obj, bytes: bytes, pin: true,
+      name: String(name == null ? '' : name).trim().slice(0, 24)
+    });
+    /* 手动快照只留最近几份，更早的自己让位（绝不牵连自动记录之外的东西） */
+    var pins = list.filter(function (r) { return r.pin; });
+    if (pins.length > HIST_PIN_MAX) {
+      for (var i = pins.length - 1; i >= HIST_PIN_MAX; i--) {
+        var idx = list.indexOf(pins[i]);
+        if (idx > -1) list.splice(idx, 1);
+      }
+    }
+    return histWrite(histTrim(list));
+  }
+
   function histRestore(idx) {
     var rec = histAll()[idx];
     if (!rec) return '';
-    var meta = HIST_KINDS[rec.kind];
-    if (!meta) return '';
+    if (rec.kind !== 'all' && !HIST_KINDS[rec.kind]) return '';
+    var kinds = rec.kind === 'all' ? HIST_LIVE : [rec.kind];
+
+    /* 先把「现在」记一笔：恢复本身也可能手滑，这样还能再退回来 */
+    kinds.forEach(function (k) { try { histPush(k); } catch (e) {} });
+
     try {
-      if (rec.json == null) localStorage.removeItem(meta.store);
-      else localStorage.setItem(meta.store, rec.json);
+      if (rec.kind === 'all') {
+        var obj = rec.json || {};
+        HIST_LIVE.forEach(function (k) {
+          var v = obj[k];
+          if (v == null) localStorage.removeItem(HIST_KINDS[k].store);
+          else localStorage.setItem(HIST_KINDS[k].store, v);
+        });
+      } else if (rec.json == null) {
+        localStorage.removeItem(HIST_KINDS[rec.kind].store);
+      } else {
+        localStorage.setItem(HIST_KINDS[rec.kind].store, rec.json);
+      }
     } catch (e) { return ''; }
     return rec.kind;
   }
@@ -2726,16 +2826,21 @@
 
   function histCard() {
     var list = histAll();
-    var total = 0;
-    list.forEach(function (r) { total += r.bytes || 0; });
+    var total = 0, pins = 0;
+    list.forEach(function (r) { total += r.bytes || 0; if (r.pin) pins++; });
     var rows = list.slice(0, 10).map(function (r, i) {
       var meta = HIST_KINDS[r.kind] || { name: r.kind };
-      return '<div class="hist-row">' +
+      var what = r.kind === 'all'
+        ? '整站快照'
+        : meta.name + (r.json == null ? '（改之前是默认）' : '');
+      return '<div class="hist-row' + (r.pin ? ' is-pin' : '') + '">' +
         '<span class="hist-row__when">' + esc(histTime(r.t)) + '</span>' +
-        '<span class="hist-row__what">' + esc(meta.name) +
-          (r.json == null ? '（改之前是默认）' : '') + '</span>' +
+        '<span class="hist-row__what">' +
+          (r.pin ? '<span class="hist-pin">📌</span>' : '') +
+          (r.name ? '<b>' + esc(r.name) + '</b> · ' : '') + esc(what) + '</span>' +
         '<span class="hist-row__size">' + (r.bytes ? esc(fmtBytes(r.bytes)) : '—') + '</span>' +
         '<button class="btn btn--ghost" type="button" data-hist="' + i + '">恢复</button>' +
+        '<button class="hist-del" type="button" data-hdel="' + i + '" title="只删掉这一份记录" aria-label="删除这份记录">×</button>' +
         '</div>';
     }).join('');
 
@@ -2744,6 +2849,17 @@
           '<p>每次改动<b>之前</b>自动留一份旧版本。改错了、删多了，回到这里点「恢复」就行。</p></div>' +
         '<span class="admin-count">' + list.length + ' 份 · ' + esc(fmtBytes(total)) + '</span>' +
       '</div>' +
+
+      /* 手动快照：给「改大动作之前」钉一个锚点 */
+      '<div class="hist-snap">' +
+        '<input type="text" id="histName" maxlength="24" autocomplete="off" spellcheck="false" ' +
+          'placeholder="给这一版起个名字（可留空）" />' +
+        '<button class="btn btn--ghost" type="button" id="histPin">📌 记下当前这一版</button>' +
+      '</div>' +
+      '<p class="admin-tip">手动快照会把<b>站点数据 + 分享 + 文章 + 设置</b>一起存下来，' +
+        '恢复时一起回去；自动记录挤不掉它（最多留 ' + HIST_PIN_MAX + ' 份，' +
+        (pins ? '已用 ' + pins + ' 份' : '还没用过') + '）。</p>' +
+
       (list.length
         ? '<div class="hist-list">' + rows + '</div>' +
           (list.length > 10
@@ -2751,7 +2867,7 @@
               esc(fmtBytes(HIST_BUDGET)) + '），再早的会自动丢掉。</p>'
             : '')
         : '<p class="hist-empty">还没有记录。等你在「站点数据 / 分享 / 文章 / 站点设置」里改点什么，' +
-          '这里就会出现第一份。</p>') +
+          '这里就会出现第一份；想主动钉一个锚点，就在上面起个名字点一下。</p>') +
       (list.length
         ? '<div class="admin-actions" style="margin-top:12px">' +
             '<button class="btn btn--danger" type="button" id="histClear">清空版本历史</button>' +
@@ -3166,7 +3282,7 @@
       ['🎨 主题', '7 套配色 + 自己敲 <code>#ff1d55</code> 这类色值 + 「我的配色」存多套；还有极光强度、圆角、默认主题、卡片密度、正文字号行高'],
       ['🔗 自定义链接', '顶栏/页脚那种自己加的链接，最多 ' + MAX + ' 个'],
       ['🌌 站点信息', '站名、标语、建站日期、Logo、Favicon、分享卡片图'],
-      ['💾 备份', '「发布到虚拟主机」导出前先体检、再下载 <code>site-data.js</code> / <code>feed.xml</code>，传完能核对线上版本；还有版本历史（误删能回退）、整站打包成 JSON、导入回来、恢复默认'],
+      ['💾 备份', '「发布到虚拟主机」导出前先体检（标红的错误会先拦一下）、再下载 <code>site-data.js</code> / <code>feed.xml</code>，传完能核对线上版本；还有版本历史（改动前自动留底 + 手动打快照，误删能回退）、整站打包成 JSON、导入回来、恢复默认'],
       ['🔐 口令', '改访问口令。注意这是纯前端门禁，只防误入，不是真安全'],
       ['📖 手册 / 参数', '就是这一页']
     ].map(function (r) { return gRow(r[0], r[1]); }).join('');
@@ -3265,7 +3381,7 @@
       kv('<code>xingyu.bookmarks.v1</code>', '收藏夹'),
       kv('<code>xingyu.recent.v1</code>', '最近访问'),
       kv('<code>xingyu.export.v1</code>', '上次「发布到虚拟主机」导出的时间与签名，用来判断有没有没导出的改动'),
-      kv('<code>xingyu.hist.v1</code>', '版本历史：改动前的旧版本，最多 14 份 / 1.6 MB，超了从最旧的丢')
+      kv('<code>xingyu.hist.v1</code>', '版本历史：改动前的旧版本 + 手动快照，最多 14 份 / 1.6 MB。手动快照不会被自动记录挤掉，最多留 5 份')
     ].join('');
 
     var deployGrid = [
@@ -3843,24 +3959,26 @@
       refreshBody(root);
     }
 
-    /* 发布到虚拟主机：下载 site-data.js */
+    /* 发布到虚拟主机：下载 site-data.js（体检有标红错误时先拦一道） */
     var snDownload = body.querySelector('#snDownload');
     if (snDownload) snDownload.addEventListener('click', function () {
-      var text = staticJs(splitImgs);
-      download('site-data.js', text, 'application/javascript');
-      snapSave({ at: nowText(), sig: snapSig(text) });
+      snapGate(function () {
+        var text = staticJs(splitImgs);
+        download('site-data.js', text, 'application/javascript');
+        snapSave({ at: nowText(), sig: snapSig(text) });
 
-      /* 勾了「拆图片」就把图片文件也一起给出去，隔 400ms 一个，
-         免得浏览器把连续下载当成弹窗拦掉 */
-      var imgs = splitImgs ? staticImageFiles(Store.get()) : [];
-      imgs.forEach(function (im, i) {
-        setTimeout(function () { saveImageFile(im); }, 400 * (i + 1));
+        /* 勾了「拆图片」就把图片文件也一起给出去，隔 400ms 一个，
+           免得浏览器把连续下载当成弹窗拦掉 */
+        var imgs = splitImgs ? staticImageFiles(Store.get()) : [];
+        imgs.forEach(function (im, i) {
+          setTimeout(function () { saveImageFile(im); }, 400 * (i + 1));
+        });
+
+        toast(imgs.length
+          ? 'site-data.js + ' + imgs.length + ' 张图片已下载，图片放 assets/img/ ⬆'
+          : 'site-data.js 已下载，传到 assets/js/ 覆盖同名文件 ⬆');
+        refreshBody(root);
       });
-
-      toast(imgs.length
-        ? 'site-data.js + ' + imgs.length + ' 张图片已下载，图片放 assets/img/ ⬆'
-        : 'site-data.js 已下载，传到 assets/js/ 覆盖同名文件 ⬆');
-      refreshBody(root);
     });
 
     /* 拆图片开关：勾上后重新算一遍体积 */
@@ -3915,9 +4033,42 @@
 
     var snCopy = body.querySelector('#snCopy');
     if (snCopy) snCopy.addEventListener('click', function () {
-      var text = staticJs(splitImgs);
-      copyText(text);
-      snapSave({ at: nowText(), sig: snapSig(text) });
+      snapGate(function () {
+        var text = staticJs(splitImgs);
+        copyText(text);
+        snapSave({ at: nowText(), sig: snapSig(text) });
+      });
+    });
+
+    /* 手动打一个快照：起名 → 钉住当前这一版 */
+    var histPin = body.querySelector('#histPin');
+    var histName = body.querySelector('#histName');
+    if (histPin) histPin.addEventListener('click', function () {
+      var name = histName ? histName.value.trim() : '';
+      if (!histSnapshot(name)) {
+        toast('存不下 —— 浏览器存储快满了，先清一点历史再试');
+        return;
+      }
+      toast(name ? '已记下「' + name + '」✦' : '已记下当前这一版 ✦');
+      refreshBody(root);
+    });
+    if (histName && histPin) {
+      histName.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') { e.preventDefault(); histPin.click(); }
+      });
+    }
+
+    /* 只删掉历史里的某一条 */
+    body.querySelectorAll('[data-hdel]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var list = histAll();
+        var i = +b.getAttribute('data-hdel');
+        if (!list[i]) { refreshBody(root); return; }
+        list.splice(i, 1);
+        histWrite(list);
+        toast('删掉一份历史记录');
+        refreshBody(root);
+      });
     });
 
     /* 版本历史：恢复 / 清空 */
@@ -3927,10 +4078,14 @@
         var rec = histAll()[i];
         if (!rec) { toast('这一版已经不在了'); refreshBody(root); return; }
         var meta = HIST_KINDS[rec.kind] || { name: rec.kind };
+        var isAll = rec.kind === 'all';
         askConfirm({
-          title: '恢复到这一版「' + meta.name + '」？',
-          desc: '时间是 ' + histTime(rec.t) + ' 之前的那一版。<br>' +
-                '当前内容会被覆盖成它。这次恢复之前的模样也会记进历史，反悔还能再恢复回来。',
+          title: isAll ? '回到「' + (rec.name || '整站快照') + '」？'
+                       : '恢复到这一版「' + meta.name + '」？',
+          desc: (isAll ? '这份快照记于 ' + histTime(rec.t) + '。'
+                       : '时间是 ' + histTime(rec.t) + ' 之前的那一版。') + '<br>' +
+                (isAll ? '站点数据、分享、文章、设置会一起回到这一版。' : '当前内容会被覆盖成它。') +
+                '这次恢复之前的模样也会记进历史，反悔还能再恢复回来。',
           ok: '确认恢复'
         }, function () {
           if (!histRestore(i)) { toast('恢复失败，这一版可能已经被挤掉了'); return; }

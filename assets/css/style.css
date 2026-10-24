@@ -2690,22 +2690,62 @@ html[data-readfont="serif"] .look-paper{
 .sn-check input{ margin:2px 0 0; width:15px; height:15px; flex:0 0 auto; accent-color:var(--a1); }
 .sn-check b, .sn-check code{ color:var(--text); }
 
+/* 体检有标红错误时，导出按钮右上角点一颗红灯，提醒「先看看上面那几条」 */
+.btn.is-blocked{ position:relative; }
+.btn.is-blocked::after{
+  content:''; position:absolute; top:-4px; right:-4px;
+  width:10px; height:10px; border-radius:50%; background:#ff6b6b;
+  box-shadow:0 0 0 2px var(--bg), 0 0 10px rgba(255,90,90,.75);
+  animation:snBlockedPulse 2.4s var(--ease) infinite;
+}
+@keyframes snBlockedPulse{
+  0%,100%{ opacity:.75; }
+  50%{ opacity:1; }
+}
+@media (prefers-reduced-motion:reduce){
+  .btn.is-blocked::after{ animation:none; }
+}
+
 /* 版本历史列表 */
+.hist-snap{ display:flex; gap:8px; margin-top:12px; }
+.hist-snap input{
+  flex:1 1 auto; min-width:0; height:34px; padding:0 12px;
+  border-radius:10px; font-size:12.5px; color:var(--text);
+  background:var(--glass); border:1px solid var(--line, rgba(255,255,255,.1));
+  font-family:inherit;
+}
+.hist-snap input::placeholder{ color:var(--text-mute); }
+.hist-snap input:focus{ outline:none; border-color:var(--a1); }
+.hist-snap .btn{ flex:0 0 auto; height:34px; padding:0 14px; font-size:12.5px; }
 .hist-list{ display:flex; flex-direction:column; gap:3px; margin-top:10px; }
 .hist-row{
-  display:grid; grid-template-columns:auto minmax(0,1fr) auto auto; gap:11px;
+  display:grid; grid-template-columns:auto minmax(0,1fr) auto auto auto; gap:11px;
   align-items:center; padding:8px 12px; border-radius:9px; font-size:12.5px;
 }
 .hist-list > .hist-row:nth-child(odd){ background:var(--glass); }
+.hist-row.is-pin{ background:rgba(255,210,140,.07); }
 .hist-row__when{ color:var(--text-mute); font-variant-numeric:tabular-nums; white-space:nowrap; }
 .hist-row__what{ color:var(--text); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.hist-row__what b{ font-weight:600; color:var(--a1-soft, var(--text)); }
 .hist-row__size{ color:var(--text-mute); font-variant-numeric:tabular-nums; white-space:nowrap; }
 .hist-row .btn{ height:28px; padding:0 11px; font-size:12px; }
+.hist-pin{ margin-right:4px; }
+.hist-del{
+  width:24px; height:24px; border-radius:50%; flex:0 0 auto;
+  font-size:14px; line-height:1; color:var(--text-mute);
+  background:none; border:1px solid transparent;
+  transition:color .2s var(--ease), background .2s var(--ease);
+}
+.hist-del:hover{ color:#ff9b9b; background:var(--glass-hi); }
 .hist-empty{ font-size:12.5px; color:var(--text-mute); margin:10px 0 0; }
 @media (max-width:640px){
-  .hist-row{ grid-template-columns:minmax(0,1fr) auto; gap:4px 10px; }
+  .hist-snap{ flex-wrap:wrap; }
+  .hist-snap input{ flex-basis:100%; }
+  .hist-row{ grid-template-columns:minmax(0,1fr) auto auto; gap:4px 8px; }
   .hist-row__when{ grid-row:2; grid-column:1; }
+  .hist-row__size{ grid-row:2; grid-column:2 / 4; text-align:right; }
   .hist-row .btn{ grid-row:1; grid-column:2; }
+  .hist-del{ grid-row:1; grid-column:3; }
 }
 
 /* ---------- 分类栏「只看」：勾几个分类，只渲染它们 ---------- */
