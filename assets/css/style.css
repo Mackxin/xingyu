@@ -1518,6 +1518,12 @@ html[data-theme="light"] .tl-date{ box-shadow:none; }
     display:block; margin-top:auto; padding-top:4px; font-size:10.5px;
     -webkit-line-clamp:1;
   }
+  /* 后台「显示描述」关掉时，手机端必须真的不显示。
+     上面那条 `html[data-density] .link-card__desc{display:block}` 跟桌面那条关闭规则
+     `html[data-desc="off"] .link-card__desc{display:none}` 特异性一模一样（都是 0,2,1），
+     只因为写在文件更后面才赢 —— 结果就是关了开关手机上还照样顶着域名。
+     这里用同样的前缀、并且放在最后，谁关谁生效。 */
+  html[data-desc="off"] .link-card__desc{ display:none; }
   .mini-btn{ width:26px; height:26px; border-radius:8px; }
   .mini-btn svg{ width:14px; height:14px; }
   .stats{ gap:10px; }
