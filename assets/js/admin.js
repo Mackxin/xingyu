@@ -2233,6 +2233,8 @@
      看见「已经有了」就只做兜底。所以覆盖这一个文件，整站内容就整体换掉，
      不用再碰 index.html / data.js / config.js —— 对虚拟主机上传来说最省事。 */
   var SNAP_KEY = 'xingyu.export.v1';
+  /* 导出时要不要把内嵌图片拆成独立文件（勾了就得自己把图片一起传上去） */
+  var splitImgs = false;
 
   function nowText() {
     var d = new Date();
@@ -2263,13 +2265,81 @@
       .replace(/<\//g, '<\\/');
   }
 
-  function staticJs() {
+  /* ---------- 内嵌图片：base64 → 真实文件 ----------
+     后台上传的 Logo / Favicon / 首页大图都是塞在配置里的 data URL，
+     一导出就是几百 KB 的文本。拆成独立文件后 site-data.js 能小一大圈，
+     浏览器也省掉一次 base64 解码。 */
+  var IMG_SLOTS = [
+    { key: 'logoImage', file: 'logo',    label: '顶栏 Logo' },
+    { key: 'favicon',   file: 'favicon', label: '浏览器标签图标' },
+    { key: 'home',      file: 'home',    label: '首页大图', inHome: true }
+  ];
+  var IMG_EXT = {
+    'image/png': 'png', 'image/jpeg': 'jpg', 'image/jpg': 'jpg',
+    'image/gif': 'gif', 'image/webp': 'webp', 'image/svg+xml': 'svg'
+  };
+
+  function staticImageFiles(cfg) {
+    var out = [];
+    (cfg ? IMG_SLOTS : []).forEach(function (slot) {
+      var v = slot.inHome
+        ? String((cfg.home || {}).image || '')
+        : String(cfg[slot.key] || '');
+      var m = /^data:(image\/[a-z0-9.+-]+);base64,([\s\S]+)$/i.exec(v);
+      if (!m) return;
+      var mime = m[1].toLowerCase();
+      var b64 = m[2];
+      var ext = IMG_EXT[mime] || 'png';
+      out.push({
+        slot: slot, mime: mime, ext: ext, b64: b64,
+        name: slot.file + '.' + ext,
+        rel: 'assets/img/' + slot.file + '.' + ext,
+        bytes: Math.round(b64.length * 3 / 4)
+      });
+    });
+    return out;
+  }
+
+  /* 把 base64 直接写成文件下载（不经过 data URL，避免大图被浏览器截断） */
+  function saveImageFile(im) {
+    try {
+      var bin = atob(im.b64), n = bin.length;
+      var buf = new Uint8Array(n);
+      for (var i = 0; i < n; i++) buf[i] = bin.charCodeAt(i);
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([buf], { type: im.mime }));
+      a.download = im.name;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 0);
+      return true;
+    } catch (e) {
+      toast('图片「' + im.slot.label + '」导出失败，可以在「首页内容 / 站点信息」里重新传一次');
+      return false;
+    }
+  }
+
+  /* splitImg = true：配置里的 data URL 换成相对路径 */
+  function staticJs(splitImg) {
     var cfg = Store.get();
     var data = Store.dataAll();
     var feed = Store.feedAll();
     var posts = Store.postsAll();
     var entries = (window.SITE_DATA && window.SITE_DATA.entries) || [];
     var pass = Store.isDefaultPasscode() ? '' : Store.passHash();
+
+    if (splitImg) {
+      staticImageFiles(cfg).forEach(function (im) {
+        if (im.slot.inHome) {
+          var home = {};
+          Object.keys(cfg.home || {}).forEach(function (k) { home[k] = cfg.home[k]; });
+          home.image = im.rel;
+          cfg.home = home;
+        } else {
+          cfg[im.slot.key] = im.rel;
+        }
+      });
+    }
 
     var out = [];
     out.push('/* 星屿 · 站点数据快照');
@@ -2287,28 +2357,245 @@
     return out.join('\n') + '\n';
   }
 
+  /* ---------- 导出前体检 ----------
+     把「传上去会出洋相」的地方先挑出来：空链接、没名字、网址少 http、文章没正文… */
+  function healthIssues(data, feed, posts) {
+    var out = [];
+    var push = function (lv, t, d) { out.push({ lv: lv, t: t, d: d }); };
+
+    (data || []).forEach(function (c) {
+      var links = c.links || [];
+      var cname = c.name || '未命名分类';
+      if (!links.length) push('warn', '空分类', '「' + cname + '」里一个站点都没有');
+      links.forEach(function (l) {
+        var n = String(l.n == null ? '' : l.n).trim();
+        var u = String(l.u == null ? '' : l.u).trim();
+        if (!n) push('err', '站点没名字', '分类「' + cname + '」里有个站点没填名字');
+        if (!u) { push('err', '空链接', '「' + (n || '未命名') + '」没有网址'); return; }
+        if (u.charAt(0) === '#' || u.charAt(0) === '/') return;
+        if (!/^https?:\/\//i.test(u)) {
+          push('warn', '网址不规范', '「' + (n || u) + '」是 ' + u.slice(0, 48) + '，前面少了 https://');
+        } else if (/\s/.test(u)) {
+          push('warn', '网址里有空格', '「' + (n || u) + '」：' + u.slice(0, 48));
+        }
+      });
+    });
+
+    var today = new Date(); today.setHours(0, 0, 0, 0);
+    (feed || []).forEach(function (f) {
+      var title = String(f.title || '').trim();
+      if (!title) push('err', '分享没标题', (f.date || '（无日期）') + ' 有一条分享是空的');
+      if (!f.date) push('warn', '分享没日期', '「' + (title || '未命名') + '」没有日期，排不进时间线');
+      else {
+        var d = new Date(String(f.date) + 'T00:00:00');
+        if (!isNaN(d.getTime()) && d > today) {
+          push('warn', '分享日期在未来', '「' + title + '」写的是 ' + f.date);
+        }
+      }
+      var u = String(f.url || '');
+      if (u && !/^(https?:\/\/|#|\/|\.|mailto:|tel:)/i.test(u)) {
+        push('warn', '分享链接怪', '「' + (title || '未命名') + '」的链接是 ' + u.slice(0, 40));
+      }
+    });
+
+    (posts || []).forEach(function (p) {
+      var title = String(p.title || '').trim();
+      if (!title) push('err', '文章没标题', 'id = ' + (p.id || '（空）'));
+      if (!p.date) push('warn', '文章没日期', '「' + (title || '未命名') + '」');
+      if (!p.draft && !String(p.body || '').trim()) {
+        push('warn', '文章没正文', '「' + (title || '未命名') + '」是空的，但没标草稿，会出现在列表里');
+      }
+    });
+
+    return out;
+  }
+
+  /* ---------- RSS：把 tools/gen-feed.js 的逻辑搬到前台 ----------
+     以前改完分享得开终端跑 node 脚本，现在导出时顺手就能下载。 */
+  function xmlEsc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&apos;');
+  }
+  function siteBase() {
+    try {
+      if (/^https?:$/.test(location.protocol)) {
+        return location.origin + location.pathname.replace(/[^/]*$/, '');
+      }
+    } catch (e) {}
+    return 'https://mackxin.github.io/xingyu/';
+  }
+  function absUrl(u, base) {
+    u = String(u || '').trim();
+    if (!u) return base;
+    if (/^https?:\/\//i.test(u)) return u;
+    if (u.charAt(0) === '#') return base + u;
+    return base + u.replace(/^\.?\//, '');
+  }
+  function rfc822(dateStr) {
+    var p = String(dateStr || '').split('-');
+    if (p.length !== 3) return '';
+    var d = new Date(+p[0], +p[1] - 1, +p[2], 9, 0, 0);
+    return isNaN(d.getTime()) ? '' : d.toUTCString();
+  }
+  function mdPlain(s) {
+    return String(s || '')
+      .replace(/```[\s\S]*?```/g, ' ')
+      .replace(/!\[([^\]]*)\]\([^)]*\)/g, '$1')
+      .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+      .replace(/^[ \t]*\|?[ \t]*:?-{2,}:?[ \t]*(\|[ \t]*:?-{2,}:?[ \t]*)*\|?[ \t]*$/gm, ' ')
+      .replace(/\|/g, ' ')
+      .replace(/^\s{0,3}#{1,6}\s+/gm, '')
+      .replace(/^\s{0,3}>\s?/gm, '')
+      .replace(/^\s*([-*+]|\d+[.)])\s+/gm, '')
+      .replace(/[`*_~]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+  function buildFeedXml() {
+    var LIMIT = 20;
+    var cfg = Store.get();
+    var base = siteBase();
+    var feed = Store.feedAll().filter(function (f) {
+      return f && f.title && rfc822(f.date);
+    }).map(function (f) {
+      return { date: f.date, title: f.title, url: f.url, desc: f.desc || '', tags: f.tags || [], isPost: false };
+    });
+    var posts = Store.postsAll().filter(function (p) {
+      return p && p.title && !p.draft && rfc822(p.date);
+    }).map(function (p) {
+      var desc = p.excerpt || mdPlain(p.body);
+      if (desc.length > 160) desc = desc.slice(0, 160) + '…';
+      return { date: p.date, title: p.title, url: '#/post/' + encodeURIComponent(p.id), desc: desc, tags: p.tags || [], isPost: true };
+    });
+    var merged = feed.concat(posts);
+    merged.sort(function (a, b) { return String(b.date).localeCompare(String(a.date)); });
+    merged = merged.slice(0, LIMIT);
+
+    var items = merged.map(function (f) {
+      var tags = (f.tags || []).map(function (t) { return '    <category>' + xmlEsc(t) + '</category>'; }).join('\n');
+      var link = absUrl(f.url, base);
+      return [
+        '  <item>',
+        '    <title>' + xmlEsc((f.isPost ? '📝 ' : '') + f.title) + '</title>',
+        '    <link>' + xmlEsc(link) + '</link>',
+        '    <guid isPermaLink="true">' + xmlEsc(link) + '</guid>',
+        '    <pubDate>' + rfc822(f.date) + '</pubDate>',
+        '    <description>' + xmlEsc(f.desc || '') + '</description>',
+        tags,
+        '  </item>'
+      ].filter(Boolean).join('\n');
+    }).join('\n');
+
+    var out = [
+      '<?xml version="1.0" encoding="UTF-8"?>',
+      '<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">',
+      '  <channel>',
+      '    <title>' + xmlEsc((cfg.siteName || '星屿') + ' · 灵感与文章') + '</title>',
+      '    <link>' + xmlEsc(base) + '</link>',
+      '    <description>' + xmlEsc((cfg.tagline || '以星为图，以屿为家') +
+        ' —— 每天一小条，记录遇见的工具、灵感与小发现，也写点长一点的文章。') + '</description>',
+      '    <language>zh-cn</language>',
+      '    <lastBuildDate>' + new Date().toUTCString() + '</lastBuildDate>',
+      '    <generator>' + xmlEsc((cfg.siteLatin || 'XINGYU') + ' gen-feed') + '</generator>',
+      '    <atom:link href="' + xmlEsc(base + 'feed.xml') + '" rel="self" type="application/rss+xml" />',
+      items,
+      '  </channel>',
+      '</rss>',
+      ''
+    ].filter(Boolean).join('\n');
+    return { text: out, count: merged.length, base: base };
+  }
+
   function staticStat() {
-    var text = staticJs();
+    var cfg = Store.get();
+    var text = staticJs(splitImgs);
     var rec = snapRecord();
     var sig = snapSig(text);
     var d = counts();
     var bytes;
     try { bytes = new Blob([text]).size; } catch (e) { bytes = text.length * 2; }
+    var imgs = staticImageFiles(cfg);
+    var imgBytes = 0;
+    imgs.forEach(function (im) { imgBytes += im.bytes; });
     return {
       sig: sig,
       bytes: bytes,
+      imgBytes: imgBytes,
+      imgs: imgs,
       never: !rec,
       dirty: !rec || rec.sig !== sig,
       at: (rec && rec.at) || '',
       pass: !Store.isDefaultPasscode(),
+      issues: healthIssues(Store.dataAll(), Store.feedAll(), Store.postsAll()),
       summary: d.cats + ' 个分类 · ' + d.links + ' 个站点 · ' +
         Store.feedAll().length + ' 条分享 · ' + Store.postsAll().length + ' 篇文章 · 文件约 ' +
-        Math.max(1, Math.round(bytes / 1024)) + ' KB'
+        Math.max(1, Math.round(bytes / 1024)) + ' KB' +
+        (splitImgs && imgs.length ? '（图片另存 ' + imgs.length + ' 个文件，' + fmtBytes(imgBytes) + '）' : '')
     };
+  }
+
+  function healthHtml(issues) {
+    if (!issues.length) {
+      return '<p class="admin-tip sn-ok">✅ 体检通过：站点、分享、文章都没查出问题，可以放心导。</p>';
+    }
+    var errs = issues.filter(function (i) { return i.lv === 'err'; }).length;
+    var warns = issues.length - errs;
+    var head = '<p class="admin-tip sn-warn">🔍 体检发现 <b>' + issues.length + '</b> 处问题' +
+      (errs ? '（<b>' + errs + ' 处建议先改</b>' + (warns ? '，' + warns + ' 处可忽略' : '') + '）'
+            : '（都不影响使用，看到就顺手改改）') + '：</p>';
+    var rows = issues.slice(0, 8).map(function (i) {
+      return '<li class="sn-issue sn-issue--' + i.lv + '"><b>' + esc(i.t) + '</b>　' + esc(i.d) + '</li>';
+    }).join('');
+    var more = issues.length > 8
+      ? '<li class="sn-issue sn-issue--more">…… 还有 ' + (issues.length - 8) + ' 处，改完再点一次导出会重新检查</li>'
+      : '';
+    return head + '<ul class="sn-issues">' + rows + more + '</ul>';
+  }
+
+  /* ---------- 核对线上版本 ----------
+     在虚拟主机的后台里打开这一页时，assets/js/site-data.js 就是线上那一份，
+     同源直接 fetch 得到，不需要跨域。读文件头那行「导出于 …」比一比就知道传没传。 */
+  function localPreview() {
+    try {
+      var h = location.hostname;
+      return location.protocol === 'file:' || h === 'localhost' ||
+             h === '127.0.0.1' || h === '0.0.0.0' || h === '';
+    } catch (e) { return false; }
+  }
+
+  function liveCheck(cb) {
+    if (typeof fetch !== 'function') { cb('这个浏览器不支持 fetch'); return; }
+    if (location.protocol === 'file:') { cb('文件是本机双击打开的，没有线上地址'); return; }
+    fetch('assets/js/site-data.js?t=' + Date.now(), { cache: 'no-store' }).then(function (r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.text();
+    }).then(function (txt) {
+      var m = /导出于\s*(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2})/.exec(txt);
+      var bytes;
+      try { bytes = new Blob([txt]).size; } catch (e) { bytes = txt.length * 2; }
+      cb(null, { at: m ? m[1] : '', bytes: bytes, empty: !/window\.SITE_DATA/.test(txt) });
+    }).catch(function (e) {
+      cb((e && e.message) || '网络错误');
+    });
   }
 
   function staticCard() {
     var s = staticStat();
+    var imgRow = '';
+    if (s.imgs.length) {
+      var names = s.imgs.map(function (im) { return im.name; }).join('、');
+      imgRow =
+        '<label class="sn-check">' +
+          '<input type="checkbox" id="snSplitImg"' + (splitImgs ? ' checked' : '') + ' />' +
+          '<span>把 ' + s.imgs.length + ' 张内嵌图片拆成独立文件（' + esc(fmtBytes(s.imgBytes)) + '）' +
+            '，<code>site-data.js</code> 会小很多</span>' +
+        '</label>' +
+        '<p class="admin-tip">拆出来的文件：<code>' + esc(names) + '</code>，' +
+          '需要放到网站的 <code>assets/img/</code> 目录里（点下载时会一起给你）。' +
+          '不勾也能用，只是 <code>site-data.js</code> 会大一大截。</p>';
+    }
+
     return '<div class="admin-card">' +
         '<div class="admin-card__head">' +
           '<div><h2>发布到虚拟主机</h2>' +
@@ -2318,16 +2605,24 @@
             (s.never ? '还没导出过' : s.dirty ? '有改动没导出' : '已是最新') + '</span>' +
         '</div>' +
         '<p class="admin-tip">' + esc(s.summary) + '</p>' +
+        healthHtml(s.issues) +
+        imgRow +
         '<div class="admin-actions">' +
           '<button class="btn btn--primary" type="button" id="snDownload">⬇ 下载 site-data.js</button>' +
+          '<button class="btn btn--ghost" type="button" id="snFeed">⬇ 下载 feed.xml</button>' +
           '<button class="btn btn--ghost" type="button" id="snCopy">复制内容</button>' +
+          '<button class="btn btn--ghost" type="button" id="snLive">🔍 核对线上版本</button>' +
         '</div>' +
+        '<p class="admin-tip" id="snLiveOut" hidden></p>' +
         '<ol class="guide-steps">' +
           '<li>点上面的按钮，文件会存进「下载」文件夹。</li>' +
           '<li>用 FTP 或主机商的文件管理器，把它传到网站的 <code>assets/js/</code> 目录，' +
             '<b>覆盖</b>同名的 site-data.js。</li>' +
           '<li>浏览器按 <kbd>Ctrl</kbd> / <kbd>⌘</kbd> + <kbd>Shift</kbd> + <kbd>R</kbd> 强刷一次，就能看到新内容。</li>' +
+          '<li>传完点一下「🔍 核对线上版本」—— 它会去读线上那个文件，告诉你到底传上去了没有。</li>' +
         '</ol>' +
+        '<p class="admin-tip"><code>feed.xml</code> 是 RSS 订阅源，改了分享 / 文章才需要重新传；' +
+          '传完记得也放到网站根目录。不订阅就不用管它。</p>' +
         '<p class="admin-tip">当前 <code>index.html</code> 已经引入了这个文件，所以以后<b>只换它一个</b>就够了，' +
           'index.html、data.js、config.js 都不用动。它排在所有脚本最前面，' +
           '后面的 data.js / config.js 看到「已经有了」就只做兜底。</p>' +
@@ -2338,6 +2633,128 @@
             '<code>xingyu</code>。想换成自己的：先去「口令」页设一个，再回来导一次。</p>') +
         (s.at ? '<p class="admin-tip">上次导出：' + esc(s.at) + '</p>' : '') +
       '</div>';
+  }
+
+  /* ======================= 版本历史（误删找回） ======================= */
+  /* 每次改动**之前**，把那一版的原始 JSON 记一笔。
+     恢复就是把这个字符串塞回原来的 localStorage key —— 不用理解里面的结构。
+     json === null 表示「改之前还是默认值」，恢复时把 key 删掉即可。
+
+     容量：localStorage 一般只有 5MB，站点数据一份就 300KB+，
+     所以给了总预算，超了从最旧的开始丢，绝不把站点的存储撑爆。 */
+  var HIST_KEY = 'xingyu.hist.v1';
+  var HIST_MAX = 14;
+  var HIST_BUDGET = 1600 * 1024;
+  var HIST_KINDS = {
+    data:   { store: 'xingyu.data.v1',   name: '站点数据' },
+    feed:   { store: 'xingyu.feed.v1',   name: '分享' },
+    posts:  { store: 'xingyu.posts.v1',  name: '文章' },
+    config: { store: 'xingyu.config.v1', name: '站点设置' }
+  };
+
+  function histAll() {
+    try {
+      var v = JSON.parse(localStorage.getItem(HIST_KEY));
+      return Array.isArray(v) ? v : [];
+    } catch (e) { return []; }
+  }
+  function histWrite(list) {
+    try { localStorage.setItem(HIST_KEY, JSON.stringify(list)); return true; }
+    catch (e) {
+      /* 写不进去（多半满了）：把现有的扔掉再试一次，还不行就放弃，别影响主流程 */
+      try { localStorage.removeItem(HIST_KEY); } catch (e2) {}
+      return false;
+    }
+  }
+  function histTrim(list) {
+    var total = 0;
+    list.forEach(function (r) { total += r.bytes || 0; });
+    while (list.length && (list.length > HIST_MAX || total > HIST_BUDGET)) {
+      var gone = list.pop();
+      total -= gone.bytes || 0;
+    }
+    return list;
+  }
+  function histPush(kind) {
+    var meta = HIST_KINDS[kind];
+    if (!meta) return;
+    var raw = null;
+    try { raw = localStorage.getItem(meta.store); } catch (e) {}
+    var now = Date.now();
+    var list = histAll();
+    var top = list[0];
+    if (top && top.kind === kind) {
+      if (top.json === raw) return;                  // 内容没变，不记
+      if (now - (top.t || 0) < 4000) list.shift();   // 连续敲字合成一条
+    }
+    list.unshift({ t: now, kind: kind, json: raw, bytes: raw ? raw.length * 2 : 0 });
+    histWrite(histTrim(list));
+  }
+  function histRestore(idx) {
+    var rec = histAll()[idx];
+    if (!rec) return '';
+    var meta = HIST_KINDS[rec.kind];
+    if (!meta) return '';
+    try {
+      if (rec.json == null) localStorage.removeItem(meta.store);
+      else localStorage.setItem(meta.store, rec.json);
+    } catch (e) { return ''; }
+    return rec.kind;
+  }
+  function histTime(ts) {
+    var d = new Date(ts || 0);
+    function p(n) { return (n < 10 ? '0' : '') + n; }
+    return p(d.getMonth() + 1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+  }
+
+  /* 把 Store 的四个写入口包一层：先记旧值，再真正写 */
+  (function wrapHistory() {
+    if (Store.__histWrapped) return;
+    Store.__histWrapped = true;
+    ['setData', 'setFeed', 'setPosts', 'save'].forEach(function (k) {
+      var kind = { setData: 'data', setFeed: 'feed', setPosts: 'posts', save: 'config' }[k];
+      var orig = Store[k];
+      if (typeof orig !== 'function') return;
+      Store[k] = function () {
+        try { histPush(kind); } catch (e) {}
+        return orig.apply(Store, arguments);
+      };
+    });
+  })();
+
+  function histCard() {
+    var list = histAll();
+    var total = 0;
+    list.forEach(function (r) { total += r.bytes || 0; });
+    var rows = list.slice(0, 10).map(function (r, i) {
+      var meta = HIST_KINDS[r.kind] || { name: r.kind };
+      return '<div class="hist-row">' +
+        '<span class="hist-row__when">' + esc(histTime(r.t)) + '</span>' +
+        '<span class="hist-row__what">' + esc(meta.name) +
+          (r.json == null ? '（改之前是默认）' : '') + '</span>' +
+        '<span class="hist-row__size">' + (r.bytes ? esc(fmtBytes(r.bytes)) : '—') + '</span>' +
+        '<button class="btn btn--ghost" type="button" data-hist="' + i + '">恢复</button>' +
+        '</div>';
+    }).join('');
+
+    return '<div class="admin-card__head">' +
+        '<div><h2>版本历史</h2>' +
+          '<p>每次改动<b>之前</b>自动留一份旧版本。改错了、删多了，回到这里点「恢复」就行。</p></div>' +
+        '<span class="admin-count">' + list.length + ' 份 · ' + esc(fmtBytes(total)) + '</span>' +
+      '</div>' +
+      (list.length
+        ? '<div class="hist-list">' + rows + '</div>' +
+          (list.length > 10
+            ? '<p class="admin-tip">只列最近 10 份；总共最多留 ' + HIST_MAX + ' 份（或者 ' +
+              esc(fmtBytes(HIST_BUDGET)) + '），再早的会自动丢掉。</p>'
+            : '')
+        : '<p class="hist-empty">还没有记录。等你在「站点数据 / 分享 / 文章 / 站点设置」里改点什么，' +
+          '这里就会出现第一份。</p>') +
+      (list.length
+        ? '<div class="admin-actions" style="margin-top:12px">' +
+            '<button class="btn btn--danger" type="button" id="histClear">清空版本历史</button>' +
+          '</div>'
+        : '');
   }
 
   function backupPanel() {
@@ -2368,6 +2785,9 @@
         '</div>' +
         '<input type="file" id="bkFile" accept=".json,application/json" hidden />' +
       '</div>' +
+
+      /* 版本历史：改动前自动留底，误删能回退 */
+      '<div class="admin-card" id="histCard">' + histCard() + '</div>' +
 
       '<div class="admin-card">' +
         '<div class="admin-card__head">' +
@@ -2744,7 +3164,7 @@
       ['🎨 主题', '7 套配色 + 自己敲 <code>#ff1d55</code> 这类色值 + 「我的配色」存多套；还有极光强度、圆角、默认主题、卡片密度、正文字号行高'],
       ['🔗 自定义链接', '顶栏/页脚那种自己加的链接，最多 ' + MAX + ' 个'],
       ['🌌 站点信息', '站名、标语、建站日期、Logo、Favicon、分享卡片图'],
-      ['💾 备份', '「发布到虚拟主机」导出 <code>site-data.js</code>；也能整站打包成 JSON、导入回来、恢复默认'],
+      ['💾 备份', '「发布到虚拟主机」导出前先体检、再下载 <code>site-data.js</code> / <code>feed.xml</code>，传完能核对线上版本；还有版本历史（误删能回退）、整站打包成 JSON、导入回来、恢复默认'],
       ['🔐 口令', '改访问口令。注意这是纯前端门禁，只防误入，不是真安全'],
       ['📖 手册 / 参数', '就是这一页']
     ].map(function (r) { return gRow(r[0], r[1]); }).join('');
@@ -2768,6 +3188,7 @@
           gRow('长按卡片', '弹出收藏 / 复制链接 / 打开') +
           gRow('底部 tab 栏', '导航胶囊移到屏幕底部，单手拇指够得着') +
           gRow('🏷 顶栏按钮', '窄屏时标签 / 分类收成按钮，点开是底部面板') +
+          gRow('分类栏「只看」', '勾几个分类就只显示它们（面板里勾不会把面板关掉）') +
         '</div>' +
 
         '<div class="admin-sub"><b>后台每个面板管什么</b><em>左侧那一列从上到下</em></div>' +
@@ -2841,7 +3262,8 @@
       kv('<code>xingyu.posts.v1</code>', '文章；没写过就用 <code>data.js</code> 里的'),
       kv('<code>xingyu.bookmarks.v1</code>', '收藏夹'),
       kv('<code>xingyu.recent.v1</code>', '最近访问'),
-      kv('<code>xingyu.export.v1</code>', '上次「发布到虚拟主机」导出的时间与签名，用来判断有没有没导出的改动')
+      kv('<code>xingyu.export.v1</code>', '上次「发布到虚拟主机」导出的时间与签名，用来判断有没有没导出的改动'),
+      kv('<code>xingyu.hist.v1</code>', '版本历史：改动前的旧版本，最多 14 份 / 1.6 MB，超了从最旧的丢')
     ].join('');
 
     var deployGrid = [
@@ -3422,17 +3844,109 @@
     /* 发布到虚拟主机：下载 site-data.js */
     var snDownload = body.querySelector('#snDownload');
     if (snDownload) snDownload.addEventListener('click', function () {
-      var text = staticJs();
+      var text = staticJs(splitImgs);
       download('site-data.js', text, 'application/javascript');
       snapSave({ at: nowText(), sig: snapSig(text) });
-      toast('site-data.js 已下载，传到 assets/js/ 覆盖同名文件 ⬆');
+
+      /* 勾了「拆图片」就把图片文件也一起给出去，隔 400ms 一个，
+         免得浏览器把连续下载当成弹窗拦掉 */
+      var imgs = splitImgs ? staticImageFiles(Store.get()) : [];
+      imgs.forEach(function (im, i) {
+        setTimeout(function () { saveImageFile(im); }, 400 * (i + 1));
+      });
+
+      toast(imgs.length
+        ? 'site-data.js + ' + imgs.length + ' 张图片已下载，图片放 assets/img/ ⬆'
+        : 'site-data.js 已下载，传到 assets/js/ 覆盖同名文件 ⬆');
       refreshBody(root);
     });
+
+    /* 拆图片开关：勾上后重新算一遍体积 */
+    var snSplit = body.querySelector('#snSplitImg');
+    if (snSplit) snSplit.addEventListener('change', function () {
+      splitImgs = !!snSplit.checked;
+      refreshBody(root);
+    });
+
+    /* 顺手生成 RSS */
+    var snFeed = body.querySelector('#snFeed');
+    if (snFeed) snFeed.addEventListener('click', function () {
+      var r = buildFeedXml();
+      download('feed.xml', r.text, 'application/rss+xml');
+      toast('feed.xml 已下载 · ' + r.count + ' 条（传到网站根目录）');
+    });
+
+    /* 核对线上版本：读线上那份 site-data.js 的导出时间 */
+    var snLive = body.querySelector('#snLive');
+    var snLiveOut = body.querySelector('#snLiveOut');
+    if (snLive) snLive.addEventListener('click', function () {
+      if (!snLiveOut) return;
+      snLiveOut.hidden = false;
+      snLiveOut.textContent = '正在读取线上文件…';
+      liveCheck(function (err, info) {
+        if (err) {
+          snLiveOut.textContent = '读不到线上的 site-data.js（' + err + '）。' +
+            '多半是还没传上去，或者网页和这个文件不在同一个站点下。';
+          return;
+        }
+        var mine = (snapRecord() || {}).at || '';
+        var head = localPreview()
+          ? '这是本机预览地址，结果只代表本地文件；上线后到虚拟主机的后台再点一次更准。'
+          : '';
+        var msg;
+        if (info.empty) {
+          msg = '线上那份还是<b>空文件</b> —— site-data.js 还没传上去，访客看到的是 data.js 里的默认内容。';
+        } else if (!info.at) {
+          msg = '线上文件读到了（' + fmtBytes(info.bytes) + '），但没认出导出时间，可能被改过。';
+        } else if (mine && info.at === mine) {
+          msg = '✅ 线上就是你导出的这一份（' + info.at + '，' + fmtBytes(info.bytes) + '），传成功了。';
+        } else if (mine) {
+          msg = '线上是 <b>' + esc(info.at) + '</b>（' + fmtBytes(info.bytes) + '），' +
+            '你本机上次导出是 <b>' + esc(mine) + '</b> —— 对不上，多半还没传上去，或者传完没刷新。';
+        } else {
+          msg = '线上是 <b>' + esc(info.at) + '</b>，你本机还没导出过，所以这份是别处传的。';
+        }
+        snLiveOut.innerHTML = (head ? head + '<br>' : '') + msg;
+      });
+    });
+
     var snCopy = body.querySelector('#snCopy');
     if (snCopy) snCopy.addEventListener('click', function () {
-      var text = staticJs();
+      var text = staticJs(splitImgs);
       copyText(text);
       snapSave({ at: nowText(), sig: snapSig(text) });
+    });
+
+    /* 版本历史：恢复 / 清空 */
+    body.querySelectorAll('[data-hist]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var i = +b.getAttribute('data-hist');
+        var rec = histAll()[i];
+        if (!rec) { toast('这一版已经不在了'); refreshBody(root); return; }
+        var meta = HIST_KINDS[rec.kind] || { name: rec.kind };
+        askConfirm({
+          title: '恢复到这一版「' + meta.name + '」？',
+          desc: '时间是 ' + histTime(rec.t) + ' 之前的那一版。<br>' +
+                '当前内容会被覆盖成它。这次恢复之前的模样也会记进历史，反悔还能再恢复回来。',
+          ok: '确认恢复'
+        }, function () {
+          if (!histRestore(i)) { toast('恢复失败，这一版可能已经被挤掉了'); return; }
+          toast('已恢复到 ' + histTime(rec.t) + ' 那一版 ✦');
+          syncAfterRestore(true);
+        });
+      });
+    });
+    var histClear = body.querySelector('#histClear');
+    if (histClear) histClear.addEventListener('click', function () {
+      askConfirm({
+        title: '清空版本历史？',
+        desc: '留存的旧版本会全部删掉，之后就没法回退了。<br>站点数据、分享、文章、设置本身不受影响。',
+        ok: '确认清空'
+      }, function () {
+        try { localStorage.removeItem(HIST_KEY); } catch (e) {}
+        toast('版本历史已清空');
+        refreshBody(root);
+      });
     });
 
     /* 下载一个包含全部内容的备份文件 */

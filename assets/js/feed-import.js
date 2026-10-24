@@ -1546,7 +1546,7 @@ window.XY_FEED_IMPORT = [
       url: 'https://litemonitor.cn/', tags: ['开发'],
       desc: '免费·开源·轻量 桌面硬件性能监控软件 · 实时监控CPU/GPU/显存/内存/磁盘/网络' },
     { date: '2026-02-24', icon: '✨', title: 'GKD',
-      url: 'about:blank', tags: [],
+      url: 'https://gkd.li/', tags: [],
       desc: '一款基于无障碍+高级选择器+订阅规则的自定义屏幕点击APP · 简单来说就是能帮助你跳过安卓应用开屏广告 · 规则订阅地址看点点点点点' },
     { date: '2026-02-20', icon: '✨', title: 'Resizeon',
       url: 'https://resizeon.com/zh-cn/', tags: [],

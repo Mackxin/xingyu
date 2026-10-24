@@ -165,6 +165,8 @@
     feedTag: 'all',
     catFilter: '',      // 分类栏筛选词
     recentMode: 'recent', // recent | top —— 最近访问榜的排序方式
+    onlyCats: [],       // 只看这几个分类（空 = 全部）；分类栏里勾出来的
+    pickMode: false,    // 分类栏是否处于「勾选」模式
     postId: '',         // 正在阅读的文章 id（空 = 文章列表）
     postTag: 'all',     // 文章列表的标签筛选
     fav: loadFav()
@@ -488,6 +490,20 @@
       '</div>';
   }
 
+  /* 一个分类块（标题 + 一排卡片）。抽出来是因为「只看几个分类」时
+     要单独重绘正文，不想再走整页 renderNav */
+  function catBlockHtml(c) {
+    var sorted = sortPinned(c.links);
+    var cards = sorted.map(function (l) { return linkCard({ n: l.n, u: l.u, d: l.d, pin: l.pin }); }).join('');
+    /* 全部铺出来，不再折叠。视口外的分类块交给 CSS 的 content-visibility 跳过
+       布局与绘制（见 .cat-block），所以要一口气放两万多张卡也不至于卡 */
+    return '<div class="cat-block" id="cat-' + esc(c.id) + '" data-cat-block="' + esc(c.id) + '">' +
+      '<div class="cat-block__head"><h2>' + catIco(c.icon) + esc(c.name) + '</h2>' +
+        '<span class="count">' + c.links.length + ' 个站点 · ' + esc(c.desc) + '</span></div>' +
+      '<div class="link-grid" data-grid="' + esc(c.id) + '">' + cards + '</div>' +
+      '</div>';
+  }
+
   function renderNav(recentHtml) {
     var q = state.query;
     var searching = !!norm(q) || state.favOnly;
@@ -495,9 +511,19 @@
       ? sortPinned(searchLinks(q).filter(function (l) { return !state.favOnly || isFav(l.u); }))
       : [];
 
+    /* 只看某几个分类：分类栏里勾出来的那几个，其余整块不渲染 */
+    var only = state.onlyCats;
+    var shownCats = only.length
+      ? CATS.filter(function (c) { return only.indexOf(c.id) > -1; })
+      : CATS;
+    var shownLinks = 0;
+    shownCats.forEach(function (c) { shownLinks += c.links.length; });
+
     var meta = searching
       ? '找到 <b>' + results.length + '</b> 个站点' + (norm(q) ? ' · “' + esc(q.trim()) + '”' : '')
-      : '共 <b>' + totalLinks + '</b> 个站点 · <b>' + CATS.length + '</b> 个分类';
+      : only.length
+        ? '只看 <b>' + only.length + '</b> 个分类 · <b>' + shownLinks + '</b> 个站点'
+        : '共 <b>' + totalLinks + '</b> 个站点 · <b>' + CATS.length + '</b> 个分类';
     var head = navHead(meta);
 
     var body;
@@ -517,16 +543,24 @@
     var chips = CATS.map(function (c) {
       // 供分类栏筛选使用：名字 + 图标 + 描述都能命中
       var hay = norm(c.name + c.icon + ' ' + (c.desc || ''));
-      return '<button class="cat-item" type="button" data-cat="' + esc(c.id) + '" data-search="' + esc(hay) + '">' +
+      var picked = only.indexOf(c.id) > -1;
+      return '<button class="cat-item' + (picked ? ' is-picked' : '') + '" type="button" ' +
+        'data-cat="' + esc(c.id) + '" data-search="' + esc(hay) + '"' +
+        (state.pickMode ? ' aria-pressed="' + picked + '"' : '') + '>' +
         '<span class="cat-item__name">' + catIco(c.icon) + esc(c.name) + '</span>' +
         '<span class="cat-item__count">' + c.links.length + '</span>' +
         '</button>';
     }).join('');
 
     var rail =
-      '<aside class="cat-rail" id="catRail">' +
+      '<aside class="cat-rail' + (state.pickMode ? ' is-pick' : '') + '" id="catRail">' +
         '<div class="cat-rail__head">' +
           '<p class="cat-rail__title">主题分类<span class="cat-rail__n">' + CATS.length + '</span></p>' +
+          '<button class="cat-pick' + (state.pickMode ? ' is-on' : '') + '" type="button" ' +
+            'id="catPickToggle" aria-pressed="' + state.pickMode + '" ' +
+            'title="勾几个分类，只看它们">' +
+            (state.pickMode ? (only.length ? '只看 ' + only.length + ' 类' : '勾选分类') : '只看') +
+          '</button>' +
         '</div>' +
         '<div class="cat-rail__scrim" id="catRailScrim"></div>' +
         '<div class="cat-rail__sheet" id="catRailSheet">' +
@@ -550,17 +584,7 @@
         '</div>' +
       '</aside>';
 
-    var blocks = CATS.map(function (c) {
-      var sorted = sortPinned(c.links);
-      var cards = sorted.map(function (l) { return linkCard({ n: l.n, u: l.u, d: l.d, pin: l.pin }); }).join('');
-      /* 全部铺出来，不再折叠。视口外的分类块交给 CSS 的 content-visibility 跳过
-         布局与绘制（见 .cat-block），所以要一口气放两万多张卡也不至于卡 */
-      return '<div class="cat-block" id="cat-' + esc(c.id) + '" data-cat-block="' + esc(c.id) + '">' +
-        '<div class="cat-block__head"><h2>' + catIco(c.icon) + esc(c.name) + '</h2>' +
-          '<span class="count">' + c.links.length + ' 个站点 · ' + esc(c.desc) + '</span></div>' +
-        '<div class="link-grid" data-grid="' + esc(c.id) + '">' + cards + '</div>' +
-        '</div>';
-    }).join('');
+    var blocks = shownCats.map(catBlockHtml).join('');
 
     /* 标题区（head）放进 .nav-layout 里，交给 CSS grid 摆到右侧内容栏顶端 ——
        这样它跟卡片的左边缘对齐，左边那列空出来的位置正好让分类栏顶上去。
@@ -583,6 +607,7 @@
       for (var j = 0; j < ls.length; j++) if (ls[j].pin) pins++;
     }
     return [state.query, state.favOnly ? 1 : 0, state.catFilter, state.fav.join(','),
+            state.pickMode ? 1 : 0, state.onlyCats.join(','),
             pins, recentHtml].join('\u0001');
   }
   function renderNavCached() {
@@ -599,6 +624,41 @@
     var run = function () { if (!navMemo) renderNavCached(); };
     if (window.requestIdleCallback) requestIdleCallback(run, { timeout: 2500 });
     else setTimeout(run, 1200);
+  }
+
+  /* ---------- 只看某几个分类 ----------
+     勾选时**不整页重绘**：手机端分类是底部弹层，重绘会把它关掉。
+     这里只换正文（.nav-body）+ 改勾选态 + 更新顶部那行数字。 */
+  function applyOnlyCats() {
+    var only = state.onlyCats;
+    var shown = only.length
+      ? CATS.filter(function (c) { return only.indexOf(c.id) > -1; })
+      : CATS;
+
+    var body = $('.nav-body');
+    if (body) body.innerHTML = recentBlockHtml() + shown.map(catBlockHtml).join('');
+
+    $$('.cat-item').forEach(function (b) {
+      var on = only.indexOf(b.getAttribute('data-cat')) > -1;
+      b.classList.toggle('is-picked', on);
+      if (state.pickMode) b.setAttribute('aria-pressed', on);
+    });
+
+    var pick = $('#catPickToggle');
+    if (pick) pick.textContent = only.length ? '只看 ' + only.length + ' 类' : '勾选分类';
+
+    var meta = $('.nav-meta');
+    if (meta) {
+      var n = 0;
+      shown.forEach(function (c) { n += c.links.length; });
+      meta.innerHTML = only.length
+        ? '只看 <b>' + only.length + '</b> 个分类 · <b>' + n + '</b> 个站点'
+        : '共 <b>' + totalLinks + '</b> 个站点 · <b>' + CATS.length + '</b> 个分类';
+    }
+
+    navMemo = null;    // 缓存作废，下次切回来按新状态重算
+    setupSpy();        // 分类块换了一批，滚动联动的观察目标也要换
+    if (meta) syncCatBtn(null);
   }
 
   function navHead(meta) {
@@ -1101,10 +1161,32 @@
       railList.addEventListener('click', function (e) {
         var btn = e.target.closest ? e.target.closest('.cat-item') : null;
         if (!btn || btn.classList.contains('is-hidden')) return;
+        var id = btn.getAttribute('data-cat');
+        /* 勾选模式：点一下是"选中/取消"，不再跳转 */
+        if (state.pickMode) {
+          var i = state.onlyCats.indexOf(id);
+          if (i > -1) state.onlyCats.splice(i, 1);
+          else state.onlyCats.push(id);
+          applyOnlyCats();
+          return;
+        }
         closeCatSheet();
-        scrollToCat(btn.getAttribute('data-cat'));
+        scrollToCat(id);
       });
     }
+
+    /* 「只看」开关：开了之后分类项变成勾选框；关掉就恢复成全部分类 */
+    var pickBtn = $('#catPickToggle');
+    if (pickBtn) pickBtn.addEventListener('click', function () {
+      var rail = $('#catRail');
+      var wasSheet = !!(rail && rail.classList.contains('is-sheet'));
+      state.pickMode = !state.pickMode;
+      if (!state.pickMode) state.onlyCats = [];
+      softRender();
+      if (wasSheet) openCatSheet();   // 手机端是底部弹层，重绘后要重新弹开
+      if (state.pickMode) toast('点分类勾选，只看选中的几个');
+    });
+
     bindCatRail();
 
     setupSpy();
