@@ -88,7 +88,86 @@
       /* 今日精选指定哪几条（存 feedKey：日期|标题）。
          空数组 = 自动取「分享」里最新的 featuredCount 条；
          有值 = 只显示这几条，条数由勾选数量决定。 */
-      featuredPicks: []
+      featuredPicks: [],
+
+      /* ---------- 赞助（首页最下面那块小的） ----------
+         想藏起来把 sponsorOn 改成 false（后台「首页内容 → 赞助」也有开关）。
+         赞助图一般是收款码截图；不放图就显示一个 ☕ 徽章，也不难看。 */
+      sponsorOn: true,
+      sponsorTitle: '喜欢这里？请我喝杯咖啡',
+      sponsorDesc: '这座小岛是一个人搭的，没有广告，也没有赞助商 banner。如果这里的东西帮到过你，可以随意打赏一杯咖啡的钱；不方便也完全没关系——常来坐坐就很好。',
+      sponsorNote: '微信 / 支付宝扫码 · 随意就好',
+      sponsorImage: '',        // 收款码 / 赞助图（data URL 或网址）；空 = 只显示文字
+      sponsorLink: ''          // 可选：点一下跳到你的赞赏页
+    },
+
+    /* ---------- 关于页（#/about） ----------
+       正文是 Markdown，用和文章页同一套渲染器，所以标题 / 列表 / 引用 / 表格都能写。
+       想改内容：后台「首页内容 → 关于这一页」，或者直接改下面这段。 */
+    about: {
+      eyebrow: 'About · 关于',
+      title: '关于星屿',
+      lede: '一个普通人用来收留链接、想法和一点点文字的地方。没有广告，没有推荐算法，也没有人催更——只是一间自己搭的小屋，门开着。',
+      updated: '2026-10-24',
+      md: [
+        '我大概攒了十年的书签。',
+        '',
+        '最早的收藏夹里横七竖八躺着几百个链接，标题还是网页自带的「XXX - 首页」，过半年再打开，连自己当初为什么要存它都想不起来。后来换浏览器、换电脑、换手机，书签跟着搬来搬去，越搬越乱，最后干脆谁也不看——**存了等于没存**。',
+        '',
+        '星屿是想把这件事收拾一下：让收藏重新变成一件可以回头翻的事。',
+        '',
+        '## 名字的来由',
+        '',
+        '「星」是散落的信息，「屿」是能站上去的地方。',
+        '',
+        '夜里的星星彼此离得很远，人抬头却能把它们连成图——星座本来不存在，是人为了记住才画出来的。散落的网址也是这样：一个个孤零零的地址本身没什么意义，是你把它们按自己的兴趣归了类，它们才成了「设计」「开发」「写作」这些能走进去的小岛。',
+        '',
+        '所以这里叫星屿：**以星为图，以屿为家。**',
+        '',
+        '## 岛上有什么',
+        '',
+        '四块地方，各有各的用处：',
+        '',
+        '- **导航** —— 攒了这些年的书签按主题归好类，一页装完。想找什么直接搜站点名，连拼音首字母都认（输 `txsp` 能搜到「腾讯视频」）。',
+        '- **分享** —— 像刷动态一样的时间线，记的是这段时间遇见的工具、读到的文章、突然想通的一点小事。都是短条目，看完就能走。',
+        '- **文章** —— 写得长一点的东西：折腾记录、读书笔记，以及那些需要慢慢想清楚的念头。',
+        '- **关于** —— 就是这一页。',
+        '',
+        '## 怎么逛更顺手',
+        '',
+        '| 想干的事 | 怎么做 |',
+        '| --- | --- |',
+        '| 快速跳到某个页面 | `⌘K` / `Ctrl + K` 打开命令面板 |',
+        '| 找站点 | 顶栏搜索框：中文、英文、拼音首字母都认 |',
+        '| 只看某几类 | 导航页分类栏右上角「只看」，勾几个就只留那几个 |',
+        '| 随手收藏 | 鼠标移到站点卡片上，点那颗小星星 |',
+        '| 不知道看什么 | 首页的「随机漫游」，随机开一个站点 |',
+        '',
+        '手机上一样能用：分类和标签会收进底部弹层，点顶栏的按钮就能展开。',
+        '',
+        '## 关于我',
+        '',
+        '白天是普通上班族，晚上喜欢折腾点小东西。',
+        '',
+        '这里的技术栈朴素到有点复古：**没有框架、没有构建、没有一个第三方依赖**，就是 HTML + CSS + 原生 JS，丢在虚拟主机上就能跑。写得慢一点，但每一行都看得懂，也改得动。',
+        '',
+        '如果说这座岛有什么主张，大概是这几句：',
+        '',
+        '> 工具越少，越自由。',
+        '>',
+        '> 收藏不是囤积，是为了有一天真的会打开它。',
+        '>',
+        '> 记录的意义不在于好看，在于半年后你还能认出当时的自己。',
+        '',
+        '## 想聊两句',
+        '',
+        '- 看到错链、想推荐好站点，或者只是想说句话，都欢迎。',
+        '- 这个站没有广告、没有统计脚本，也不追踪你。它只是我的一个房间，门开着，你可以进来坐坐。',
+        '',
+        '---',
+        '',
+        '*慢慢生长，持续更新。*'
+      ].join('\n')
     }
   };
 
@@ -196,7 +275,29 @@
       featuredTitle: str(src.featuredTitle, d.featuredTitle, 24),
       featuredDesc: str(src.featuredDesc, d.featuredDesc, 80),
       featuredCount: intIn(src.featuredCount, 3, 12, d.featuredCount),
-      featuredPicks: normPicks(src.featuredPicks)
+      featuredPicks: normPicks(src.featuredPicks),
+      /* 赞助：文案都有字数和协议保护，图片走 imgStr 白名单 */
+      sponsorOn: src.sponsorOn === undefined ? d.sponsorOn : !!src.sponsorOn,
+      sponsorTitle: str(src.sponsorTitle, d.sponsorTitle, 30),
+      sponsorDesc: str(src.sponsorDesc, d.sponsorDesc, 200),
+      sponsorNote: str(src.sponsorNote, d.sponsorNote, 60),
+      sponsorImage: imgStr(src.sponsorImage),
+      sponsorLink: str(src.sponsorLink, d.sponsorLink, 300)
+    };
+  }
+
+  /* 关于页：正文是 Markdown，长度给得比一般字段宽得多 */
+  var MAX_ABOUT_MD = 20000;
+  function normAbout(src) {
+    src = (src && typeof src === 'object') ? src : {};
+    var d = DEFAULTS.about;
+    return {
+      eyebrow: str(src.eyebrow, d.eyebrow, 40),
+      title: str(src.title, d.title, 30),
+      lede: str(src.lede, d.lede, 240),
+      updated: normDate(src.updated, d.updated),
+      md: String(src.md == null ? d.md : src.md).slice(0, MAX_ABOUT_MD)
+        || d.md
     };
   }
 
@@ -220,6 +321,7 @@
     target.startDate = normDate(target.startDate, DEFAULTS.startDate);
     target.theme = normTheme(src && src.theme !== undefined ? src.theme : target.theme);
     target.read = normRead(src && src.read !== undefined ? src.read : target.read);
+    target.about = normAbout(src && src.about !== undefined ? src.about : target.about);
     target.cardDensity = ['compact', 'normal', 'comfy'].indexOf(target.cardDensity) > -1
       ? target.cardDensity : DEFAULTS.cardDensity;
     if (!Array.isArray(target.customLinks)) target.customLinks = [];
@@ -386,6 +488,24 @@
       cfg.home = normHome(cfg.home);
       Store.save(cfg);
       return cfg.home;
+    },
+
+    /* 关于页（#/about） */
+    about: function () { return Store.get().about; },
+    setAbout: function (patch) {
+      var cfg = Store.get();
+      var next = {};
+      Object.keys(cfg.about || {}).forEach(function (k) { next[k] = cfg.about[k]; });
+      Object.keys(patch || {}).forEach(function (k) { next[k] = patch[k]; });
+      cfg.about = normAbout(next);
+      Store.save(cfg);
+      return cfg.about;
+    },
+    resetAbout: function () {
+      var cfg = Store.get();
+      cfg.about = normAbout(DEFAULTS.about);
+      Store.save(cfg);
+      return cfg.about;
     },
 
     /* 主题外观：只传要改的字段，其余保持原样 */

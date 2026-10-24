@@ -157,7 +157,7 @@
 
   /* ---------- 状态 ---------- */
   var ROUTES = ['home', 'nav', 'share', 'post'];         // 主导航 / 滑动切换顺序
-  var ALL_ROUTES = ['home', 'nav', 'share', 'post', 'admin'];  // 全部可路由页面（admin 不占主导航）
+  var ALL_ROUTES = ['home', 'nav', 'share', 'post', 'about', 'admin'];  // 全部可路由页面（about/admin 不占主导航）
   var state = {
     route: 'home',
     query: '',
@@ -291,6 +291,16 @@
     };
   }
 
+  /* 关于页的配置：没有 Store（理论上不会）时给个最小兜底，别让整页空白 */
+  function aboutCfg() {
+    if (window.XYStore && window.XYStore.about) return window.XYStore.about();
+    return {
+      eyebrow: 'About · 关于', title: '关于星屿',
+      lede: '一座以星为图、以屿为家的个人数字花园。',
+      updated: '', md: '内容还没写。到后台「首页内容 → 关于这一页」补上就行。'
+    };
+  }
+
   /* 站外链接加 target=_blank；站内 #/ 原样 */
   function isInternal(u) { return String(u || '').charAt(0) === '#'; }
 
@@ -370,6 +380,35 @@
 
     var cta1Ext = !isInternal(h.cta1Url);
 
+    /* 赞助：首页最下面那块小尾巴。
+       有图就摆图（一般是收款码截图），没图用一个 ☕ 徽章顶着，不至于空一块。
+       图 / 链接 / 开关都在后台「首页内容 → 赞助」里改。 */
+    var sponsorBlock = '';
+    if (h.sponsorOn) {
+      var spImg = h.sponsorImage || '';
+      var spLink = h.sponsorLink || '';
+      var spMedia = spImg
+        ? (spLink
+            ? '<a class="sponsor__media" href="' + hrefOf(spLink) + '" target="_blank" rel="noopener">' +
+                '<img src="' + esc(spImg) + '" alt="赞助" loading="lazy" /></a>'
+            : '<span class="sponsor__media"><img src="' + esc(spImg) + '" alt="赞助" loading="lazy" /></span>')
+        : '<span class="sponsor__media sponsor__media--none" aria-hidden="true">☕</span>';
+      sponsorBlock =
+        '<div class="sponsor">' +
+          '<div class="sponsor__copy">' +
+            '<span class="sponsor__kicker">Support · 赞助</span>' +
+            '<h2>' + esc(h.sponsorTitle) + '</h2>' +
+            '<p>' + esc(h.sponsorDesc) + '</p>' +
+            '<div class="sponsor__foot">' +
+              (h.sponsorNote ? '<span class="sponsor__note">' + esc(h.sponsorNote) + '</span>' : '') +
+              (spLink ? '<a class="pill pill--btn" href="' + hrefOf(spLink) + '" target="_blank" rel="noopener">' +
+                '去支持 ' + I.arrow + '</a>' : '') +
+            '</div>' +
+          '</div>' +
+          spMedia +
+        '</div>';
+    }
+
     return '<section class="page">' +
       '<div class="hero">' +
         '<div class="hero__copy">' +
@@ -399,6 +438,7 @@
       (statsHtml ? '<div class="stats">' + statsHtml + '</div>' : '') +
       (entriesHtml ? '<div class="bento">' + entriesHtml + '</div>' : '') +
       featuredBlock +
+      sponsorBlock +
     '</section>';
   }
 
@@ -985,7 +1025,58 @@
       '</section>';
   }
 
-  /* ---------- 路由 ---------- */
+  /* ---------- 渲染：关于（#/about） ----------
+     正文是 Markdown，和文章页共用一个渲染器与一套排版（`.post-article` / `.md`），
+     所以「关于」读起来和一篇长文章一样 —— 标题、列表、引用、表格、代码都支持。
+     内容默认写在 config.js 的 about 里，后台「首页内容 → 关于这一页」也能改。 */
+  function renderAbout() {
+    var a = aboutCfg();
+    var st = MD.stats(a.md || '');
+    var html = MD.render(a.md || '');
+    var heads = MD.headings(a.md || '').filter(function (h) { return h.level <= 3; });
+
+    var toc = heads.length >= 3
+      ? '<aside class="post-toc" aria-label="本页目录">' +
+          '<div class="post-toc__title">本页目录</div>' +
+          '<nav>' + heads.map(function (h) {
+            return '<a class="post-toc__item post-toc__item--l' + h.level + '" href="#' + h.id +
+              '" data-anchor="' + h.id + '">' + esc(h.text) + '</a>';
+          }).join('') + '</nav>' +
+        '</aside>'
+      : '';
+
+    return '<section class="page page--post page--about">' +
+      '<a class="post-back" href="#/home">' + I.arrow + '<span>回到首页</span></a>' +
+      '<div class="post-layout' + (toc ? ' has-toc' : '') + '">' +
+        '<article class="post-article">' +
+          '<header class="post-head">' +
+            '<span class="eyebrow">' + esc(a.eyebrow) + '</span>' +
+            '<h1 class="post-title">' + esc(a.title) + '</h1>' +
+            '<p class="about-lede">' + esc(a.lede) + '</p>' +
+            '<div class="post-meta">' +
+              (a.updated ? '<span class="post-meta__date">更新于 ' + esc(a.updated) + '</span>' +
+                '<span class="post-meta__dot">·</span>' : '') +
+              '<span>' + esc(MD.fmtChars(st.chars)) + '</span>' +
+              '<span class="post-meta__dot">·</span>' +
+              '<span>约 ' + st.minutes + ' 分钟读完</span>' +
+            '</div>' +
+          '</header>' +
+          '<div class="md">' + html + '</div>' +
+          '<footer class="post-foot">' +
+            '<div class="about-actions">' +
+              '<a class="btn btn--primary" href="#/nav">开始逛导航 ' + I.arrow + '</a>' +
+              '<a class="btn btn--ghost" href="#/share">看看最近的分享</a>' +
+              '<a class="btn btn--ghost" href="#/post">读点长文章</a>' +
+            '</div>' +
+            '<div class="post-foot__end"><span>✦</span> ' + esc(a.title) + ' · 一直在长</div>' +
+          '</footer>' +
+        '</article>' +
+        toc +
+      '</div>' +
+      '</section>';
+  }
+
+  /* ---------- 渲染：路由 ---------- */
   /* 支持 #/home 这类单段路由，以及 #/post/<id> 这种带参数的详情页 */
   function parseHash() {
     var h = '';
@@ -1044,6 +1135,7 @@
          : route === 'nav' ? renderNavCached()
          : route === 'share' ? renderShare()
          : route === 'post' ? (pid ? renderPost() : renderPosts())
+         : route === 'about' ? renderAbout()
          : renderHome();
   }
   function render(opts) {
@@ -1671,9 +1763,11 @@
   function buildPaletteIndex() {
     var list = [];
     var PAGE_INFO = {
-      home: ['首页', '🌌'], nav: ['导航', '🧭'], share: ['分享', '✨'], post: ['文章', '✍️']
+      home: ['首页', '🌌'], nav: ['导航', '🧭'], share: ['分享', '✨'], post: ['文章', '✍️'],
+      about: ['关于', '🌠']
     };
-    ROUTES.forEach(function (r) {
+    /* about 不在主导航里（不参与左右滑动），但搜索 / 命令面板要能搜到 */
+    ROUTES.concat(['about']).forEach(function (r) {
       var info = PAGE_INFO[r] || [r, '📄'];
       list.push({ type: '页面', name: info[0], sub: '#/' + r, url: '#/' + r, icon: info[1], isRoute: true });
     });

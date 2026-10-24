@@ -2004,6 +2004,12 @@
       (hint ? '<em>' + esc(hint) + '</em>' : '') + '</span>' +
       '<input type="text" data-home="' + key + '" value="' + esc(val) + '" /></label>';
   }
+  /* 关于页那几个字段：同一套样式，只是 data- 前缀换成 about */
+  function afield(label, key, val, hint) {
+    return '<label class="admin-field"><span class="admin-field__label">' + esc(label) +
+      (hint ? '<em>' + esc(hint) + '</em>' : '') + '</span>' +
+      '<input type="text" data-about="' + key + '" value="' + esc(val) + '" /></label>';
+  }
 
   function imgPreviewInner(val, noneText) {
     if (val) return '<img src="' + esc(val) + '" alt="" />';
@@ -2131,6 +2137,7 @@
 
   function homePanel() {
     var h = Store.home();
+    var a = Store.about();
     var stats = h.stats || [];
     var entries = h.entries || [];
 
@@ -2191,7 +2198,7 @@
           '<button class="btn btn--ghost" type="button" id="adminAddEntry"' +
             (entries.length >= Store.MAX_ENTRIES ? ' disabled' : '') + '>＋ 添加卡片</button>' +
         '</div>' +
-        '<p class="admin-tip">跳转地址支持站内 <code>#/nav</code>、<code>#/share</code>，也支持站外网址。' +
+        '<p class="admin-tip">跳转地址支持站内 <code>#/nav</code>、<code>#/share</code>、<code>#/about</code>，也支持站外网址。' +
           '不通向站内的链接会自动在新标签页打开。</p>' +
       '</div>' +
 
@@ -2208,6 +2215,51 @@
           '<input type="number" min="3" max="12" data-home="featuredCount" value="' + h.featuredCount + '" /></label>' +
         '<div class="admin-sub">显示哪几条<em>顺序跟「分享」页一致，新的在前；删掉的条目会自动从首页消失</em></div>' +
         picksListHtml(h) +
+      '</div>' +
+
+      '<div class="admin-card">' +
+        '<div class="admin-card__head">' +
+          '<div><h2>关于这一页</h2>' +
+            '<p>首页「关于星屿」那张卡片点进去就是它（<code>#/about</code>）。正文用 <b>Markdown</b>，' +
+            '写法和「文章」页完全一样。</p></div>' +
+          '<span class="admin-count">' + (a.md ? a.md.replace(/\s+/g, '').length + ' 字' : '内容为空') + '</span>' +
+        '</div>' +
+        afield('小标签', 'eyebrow', a.eyebrow, '标题上面那行小字') +
+        afield('大标题', 'title', a.title, '') +
+        '<label class="admin-field"><span class="admin-field__label">导语<em>标题下面那段稍大一点的介绍，一两句话</em></span>' +
+          '<textarea rows="3" data-about="lede">' + esc(a.lede) + '</textarea></label>' +
+        '<label class="admin-field"><span class="admin-field__label">更新日期<em>页面上显示「更新于 …」，格式 2026-10-24</em></span>' +
+          '<input type="date" data-about="updated" value="' + esc(a.updated) + '" /></label>' +
+        '<label class="admin-field"><span class="admin-field__label">正文' +
+          '<em>Markdown：## 小标题、- 列表、&gt; 引用、| 表格 |、**粗体**</em></span>' +
+          '<textarea class="admin-md" rows="16" spellcheck="false" data-about="md">' + esc(a.md) + '</textarea></label>' +
+        '<div class="admin-actions">' +
+          '<a class="btn btn--ghost" href="#/about" target="_blank" rel="noopener">↗ 打开这一页看看</a>' +
+          '<button class="btn btn--ghost" type="button" id="adminAboutReset">↺ 恢复默认正文</button>' +
+        '</div>' +
+        '<p class="admin-tip">改完直接生效（本机）。要让所有访客看到，记得回「备份 → 发布到虚拟主机」重新导一次 ' +
+          '<code>site-data.js</code>。</p>' +
+      '</div>' +
+
+      '<div class="admin-card">' +
+        '<div class="admin-card__head">' +
+          '<div><h2>赞助</h2>' +
+            '<p>首页最下面那块小卡片。放一张收款码或赞助图，右边就会出现图片；' +
+            '填了链接还会多一个「去支持」按钮。</p></div>' +
+          '<span class="admin-count" id="spBadge">' + (h.sponsorOn ? '首页显示中' : '已隐藏') + '</span>' +
+        '</div>' +
+        '<label class="sn-check" style="margin-top:0">' +
+          '<input type="checkbox" data-home="sponsorOn"' + (h.sponsorOn ? ' checked' : '') + ' />' +
+          '<span>在首页显示赞助卡片（关掉就整块不出现）</span>' +
+        '</label>' +
+        hfield('标题', 'sponsorTitle', h.sponsorTitle, '') +
+        '<label class="admin-field"><span class="admin-field__label">说明文字<em>最多 200 字，两句就够</em></span>' +
+          '<textarea rows="3" data-home="sponsorDesc">' + esc(h.sponsorDesc) + '</textarea></label>' +
+        hfield('小字备注', 'sponsorNote', h.sponsorNote, '图下面那行小字；留空就不显示') +
+        hfield('链接', 'sponsorLink', h.sponsorLink, '可选：点「去支持」跳这里，留空就只显示图') +
+        imgPicker({ scope: 'home', key: 'sponsorImage', val: h.sponsorImage, none: '还没放图' }) +
+        '<p class="admin-tip">建议放<b>收款码截图</b>（正方形、300px 以上最好看）。上传会自动压缩后存进配置，' +
+          '导出 <code>site-data.js</code> 时一起带走；不放图也不难看，会显示一个 ☕。</p>' +
       '</div>' +
 
       '<div class="admin-card">' +
@@ -3256,10 +3308,11 @@
 
     /* ---------- 使用手册 ---------- */
     var pagesRows = [
-      ['🏝 首页', '站点门面：标语、统计、几个入口卡、今日精选横轨'],
+      ['🏝 首页', '站点门面：标语、统计、几个入口卡、今日精选横轨，最下面一块赞助'],
       ['🧭 导航', '全部分类 + 站点卡片，' + d.links + ' 个站点；顶栏可搜、可只看收藏、可随机漫游'],
       ['📰 分享', '按日期分组的时间线，' + fed + ' 条；点标签筛选，点卡片直接开原链接'],
       ['✍️ 文章', '列表 + 阅读页（右侧目录、上一篇/下一篇、代码高亮）'],
+      ['🌌 关于', '自己的介绍页 <code>#/about</code>：名字来由、岛上有什么、怎么逛、关于我；正文是 Markdown'],
       ['🔐 后台', '就是这里：改完立刻生效，但只存在本机浏览器']
     ].map(function (r) { return gRow(r[0], r[1]); }).join('');
 
@@ -3278,7 +3331,7 @@
       ['🗂 站点数据', '增删分类与站点、拖拽排序、改图标与描述。这是「导航」页和全站搜索的数据源'],
       ['📰 分享', '发一条分享（日期 / 图标 / 标题 / 链接 / 标签 / 描述），列表里可搜索、可编辑'],
       ['✍️ 文章', '写文章、导入 <code>.md</code>、存草稿、预览正文'],
-      ['🏠 首页内容', '改标语、统计数字、入口卡、今日精选（勾哪几条显示哪几条，最多 12 条）'],
+      ['🏠 首页内容', '改标语、统计数字、入口卡、今日精选（勾哪几条显示哪几条，最多 12 条）、关于页正文、赞助卡片（开关 + 文案 + 收款码图片）'],
       ['🎨 主题', '7 套配色 + 自己敲 <code>#ff1d55</code> 这类色值 + 「我的配色」存多套；还有极光强度、圆角、默认主题、卡片密度、正文字号行高'],
       ['🔗 自定义链接', '顶栏/页脚那种自己加的链接，最多 ' + MAX + ' 个'],
       ['🌌 站点信息', '站名、标语、建站日期、Logo、Favicon、分享卡片图'],
@@ -3764,16 +3817,49 @@
     body.querySelectorAll('[data-home]').forEach(function (el) {
       var key = el.getAttribute('data-home');
       function apply() {
-        var v = el.value;
+        /* 复选框（赞助开关）存 true/false，别的都存字符串 */
+        var v = el.type === 'checkbox' ? el.checked : el.value;
         var patch = {};
         if (key === 'rotator') patch.rotator = parseList(v);
         else if (key === 'featuredCount') patch.featuredCount = v;
-        else patch[key] = (key === 'image') ? v.trim() : v;
+        else patch[key] = (key === 'image' || key === 'sponsorImage') ? String(v).trim() : v;
         Store.setHome(patch);
         if (key === 'image') updatePreview(root, 'image', patch.image);
+        if (key === 'sponsorImage') updatePreview(root, 'sponsorImage', patch.sponsorImage);
+        if (key === 'sponsorOn') {
+          var badge = root.querySelector('#spBadge');
+          if (badge) badge.textContent = el.checked ? '首页显示中' : '已隐藏';
+        }
       }
       el.addEventListener('input', apply);
       el.addEventListener('change', apply);
+    });
+
+    /* ---------- 关于页（#/about） ---------- */
+    body.querySelectorAll('[data-about]').forEach(function (el) {
+      var key = el.getAttribute('data-about');
+      el.addEventListener('input', function () {
+        var patch = {};
+        patch[key] = el.value;
+        Store.setAbout(patch);
+      });
+      el.addEventListener('change', function () {
+        var patch = {};
+        patch[key] = el.value;
+        Store.setAbout(patch);
+      });
+    });
+    var aboutReset = body.querySelector('#adminAboutReset');
+    if (aboutReset) aboutReset.addEventListener('click', function () {
+      askConfirm({
+        title: '恢复关于页默认正文？',
+        desc: '你改过的标题、导语和正文都会换回最初写好的那一版。<br>这一步不影响首页其他内容。',
+        ok: '确认恢复'
+      }, function () {
+        Store.resetAbout();
+        toast('关于页已恢复默认 ✦');
+        refreshBody(root);
+      });
     });
 
     /* 今日精选：勾上哪条，首页就显示哪条（勾的顺序不管，页面上统一按分享页顺序排） */

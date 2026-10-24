@@ -140,7 +140,7 @@ window.SITE_DATA = window.SITE_DATA || (function () {
     { route: '#/nav',   icon: '🧭', title: '星屿导航',   desc: '攒了多年的书签全收在这一页，随时一键盘点。', wide: false, spark: true },
     { route: '#/share', icon: '✨', title: '灵感分享',   desc: '像刷动态一样，回看这一年里遇见的工具、灵感与好内容。', wide: false, spark: false },
     { route: '#/post',  icon: '✍️', title: '手记文章',   desc: '写得长一点的东西都在这里：随笔、折腾记录与一点思考。', wide: false, spark: false },
-    { route: '#/home',  icon: '🌌', title: '关于星屿',   desc: '一座以星为图、以屿为家的个人数字花园，慢慢生长。', wide: false, spark: false }
+    { route: '#/about', icon: '🌌', title: '关于星屿',   desc: '一座以星为图、以屿为家的个人数字花园，慢慢生长。', wide: false, spark: false }
   ];
 
   /* ---------------- 文章（Markdown 原文） ----------------
