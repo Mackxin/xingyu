@@ -835,13 +835,19 @@ html[data-theme="light"] .btn--primary{ color:#fff; }
 
 /* ---------- 分类折叠（已取消：改成默认全部显示，靠 content-visibility 省开销） ---------- */
 
+/* 卡片宽度由文字决定（不是固定列宽）：一行排不下就整张换到下一行。
+   以前是 repeat(auto-fill,minmax(232px,1fr)) 的网格，列宽固定 ——
+   站名短的卡里空一大块，站名长的（还有右侧那两颗悬停按钮占掉 62px）就被省略成 "…"，
+   2078 张卡里有 581 张是截断的。改成 flex 换行后，名字多长卡片就多宽。
+   注意：卡片里那两颗 ☆ / ⧉ 按钮是参与布局的（常驻宽度、只是透明度为 0），
+   所以卡片宽度 = 名字 + 按钮 + 内距，这也是把按钮做小的原因（见 .mini-btn）。 */
 .link-grid{
-  display:grid; gap:10px;
-  grid-template-columns:repeat(auto-fill,minmax(232px,1fr));
+  display:flex; flex-wrap:wrap; align-items:stretch; gap:10px;
 }
 .link-card{
-  position:relative; display:flex; align-items:center; gap:12px;
-  padding:13px 14px; border-radius:var(--r);
+  position:relative; display:flex; align-items:center; gap:10px;
+  flex:0 1 auto; min-width:0; max-width:100%;   /* 宽度跟着内容走；超长名字才允许缩（缩的时候末尾省略） */
+  padding:10px 13px; border-radius:var(--r);
   /* 不画底色、不描边：卡片直接贴在页面的极光背景上，靠间距和留白分组。
      边框留着但是透明色，只为让排版尺寸和以前一模一样（不会因为去掉 1px 而挪位）。 */
   background:none; border:1px solid transparent;
@@ -858,7 +864,8 @@ html[data-theme="light"] .btn--primary{ color:#fff; }
 .link-card__body{ min-width:0; flex:1; }
 .link-card__name{
   display:flex; align-items:center; gap:6px;
-  font-size:14.5px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  font-size:14.5px; font-weight:600; line-height:1.25;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
 }
 /* 站点名单独包一层：桌面端就在这一行里省略；手机端列窄，改成最多折两行（见窄屏那段） */
 .link-card__nmtxt{ min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -878,13 +885,11 @@ html[data-desc="off"] .link-card__desc{ display:none; }
 html[data-cat-icon="off"] .cat-ico,
 html[data-cat-icon="off"] #headerCatEmoji{ display:none; }
 
-/* 图标和介绍都关掉时，卡片就是一行名字：把内边距收一点、格子排密一点。
-   只在宽屏生效 —— 手机端固定一行两个（见下面 max-width:640px 那段），别顶掉它。 */
+/* 图标和介绍都关掉时，卡片就是一行名字：把内边距收一点，卡片更扁更紧凑。
+   （宽度不用管了 —— 现在是 flex，卡片本来就贴着名字。） */
 @media (min-width:641px){
-  html[data-icons="off"][data-desc="off"] .link-card{ padding:8px 12px; }
-  html[data-icons="off"][data-desc="off"] .link-grid{
-    grid-template-columns:repeat(auto-fill,minmax(186px,1fr)); gap:7px;
-  }
+  html[data-icons="off"][data-desc="off"] .link-card{ padding:4px 11px; gap:8px; }
+  html[data-icons="off"][data-desc="off"] .link-grid{ gap:7px; }
 }
 
 /* ---------- 置顶 ---------- */
@@ -920,25 +925,27 @@ html[data-cat-icon="off"] #headerCatEmoji{ display:none; }
 }
 
 /* ---------- 卡片密度（后台「站点信息」可切） ----------
-   只在宽屏生效：手机端固定一行两个（见 max-width:640px 那条规则），
-   否则这里的选择器优先级更高，会把手机端的双列布局顶掉。 */
+   现在卡片宽度由文字决定，密度只调「字号 / 内距 / 间距」，不再改列宽。
+   只在宽屏生效：手机端有自己的一套（见 max-width:640px 那条规则）。 */
 @media (min-width:641px){
-  html[data-density="compact"] .link-grid{ grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:6px; }
-  html[data-density="compact"] .link-card{ padding:7px 10px; gap:8px; border-radius:12px; }
+  html[data-density="compact"] .link-grid{ gap:6px; }
+  html[data-density="compact"] .link-card{ padding:3px 9px; gap:6px; border-radius:10px; }
   html[data-density="compact"] .link-card__name{ font-size:13.5px; }
   html[data-density="compact"] .link-card__desc{ font-size:11px; }
-  html[data-density="comfy"] .link-grid{ grid-template-columns:repeat(auto-fill,minmax(348px,1fr)); gap:13px; }
-  html[data-density="comfy"] .link-card{ padding:16px 17px; gap:14px; }
+  html[data-density="comfy"] .link-grid{ gap:13px; }
+  html[data-density="comfy"] .link-card{ padding:15px 16px; gap:12px; }
   html[data-density="comfy"] .link-card__name{ font-size:15.5px; }
   html[data-density="comfy"] .link-card__desc{ font-size:12.5px; margin-top:4px; }
 }
 
 .mini-btn{
-  display:grid; place-items:center; width:30px; height:30px; border-radius:9px;
+  /* 22px：这两颗按钮是常驻布局的（不悬停时只是 opacity:0），
+     以前 30px 高，直接把卡片撑到 48px 高、还占掉 62px 宽 —— 是「卡片太高、名字被截断」的主因 */
+  display:grid; place-items:center; width:22px; height:22px; border-radius:7px;
   color:var(--text-mute); opacity:0; transform:scale(.85);
   transition:all .3s var(--ease);
 }
-.mini-btn svg{ width:15px; height:15px; fill:none; stroke:currentColor; stroke-width:1.9; }
+.mini-btn svg{ width:13px; height:13px; fill:none; stroke:currentColor; stroke-width:1.9; }
 .link-card:hover .mini-btn{ opacity:1; transform:none; }
 .mini-btn:hover{ color:var(--text); background:var(--glass-hi); }
 .mini-btn[aria-pressed="true"]{ color:#ffcf6b; opacity:1; transform:none; }
