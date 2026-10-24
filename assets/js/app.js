@@ -143,6 +143,54 @@
     saveVisits();
   }
 
+  /* ---------- 确认框 ----------
+     前端这里自带一份（后台 admin.js 里那份只能在后台用，拿不到）；
+     样式复用 style.css 里的 .confirm-mask / .confirm-box，所以长得和后台的确认框一样。
+     破坏性操作（目前是「清空访问记录」）都要先过这一关。 */
+  function closeConfirm() {
+    var m = document.getElementById('xyConfirm');
+    if (!m) return;
+    if (m._esc) document.removeEventListener('keydown', m._esc);
+    if (m._lock) document.body.classList.remove('no-scroll');   /* 只解锁自己加的那层 */
+    if (m.parentNode) m.parentNode.removeChild(m);
+  }
+  function askConfirm(opts, onOk) {
+    closeConfirm();
+    var mask = document.createElement('div');
+    mask.className = 'confirm-mask';
+    mask.id = 'xyConfirm';
+    mask.innerHTML =
+      '<div class="confirm-box" role="dialog" aria-modal="true" aria-label="' + esc(opts.title) + '">' +
+        '<div class="confirm-box__icon">' + (opts.icon || '⚠️') + '</div>' +
+        '<h3>' + esc(opts.title) + '</h3>' +
+        '<p>' + (opts.desc || '') + '</p>' +
+        '<div class="confirm-actions">' +
+          '<button class="btn btn--ghost" type="button" data-confirm="no">' + esc(opts.cancel || '取消') + '</button>' +
+          '<button class="btn btn--danger" type="button" data-confirm="yes">' + esc(opts.ok || '确认') + '</button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(mask);
+    /* 弹框期间锁住页面滚动（手机端底部 tab 也会自动让位，见 body.no-scroll 那条） */
+    mask._lock = !document.body.classList.contains('no-scroll');
+    if (mask._lock) document.body.classList.add('no-scroll');
+    mask.addEventListener('click', function (e) {
+      var b = e.target.closest ? e.target.closest('[data-confirm]') : null;
+      if (b) {
+        var yes = b.getAttribute('data-confirm') === 'yes';
+        closeConfirm();
+        if (yes && onOk) onOk();
+        return;
+      }
+      if (e.target === mask) closeConfirm();   /* 点遮罩空白处也算取消 */
+    });
+    mask._esc = function (e) { if (e.key === 'Escape') closeConfirm(); };
+    document.addEventListener('keydown', mask._esc);
+    setTimeout(function () {
+      var c = mask.querySelector('[data-confirm="no"]');   /* 默认焦点落在「取消」上，误触不会删 */
+      if (c) c.focus();
+    }, 20);
+  }
+
   /* ---------- 图标 ---------- */
   var I = {
     star: '<svg viewBox="0 0 24 24"><path d="M12 3.6l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.5 9.8l5.9-.9z"/></svg>',
@@ -1283,9 +1331,19 @@
     });
     var clrBtn = $('#recentClear');
     if (clrBtn) clrBtn.addEventListener('click', function () {
-      clearVisits();
-      toast('已清空访问记录');
-      softRender();
+      /* 清空是不可撤销的，先弹确认框问一句（以前点一下就没了） */
+      askConfirm({
+        icon: '🧹',
+        title: '清空访问记录？',
+        desc: '「最近访问 / 最常去」里记下的站点会全部清掉，<b>只清这台浏览器里的记录</b>；' +
+              '收藏夹、站点数据和文章都不受影响。',
+        ok: '清空记录',
+        cancel: '算了'
+      }, function () {
+        clearVisits();
+        toast('已清空访问记录');
+        softRender();
+      });
     });
 
     var railList = $('#catRailList');
