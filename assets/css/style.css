@@ -23,6 +23,9 @@
   --a1: #7c9cff;
   --a2: #b47cff;
   --a3: #4fe3d0;
+  /* 「已收藏」用的星色。深色主题是亮金；浅色主题另给一档深琥珀（见 data-theme="light"），
+     否则 #ffcf6b 落在淡蓝玻璃上对比度只有 1.3:1，字基本看不见（v121 修）。 */
+  --star: #ffcf6b;
   --grad: linear-gradient(120deg, var(--a1), var(--a2) 52%, var(--a3));
   --grad-soft: linear-gradient(120deg, rgba(124,156,255,.22), rgba(180,124,255,.18) 55%, rgba(79,227,208,.16));
 
@@ -62,6 +65,10 @@ html[data-theme="light"]{
   --text:      #0d1424;
   --text-dim:  #333d57;
   --text-mute: #556080;
+  /* 浅色主题下的「已收藏」色：深琥珀。算过实际合成底（--glass-hi 淡蓝 ≈ #C7D3EF）
+     和「已选中」那层 14% 暖底（≈ #BCC1CE）：4.7~5.6:1，13.5px 小字也读得清。
+     #7a5200 只有 3.9:1，不够，所以再压深一档。 */
+  --star:      #6b4600;
   --shadow-sm: none;
   --shadow: none;
 }
@@ -1018,7 +1025,13 @@ html[data-cat-icon="off"] #headerCatEmoji{ display:none; }
 }
 .card-menu__i:hover{ background:var(--glass); }
 .card-menu__i svg{ width:16px; height:16px; flex-shrink:0; fill:none; stroke:currentColor; stroke-width:1.9; }
-.card-menu__i.is-on{ color:#ffcf6b; }
+/* 已收藏那一项：文字和星都用 --star（浅色主题会切成深琥珀，保证看得清）。
+   再垫一层同色淡底，让「已选中」不只靠颜色区分。 */
+.card-menu__i.is-on{
+  color:var(--star);
+  background:color-mix(in srgb, var(--star) 14%, transparent);
+}
+.card-menu__i.is-on:hover{ background:color-mix(in srgb, var(--star) 22%, transparent); }
 .card-menu__i.is-on svg{ fill:currentColor; }
 
 /* 导航页标题下那句「右键 / 长按 卡片可以收藏或复制」：按设备二选一显示 */
