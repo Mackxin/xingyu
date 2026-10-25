@@ -239,9 +239,9 @@
   }
   function isFav(url) { return state.fav.indexOf(url) > -1; }
 
-  /* 收藏变了：只更新那一颗星和顶部计数，不整页重渲。
-     导航页一次铺两千多张卡，点一下星就重渲一遍太贵；更要紧的是重渲会把
-     刚点过的那排按钮换掉，连点第二颗星时点击就落空了（只存进去一个）。 */
+  /* 收藏变了：只更新菜单里那一项和顶部计数，不整页重渲。
+     导航页一次铺两千多张卡，点一下收藏就重渲一遍太贵；更要紧的是重渲会把
+     刚弹出来的右键菜单连卡片一起换掉，第二次点就落空了。 */
   function refreshFavUI(url) {
     var on = isFav(url);
     var nodes = document.querySelectorAll('[data-fav]');
@@ -249,7 +249,6 @@
       var el = nodes[i];
       if (el.getAttribute('data-fav') !== url) continue;
       el.setAttribute('aria-pressed', on ? 'true' : 'false');
-      if (el.classList.contains('mini-btn')) el.setAttribute('title', on ? '取消收藏' : '收藏');
       if (el.classList.contains('card-menu__i')) {
         if (on) el.classList.add('is-on'); else el.classList.remove('is-on');
         var lb = el.querySelector('span');
@@ -597,7 +596,6 @@
   }
 
   function linkCard(l) {
-    var fav = isFav(l.u);
     return '<a class="link-card' + (l.pin ? ' is-pinned' : '') + '" href="' + hrefOf(l.u) + '" target="_blank" rel="noopener"' +
       ' data-n="' + esc(l.n) + '" data-u="' + esc(l.u) + '" data-d="' + esc(l.d || '') + '">' +
       glyph(l.n, 'sm') +
@@ -605,10 +603,6 @@
         '<span class="link-card__name"><span class="link-card__nmtxt">' + esc(l.n) + '</span>' +
           (l.pin ? '<i class="pin" aria-label="置顶" title="置顶">📌</i>' : '') + '</span>' +
         '<span class="link-card__desc">' + esc(l.d || hostOf(l.u)) + '</span>' +
-      '</span>' +
-      '<span class="link-card__act">' +
-        '<button class="mini-btn" type="button" data-fav="' + esc(l.u) + '" aria-pressed="' + fav + '" title="收藏">' + I.star + '</button>' +
-        '<button class="mini-btn" type="button" data-copy="' + esc(l.u) + '" title="复制链接">' + I.copy + '</button>' +
       '</span>' +
       '</a>';
   }
@@ -685,7 +679,7 @@
             ? '<div class="link-grid">' + results.map(linkCard).join('') + '</div>'
             : (state.favOnly && !norm(q)
                 ? emptyHtml('⭐', '还没有收藏任何站点',
-                    '在任意站点卡片右侧点一下 ☆，它就会住进这里。收藏存在这台浏览器里 —— 换设备、清缓存之前，到后台「备份」导一份带走就行。')
+                    '在任意站点卡片上点右键（手机上长按），选「收藏」，它就会住进这里。收藏存在这台浏览器里 —— 换设备、清缓存之前，到后台「备份」导一份带走就行。')
                 : emptyHtml('🔍', '没有找到相关站点', '换个关键词试试，或清空搜索查看全部。'))) +
         '</div>';
       return '<section class="page">' + head +
@@ -819,7 +813,10 @@
         '<span class="eyebrow">Navigation · 航图</span>' +
         '<h1>星屿导航</h1>' +
         '<p>攒了多年的老书签全收在这一页 —— 共 <b>' + CATS.length + '</b> 类、<b>' + totalLinks + '</b> 个坐标。' +
-          '顶部搜索框随时筛，点星标收藏，按 <kbd style="font-family:inherit;padding:1px 6px;border:1px solid var(--border);border-radius:6px;font-size:12px">⌘K</kbd> 一键盘点。</p>' +
+          '顶部搜索框随时筛，按 <kbd style="font-family:inherit;padding:1px 6px;border:1px solid var(--border);border-radius:6px;font-size:12px">⌘K</kbd> 一键盘点。' +
+          /* 卡片上没有按钮了，收藏 / 复制靠右键（手机长按），这里提示一句，别让人找不着 */
+          '<span class="hint-desk">在卡片上<b>点右键</b>可以收藏或复制链接。</span>' +
+          '<span class="hint-touch">在卡片上<b>长按</b>可以收藏或复制链接。</span></p>' +
       '</div>' +
       '<div class="page-head__side">' +
         '<span class="nav-meta">' + (meta || '') + '</span>' +
@@ -1520,14 +1517,17 @@
     $$('.cat-item').forEach(function (b) { b.classList.toggle('is-active', b.getAttribute('data-cat') === id); });
   }
 
-  /* ---------- 手机端长按链接卡片：收藏 / 复制（卡片上的图标已隐藏） ---------- */
+  /* ---------- 链接卡片的小菜单：收藏 / 复制链接 ----------
+     手机上按住卡片 480ms 弹出来（卡片上那两颗图标已经去掉了）；
+     电脑上直接在卡片上右键弹出来 —— 卡面上不再挂常驻按钮。 */
   function closeCardMenu() {
     var m = $('#cardMenu');
     if (!m) return false;
+    if (m._esc) document.removeEventListener('keydown', m._esc);
     m.remove();
     return true;
   }
-  function openCardMenu(card, x, y) {
+  function openCardMenu(card, x, y, atCursor) {
     closeCardMenu();
     var url = card.getAttribute('href') || '';
     var fav = isFav(url);
@@ -1536,15 +1536,23 @@
     el.id = 'cardMenu';
     el.setAttribute('role', 'menu');
     el.innerHTML =
-      '<button class="card-menu__i' + (fav ? ' is-on' : '') + '" type="button" role="menuitem" data-fav="' + esc(url) + '">' +
+      '<button class="card-menu__i' + (fav ? ' is-on' : '') + '" type="button" role="menuitem" aria-pressed="' + (fav ? 'true' : 'false') + '" data-fav="' + esc(url) + '">' +
         I.star + '<span>' + (fav ? '取消收藏' : '收藏') + '</span></button>' +
       '<button class="card-menu__i" type="button" role="menuitem" data-copy="' + esc(url) + '">' +
         I.copy + '<span>复制链接</span></button>';
     document.body.appendChild(el);
     var r = el.getBoundingClientRect();
-    var left = Math.min(Math.max(8, x - r.width / 2), Math.max(8, window.innerWidth - r.width - 8));
-    var top = y - r.height - 14;
-    if (top < 8) top = Math.min(y + 20, window.innerHeight - r.height - 8);
+    var left, top;
+    if (atCursor) {
+      /* 鼠标右键：菜单左上角就落在指针处，跟系统右键菜单一个习惯 */
+      left = Math.min(Math.max(8, x), Math.max(8, window.innerWidth - r.width - 8));
+      top = Math.min(Math.max(8, y), Math.max(8, window.innerHeight - r.height - 8));
+    } else {
+      /* 手指长按：菜单浮在手指上方居中，免得被指头挡住 */
+      left = Math.min(Math.max(8, x - r.width / 2), Math.max(8, window.innerWidth - r.width - 8));
+      top = y - r.height - 14;
+      if (top < 8) top = Math.min(y + 20, window.innerHeight - r.height - 8);
+    }
     el.style.left = Math.round(left) + 'px';
     el.style.top = Math.round(top) + 'px';
     el.addEventListener('click', function (e) {
@@ -1556,6 +1564,9 @@
       else copyUrl(b.getAttribute('data-copy'));
       closeCardMenu();
     });
+    /* 电脑上右键弹出来的菜单，按 Esc 能关（手机上也有用，无副作用） */
+    el._esc = function (e2) { if (e2.key === 'Escape') closeCardMenu(); };
+    document.addEventListener('keydown', el._esc);
   }
   /* 触摸端：按住 480ms 弹菜单；长按后抬手不要触发卡片跳转 */
   function bindLongPress() {
@@ -1595,10 +1606,15 @@
       if (e.target.closest && e.target.closest('#cardMenu')) return;
       closeCardMenu();
     }, { passive: true });
+    /* 右键（电脑端）：直接把同一个菜单弹在指针处。
+       手指长按的那次 contextmenu 只负责压掉系统菜单 —— 菜单已经由上面的计时器弹过了，
+       所以 touched / fired 为真时只 preventDefault、不再重复弹。 */
     document.addEventListener('contextmenu', function (e) {
-      // 只在手指长按卡片时压掉系统菜单；桌面右键照常
-      if (!touched && !fired) return;
-      if (e.target.closest && e.target.closest('.link-card')) e.preventDefault();
+      var c = e.target.closest ? e.target.closest('.link-card') : null;
+      if (!c) return;
+      e.preventDefault();
+      if (touched || fired) return;
+      openCardMenu(c, e.clientX, e.clientY, true);
     });
   }
 

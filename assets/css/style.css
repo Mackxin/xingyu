@@ -896,10 +896,10 @@ html[data-theme="light"] .btn--primary{ color:#fff; }
 
 /* 卡片宽度由文字决定（不是固定列宽）：一行排不下就整张换到下一行。
    以前是 repeat(auto-fill,minmax(232px,1fr)) 的网格，列宽固定 ——
-   站名短的卡里空一大块，站名长的（还有右侧那两颗悬停按钮占掉 62px）就被省略成 "…"，
-   2078 张卡里有 581 张是截断的。改成 flex 换行后，名字多长卡片就多宽。
-   注意：卡片里那两颗 ☆ / ⧉ 按钮是参与布局的（常驻宽度、只是透明度为 0），
-   所以卡片宽度 = 名字 + 按钮 + 内距，这也是把按钮做小的原因（见 .mini-btn）。 */
+   站名短的卡里空一大块，站名长的就被省略成 "…"，2078 张卡里有 581 张是截断的。
+   改成 flex 换行后，名字多长卡片就多宽。
+   v119 起卡片里不再挂 ☆ / ⧉ 两颗常驻按钮（它们以前还占掉 62px、把卡片顶到 48px 高），
+   收藏 / 复制改到右键菜单里（电脑右键、手机长按），所以卡片宽度 = 名字 + 内距。 */
 .link-grid{
   display:flex; flex-wrap:wrap; align-items:stretch; gap:8px;
 }
@@ -932,7 +932,6 @@ html[data-theme="light"] .btn--primary{ color:#fff; }
   margin-top:2px; font-size:12px; color:var(--text-mute);
   white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
 }
-.link-card__act{ display:flex; align-items:center; gap:2px; flex-shrink:0; }
 
 /* ---------- 三个显示开关（后台「站点信息 → 显示项」，默认全关） ----------
    挂 <html data-*> 上，改一次属性全站立刻生效，不用重渲染两万张卡。
@@ -997,25 +996,11 @@ html[data-cat-icon="off"] #headerCatEmoji{ display:none; }
   html[data-density="comfy"] .link-card__desc{ font-size:12.5px; margin-top:4px; }
 }
 
-.mini-btn{
-  /* 22px：这两颗按钮是常驻布局的（不悬停时只是 opacity:0），
-     以前 30px 高，直接把卡片撑到 48px 高、还占掉 62px 宽 —— 是「卡片太高、名字被截断」的主因 */
-  display:grid; place-items:center; width:22px; height:22px; border-radius:7px;
-  color:var(--text-mute); opacity:0; transform:scale(.85);
-  transition:all .3s var(--ease);
-}
-.mini-btn svg{ width:13px; height:13px; fill:none; stroke:currentColor; stroke-width:1.9; }
-.link-card:hover .mini-btn{ opacity:1; transform:none; }
-.mini-btn:hover{ color:var(--text); background:var(--glass-hi); }
-.mini-btn[aria-pressed="true"]{ color:#ffcf6b; opacity:1; transform:none; }
-.mini-btn[aria-pressed="true"] svg{ fill:currentColor; }
-@media (hover:none){
-  .mini-btn{ opacity:1; transform:none; }
-}
-
-/* 长按链接卡片弹出的小菜单（手机端卡片右上角的图标已隐藏） */
+/* 链接卡片的小菜单：手机长按弹在手指上方、电脑右键弹在指针处。
+   卡片上那两颗常驻的 ☆ / ⧉ 已经去掉了，收藏和复制都走这里。 */
 .card-menu{
   position:fixed; z-index:130;
+  user-select:none; -webkit-user-select:none;
   display:flex; flex-direction:column; min-width:150px; padding:6px;
   border-radius:16px; background:var(--glass-hi);
   border:1px solid transparent;
@@ -1035,6 +1020,13 @@ html[data-cat-icon="off"] #headerCatEmoji{ display:none; }
 .card-menu__i svg{ width:16px; height:16px; flex-shrink:0; fill:none; stroke:currentColor; stroke-width:1.9; }
 .card-menu__i.is-on{ color:#ffcf6b; }
 .card-menu__i.is-on svg{ fill:currentColor; }
+
+/* 导航页标题下那句「右键 / 长按 卡片可以收藏或复制」：按设备二选一显示 */
+.hint-touch{ display:none; }
+@media (hover:none){
+  .hint-desk{ display:none; }
+  .hint-touch{ display:inline; }
+}
 
 .empty{
   display:grid; place-items:center; gap:12px;
@@ -1574,7 +1566,6 @@ html[data-theme="light"] .tl-date{ box-shadow:none; }
     -webkit-touch-callout:none;   /* 长按时别弹系统自带的链接菜单 */
   }
   .link-card .glyph{ display:none; }   /* 手机端卡片不带左侧图标，只留名称 + 简介 */
-  .link-card__act{ display:none; }
   .link-card__body{ display:flex; flex-direction:column; flex:1 1 auto; margin-top:0; min-width:0; }
   .link-card__name,
   html[data-density] .link-card__name{
@@ -1621,8 +1612,6 @@ html[data-theme="light"] .tl-date{ box-shadow:none; }
   .bento__item p{ grid-area:2 / 1 / 3 / 4; }
   .bento__item h3{ font-size:17.5px; }
   .bento__item{ row-gap:8px; }
-  .mini-btn{ width:26px; height:26px; border-radius:8px; }
-  .mini-btn svg{ width:14px; height:14px; }
   .stats{ gap:10px; }
   .stat{ padding:16px 14px; }
   .feed-card{ grid-template-columns:1fr; gap:12px; padding:18px; }
