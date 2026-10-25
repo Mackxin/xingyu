@@ -603,20 +603,36 @@ html[data-theme="light"] .btn--primary{ color:#fff; }
   display:grid; gap:16px; margin-top:clamp(30px,5vw,56px);
   grid-template-columns:repeat(6,1fr);
 }
-.bento__item{ grid-column:span 2; padding:26px; overflow:hidden; }
+/* 一张卡内部：图标 + 标题 排一行，「进入 →」推到行的最右，说明文字另起一行。
+   以前是「图标 / 标题 / 说明 / 按钮」竖着摞四行，卡片很高、右上角还空一大块；
+   现在标题紧挨图标、按钮靠右，说明放在标题下面（手机端说明干脆顶到图标左边，省宽度）。 */
+.bento__item{
+  grid-column:span 2;
+  display:grid; grid-template-columns:auto 1fr auto;
+  column-gap:14px; row-gap:7px; align-items:center;
+  padding:22px 24px; overflow:hidden;
+}
 .bento__item--wide{ grid-column:span 3; }
 .bento__icon{
+  grid-area:1 / 1 / 2 / 2;
   display:grid; place-items:center; width:52px; height:52px; border-radius:16px;
   font-size:24px; background:var(--glass-hi); border:1px solid transparent;
   box-shadow:none;
   transition:transform .5s var(--ease);
 }
 .bento__item:hover .bento__icon{ transform:translateY(-4px) scale(1.08) rotate(-6deg); }
-.bento__item h3{ margin:18px 0 6px; font-size:19px; font-weight:700; }
-.bento__item p{ margin:0; color:var(--text-dim); font-size:13.5px; line-height:1.75; }
+.bento__item h3{
+  grid-area:1 / 2 / 2 / 3; min-width:0;
+  margin:0; font-size:19px; font-weight:700;
+}
+.bento__item p{
+  grid-area:2 / 2 / 3 / 4;
+  margin:0; color:var(--text-dim); font-size:13.5px; line-height:1.75;
+}
 .bento__go{
-  display:inline-flex; align-items:center; gap:7px; margin-top:18px;
-  font-size:13.5px; font-weight:600; color:var(--text);
+  grid-area:1 / 3 / 2 / 4; justify-self:end; align-self:center;
+  display:inline-flex; align-items:center; gap:7px; margin:0;
+  font-size:13.5px; font-weight:600; color:var(--text); white-space:nowrap;
 }
 .bento__go svg{ width:15px; height:15px; fill:none; stroke:currentColor; stroke-width:2; transition:transform .35s var(--ease); }
 .bento__item:hover .bento__go svg{ transform:translateX(5px); }
@@ -1534,6 +1550,31 @@ html[data-theme="light"] .tl-date{ box-shadow:none; }
      只因为写在文件更后面才赢 —— 结果就是关了开关手机上还照样顶着域名。
      这里用同样的前缀、并且放在最后，谁关谁生效。 */
   html[data-desc="off"] .link-card__desc{ display:none; }
+
+  /* 手机端把横向滚动条藏掉：手指照样能滑，但底部不再拖一条灰紫色滚轮出来。
+     全局那条 ::-webkit-scrollbar{height:10px} 是给电脑端用的，手机上很难看。
+     只列真的会横向溢出的三个容器：
+       .track       首页「今日精选」轨道
+       .recent__rail 导航页「最近访问 / 最常去」那排胶囊
+       .md-table    文章正文里的宽表格
+     分类栏 .cat-rail__list 早在文件上面就藏了；标签条 .tag-bar__chips 是 flex-wrap 换行、
+     顶栏 .header__links 也只会收缩，都不产生横向滚动条，不用管。 */
+  .track,
+  .recent__rail,
+  .md-table{
+    scrollbar-width:none; -ms-overflow-style:none;
+  }
+  .track::-webkit-scrollbar,
+  .recent__rail::-webkit-scrollbar,
+  .md-table::-webkit-scrollbar{
+    display:none; width:0; height:0;
+  }
+  .track{ padding-bottom:4px; }   /* 原来那 16px 是给滚动条让位的，藏了就不用了 */
+
+  /* 首页入口卡：说明文字顶到图标左边（窄屏省宽度），标题稍小一点 */
+  .bento__item p{ grid-area:2 / 1 / 3 / 4; }
+  .bento__item h3{ font-size:17.5px; }
+  .bento__item{ row-gap:8px; }
   .mini-btn{ width:26px; height:26px; border-radius:8px; }
   .mini-btn svg{ width:14px; height:14px; }
   .stats{ gap:10px; }
