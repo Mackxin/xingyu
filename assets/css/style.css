@@ -879,7 +879,7 @@ html[data-theme="light"] .btn--primary{ color:#fff; }
   color:var(--text); background:var(--glass-2); border-color:transparent;
   box-shadow:none;
 }
-.cat-item__name{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.cat-item__name{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:600; }
 /* 分类 emoji：独立一层，后台关掉「分类图标」时整块消失（不会留空位）。
    不用 flex 包名字，是为了保住长分类名的省略号。 */
 .cat-ico{ line-height:1; margin-right:5px; }
@@ -938,7 +938,9 @@ html[data-theme="light"] .btn--primary{ color:#fff; }
 .link-card__body{ min-width:0; flex:1; }
 .link-card__name{
   display:flex; align-items:center; gap:6px;
-  font-size:14.5px; font-weight:600; line-height:1.25;
+  /* 600 在大面积铺开时会糊成一片「全是粗体」（一页两千张卡），降到 500：
+     PingFang 的 Medium，比正文重一点、又不至于抢眼。 */
+  font-size:14.5px; font-weight:500; line-height:1.25;
   white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
 }
 /* 站点名单独包一层：桌面端就在这一行里省略；手机端列窄，改成最多折两行（见窄屏那段） */
