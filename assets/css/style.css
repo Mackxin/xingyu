@@ -420,6 +420,11 @@ html[data-theme="light"] #themeBtn .i-moon{ display:block; }
   outline:none;
   position:relative;      /* 滑动时的"邻页"要相对它绝对定位 */
 }
+/* 那 90px 是给列表页留的滚动余量；阅读页 / 关于页最后一个是「返回」按钮，
+   再垫 90px 就变成页脚上方空出一大块（v124 修）。
+   用 :has() 而不是 html[data-route="post"] —— 文章「列表」页也是 route=post，
+   但那边没有 .post-article，不该跟着收窄。 */
+.app:has(.post-article){ padding-bottom:40px; }
 /* 注意：动画不要用 animation-fill-mode:both —— 收尾关键帧里的 transform 会一直留在
    .page 上（计算值是 identity 矩阵而不是 none），于是 .page 成了 position:fixed 后代的
    包含块，确认弹窗 / 表情挑选器 / 分类面板都会错位。fill 用默认值，动画结束即回到无 transform。 */
@@ -2324,6 +2329,12 @@ html[data-theme="light"] /* 危险操作卡片：描边没了，改用一层很�
 
 .post-layout{ display:grid; grid-template-columns:minmax(0,1fr); gap:46px; }
 .post-article{ width:100%; max-width:var(--post-width, 820px); margin:0 auto; min-width:0; }
+/* 阅读页的标题区整体居中：大标题、日期·字数·阅读时长那行、标签，全落在同一条中轴线上。
+   上面那个「← 全部文章」是导航不是标题，仍然留在左上角。
+   「关于」页不跟 —— 它标题下面还有一段导语，居中会散（见 #/about 的说明）。 */
+html[data-route="post"] .post-head{ text-align:center; }
+html[data-route="post"] .post-head .post-meta{ justify-content:center; }
+html[data-route="post"] .post-head .post-head__tags{ justify-content:center; }
 .post-title{
   margin:0; font-size:clamp(27px,3.9vw,40px); font-weight:800;
   line-height:1.26; letter-spacing:-.02em;
@@ -2347,6 +2358,10 @@ html[data-theme="light"] /* 危险操作卡片：描边没了，改用一层很�
 .post-head::after{
   content:""; display:block; height:1px; margin-top:24px;
   background:linear-gradient(90deg, var(--border-strong), transparent 78%);
+}
+/* 标题居中之后，分隔线也跟着左右对称地淡出，不再是「左深右无」 */
+html[data-route="post"] .post-head::after{
+  background:linear-gradient(90deg, transparent, var(--border-strong) 26%, var(--border-strong) 74%, transparent);
 }
 
 .post-foot{ margin-top:58px; padding-top:26px; border-top:1px solid transparent; }
