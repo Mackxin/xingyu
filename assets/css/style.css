@@ -2361,6 +2361,13 @@ html[data-theme="light"] /* 危险操作卡片：描边没了，改用一层很�
 .post-pn__item b{ font-size:14px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .post-pn__k{ font-size:11.5px; color:var(--text-mute); }
 .post-pn__item--next{ text-align:right; align-items:flex-end; }
+/* 「也能左右滑/按方向键换篇」那一行提示：低调一点，别抢正文收尾 */
+.post-swipe-hint{
+  display:flex; align-items:center; justify-content:center; gap:8px;
+  margin:14px 0 0; font-size:12px; line-height:1.7; color:var(--text-mute); text-align:center;
+}
+.post-swipe-hint b{ color:var(--text-dim); font-weight:600; }
+.post-swipe-hint::before{ content:"⇠⇢"; letter-spacing:-1px; opacity:.55; font-size:13px; }
 .post-foot__end{ margin-top:24px; text-align:center; font-size:12px; color:var(--text-mute); }
 .post-foot__end span{ color:var(--a2); }
 .post-foot__back{ margin-top:18px; height:42px; padding:0 18px; border-radius:12px; font-size:13.5px; }

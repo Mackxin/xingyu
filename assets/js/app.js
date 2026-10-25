@@ -1094,7 +1094,13 @@
             '<span class="post-pn__k">← 更早一篇</span><b>' + esc(older.title) + '</b></a>' : '<span></span>') +
           (newer ? '<a class="post-pn__item post-pn__item--next" href="' + postHref(newer) + '">' +
             '<span class="post-pn__k">更新一篇 →</span><b>' + esc(newer.title) + '</b></a>' : '<span></span>') +
-        '</div>'
+        '</div>' +
+        /* 换篇的方式不止点链接：正文上左右滑、键盘 ← → 都行。按设备各说一句，
+           这也是给「能滑」这件事一个看得见的提示，否则没人会想到去划一下 */
+        '<p class="post-swipe-hint">' +
+          '<span class="hint-touch">在正文上<b>左右滑动</b>，也能换上一 / 下一篇文章</span>' +
+          '<span class="hint-desk">按 <b>←</b> <b>→</b> 键（或触控板横向滑动）也能换上一 / 下一篇文章</span>' +
+        '</p>'
       : '';
 
     var toc = (heads.length >= 3 && READ_CFG.toc !== false)
@@ -1218,14 +1224,26 @@
     catch (e) { try { location.hash = '#/' + route; } catch (e2) {} }
     render(dir ? { dir: dir } : { animate: false });
   }
-  /* 打开一篇文章（详情页不参与左右滑动） */
-  function openPost(id) {
+  /* 打开一篇文章。dir 有值 = 从左右滑过来（播方向动画），没值 = 直接打开 */
+  function openPost(id, dir) {
     var p = findPost(id);
     state.route = 'post';
     state.postId = (p && p.id) || id;
     try { history.pushState(null, '', '#/post/' + encodeURIComponent(state.postId)); }
     catch (e) { try { location.hash = '#/post/' + encodeURIComponent(state.postId); } catch (e2) {} }
-    render({ animate: false });
+    render(dir ? { dir: dir } : { animate: false });
+  }
+  /* 下/上一篇的 id：delta=+1 是更早的一篇，-1 是更新的一篇（和 renderPost 里
+     「更早一篇 / 更新一篇」用的是同一个 postList 顺序）。到头了返回空。 */
+  function neighborPost(delta) {
+    if (!state.postId) return '';
+    var list = postList();
+    for (var i = 0; i < list.length; i++) {
+      if (list[i].id !== state.postId) continue;
+      var j = i + delta;
+      return (j >= 0 && j < list.length) ? list[j].id : '';
+    }
+    return '';
   }
   /* 浏览器前进/后退 */
   function syncFromHash() {
@@ -1236,6 +1254,15 @@
       render({ animate: false });
     }
   }
+  /* 按 id 渲染一篇文章。renderPost() 读的是 state.postId，这里临时借一下再还回去 ——
+     同步执行，不留中间态。文章页左右滑动的"邻页"就是靠它提前画出来的。 */
+  function postHtmlById(id) {
+    var bak = state.postId;
+    state.postId = id;
+    var html = renderPost();
+    state.postId = bak;
+    return html;
+  }
   /* 只算某个路由的页面 HTML：不碰 DOM、不跑副作用。
      左右滑动时用它先把"邻页"备好，手指慢慢划就能看到下一页的内容了。
      postId 显式传 null 表示"文章列表"（邻页不可能是正在读的那一篇）。 */
@@ -1245,7 +1272,7 @@
          ? (window.XY_ADMIN ? window.XY_ADMIN.render() : renderHome())
          : route === 'nav' ? renderNavCached()
          : route === 'share' ? renderShare()
-         : route === 'post' ? (pid ? renderPost() : renderPosts())
+         : route === 'post' ? (pid ? postHtmlById(pid) : renderPosts())
          : route === 'about' ? renderAbout()
          : renderHome();
   }
@@ -2588,19 +2615,27 @@
     return false;
   }
 
-  /* ---------- 左右滑动切换页面 ---------- */
+  /* ---------- 左右滑动切换页面 / 切换文章 ---------- */
   function initSwipe() {
+    /* 目标页统一写成 { route, postId }。
+       - 在文章阅读页：换的是「上/下一篇文章」，同一个 route、换 postId
+       - 别的列表页：按 ROUTES 换 tab */
     function stepTarget(delta) {
-      if (ROUTES.indexOf(state.route) < 0) return null;        // 后台等页面不参与
-      if (state.route === 'post' && state.postId) return null; // 阅读页不参与，免得不小心划走
+      if (state.route === 'post' && state.postId) {
+        var nid = neighborPost(delta);
+        return nid ? { route: 'post', postId: nid } : null;     // 到头了，不循环
+      }
+      if (ROUTES.indexOf(state.route) < 0) return null;         // 后台等页面不参与
       var i = ROUTES.indexOf(state.route) + delta;
-      if (i < 0 || i >= ROUTES.length) return null;            // 不循环，首尾即止
-      return ROUTES[i];
+      if (i < 0 || i >= ROUTES.length) return null;             // 不循环，首尾即止
+      return { route: ROUTES[i], postId: '' };
     }
-    function step(delta, dir) {
-      var route = stepTarget(delta);
-      if (route) navigate(route, dir);
+    function goTarget(t, dir) {
+      if (!t) return;
+      if (t.route === 'post' && t.postId) { openPost(t.postId, dir); return; }
+      navigate(t.route, dir);
     }
+    function step(delta, dir) { goTarget(stepTarget(delta), dir); }
     function pageEl() { var app = $('#app'); return app ? app.firstElementChild : null; }
 
     /* 1) 触屏滑动：双页跟手
@@ -2615,11 +2650,12 @@
     /* 把邻页造出来，塞在 #app 里、绝对定位盖在内容区上，初始停在视口外侧。
        纵向位置要对齐"视口顶部"（而不是文档顶部）：页面已经滚到中间时划过来，
        看到的就是新页的开头，松手换页正好归零，视觉上才接得住。 */
-    function makeGhost(route, delta) {
+    function makeGhost(t, delta) {
       var app = $('#app');
       if (!app) return null;
       var box = document.createElement('div');
-      box.innerHTML = routeHtml(route, null);       // 邻页只可能是"文章列表"，不会是某篇文章
+      /* 邻页可能是「文章列表」，也可能是上/下一篇文章 —— 都由 stepTarget 给的 {route, postId} 决定 */
+      box.innerHTML = routeHtml(t.route, t.postId);
       var g = box.firstElementChild;
       if (!g) return null;
       var pt = parseFloat(getComputedStyle(app).paddingTop) || 0;
@@ -2718,7 +2754,7 @@
         moveGhost(ghost, 0);
       }
       var target = d.target;
-      setTimeout(function () { navigate(target); }, dur - 20);   // 不传 dir：动画已经播完了
+      setTimeout(function () { goTarget(target); }, dur - 20);   // 不传 dir：动画已经播完了
       // 等这一轮彻底落定再恢复毛玻璃，中途恢复会逐帧重采样、白掉帧
       moveTimer = setTimeout(function () { document.body.classList.remove('is-page-move'); }, dur + 120);
     }, { passive: true });
@@ -2782,13 +2818,21 @@
     if (idx > -1) { e.preventDefault(); navigate(ROUTES[idx]); return; }
     if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
       if (isInHScroll(e.target)) return;              // 横向可滚的容器，方向键留给它
-      if (state.route === 'post' && state.postId) return;  // 阅读页让给正常滚动
+      var ar = e.key === 'ArrowRight' ? 1 : -1;
+      /* 文章阅读页：←/→ 切上/下一篇，跟左右滑动一个意思。没有邻篇就不拦（留给正常滚动） */
+      if (state.route === 'post' && state.postId) {
+        var nid = neighborPost(ar);
+        if (!nid) return;
+        e.preventDefault();
+        openPost(nid, ar > 0 ? 'right' : 'left');
+        return;
+      }
       var i = ROUTES.indexOf(state.route);
       if (i < 0) return;                              // 后台等页面不参与
-      var j = i + (e.key === 'ArrowRight' ? 1 : -1);
+      var j = i + ar;
       if (j < 0 || j >= ROUTES.length) return;
       e.preventDefault();
-      navigate(ROUTES[j], e.key === 'ArrowRight' ? 1 : -1);
+      navigate(ROUTES[j], ar);
       return;
     }
     var low = String(e.key || '').toLowerCase();
