@@ -27,7 +27,8 @@ window.SITE_BOOKMARKS = (function () {
   },
   {
   "n": "灵感随记",
-  "u": "http://yihaozhan.xyz/linggan.html"
+  "u": "#/idea",
+  "d": "想到什么记一句，#标签 自动归类"
   },
   {
   "n": "游猴脚本",

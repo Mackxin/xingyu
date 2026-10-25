@@ -24,7 +24,7 @@
 
   /* 配置版本号：只用来判断「这份本地配置是按哪一版默认值存的」，
      升级默认值时做一次性迁移（见 Store.get）。改默认值才需要 +1。 */
-  var CFG_VER = 2;
+  var CFG_VER = 3;
 
   var DEFAULTS = {
     siteName: '星屿',
@@ -41,7 +41,9 @@
     logoImage: '',             // 顶栏 Logo 图片（data URL 或网址）；空 = 内置星形 SVG
     favicon: '',               // 浏览器标签图标；空 = 内置 SVG
     startDate: '2024-01-01',   // 建站日期（YYYY-MM-DD）—— 首页「成长天数」从这里算
-    customLinks: [],           // { icon, name, url } —— 最多 MAX_LINKS 个
+    /* { icon, name, url } —— 最多 MAX_LINKS 个。默认放一条「灵感随记」，
+       它就在本站里（#/idea），顶栏点一下就到 */
+    customLinks: [{ icon: '✨', name: '灵感随记', url: '#/idea' }],
 
     /* ---------- 主题外观（后台「主题」页） ---------- */
     theme: {
@@ -495,6 +497,17 @@
            所以没带 _ver 的老配置一律丢掉 showIcons，让新的默认值生效；
            升级之后你手动开的开关带 _ver 存着，不会被再重置。 */
         if (!ls._ver) delete ls.showIcons;
+        /* v2 → v3：本站新增「灵感随记」（#/idea），默认把它放进顶栏自定义链接。
+           以前只要在后台存过任何一项设置，customLinks 就会被固化成当时的值（多半是空数组），
+           默认值再怎么改也进不来 —— 所以这里补一条。只补这一条，你自己加的一条不动；
+           要是你已经手动加过 #/idea，就不重复加。 */
+        if (!ls._ver || Number(ls._ver) < 3) {
+          var cl = Array.isArray(ls.customLinks) ? ls.customLinks : [];
+          var hasIdea = cl.some(function (l) { return l && String(l.url || '').indexOf('#/idea') > -1; });
+          if (!hasIdea && cl.length < MAX_LINKS) {
+            ls.customLinks = [{ icon: '✨', name: '灵感随记', url: '#/idea' }].concat(cl);
+          }
+        }
         out = pick(out, ls);
       }
       return out;

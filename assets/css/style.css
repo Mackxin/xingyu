@@ -2832,6 +2832,116 @@ html[data-readfont="serif"] .look-paper{
 }
 
 /* =========================================================
+   灵感随记（#/idea）
+   ---------------------------------------------------------
+   和站里其它页一个调子：不铺白底、不描边、不用阴影，
+   分区全靠 --glass / --glass-2 两档极淡底色 + 圆角。
+   ========================================================= */
+.page--idea{ padding-bottom:48px; }
+.page-head--idea{ align-items:flex-start; }
+.idea-tools{ display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; margin-top:10px; }
+.idea-tools .btn{ height:34px; padding:0 14px; font-size:12.5px; }
+
+/* ---- 写一条 ---- */
+.idea-composer{
+  padding:16px 18px 14px; border-radius:var(--r-lg);
+  background:var(--glass); border:1px solid transparent;
+  transition:background .3s var(--ease);
+}
+.idea-composer:focus-within{ background:var(--glass-2); }
+.idea-composer textarea{
+  display:block; width:100%; min-height:100px; resize:vertical;
+  padding:0; border:0; outline:none; background:none;
+  color:var(--text); font:inherit; font-size:15px; line-height:1.85;
+}
+.idea-composer textarea::placeholder{ color:var(--text-mute); }
+.idea-composer__foot{
+  display:flex; align-items:center; justify-content:space-between;
+  gap:12px; flex-wrap:wrap; margin-top:12px;
+}
+.idea-tip{ font-size:12px; color:var(--text-mute); }
+
+/* ---- 标签条 ---- */
+.idea-rail{
+  display:flex; align-items:center; flex-wrap:wrap; gap:8px;
+  margin:18px 0 16px;
+}
+.idea-rail__n{ margin-left:3px; font-size:11px; opacity:.7; font-variant-numeric:tabular-nums; }
+.idea-rail__tip{ font-size:12px; color:var(--text-mute); }
+
+/* ---- 卡片墙：瀑布流，省高度也不留空格 ---- */
+.idea-grid{ columns:300px; column-gap:14px; }
+.idea-card{
+  display:inline-block; width:100%; margin:0 0 14px;
+  padding:16px 18px; border-radius:var(--r);
+  background:var(--glass); border:1px solid transparent;
+  vertical-align:top;
+  break-inside:avoid; -webkit-column-break-inside:avoid;
+  transition:background .3s var(--ease);
+}
+.idea-card:hover{ background:var(--glass-2); }
+.idea-card.is-editing{ background:var(--glass-2); }
+/* 卡片里的 Markdown 收紧一档：正文的行距是给长文用的，小卡片里太散 */
+.idea-card__body.md{
+  font-size:14.5px; line-height:1.8; color:var(--text-dim);
+}
+.idea-card__body.md > :first-child{ margin-top:0; }
+.idea-card__body.md > :last-child{ margin-bottom:0; }
+.idea-card__body.md p{ margin:.5em 0; }
+.idea-card__body.md h1,
+.idea-card__body.md h2,
+.idea-card__body.md h3{ margin:.7em 0 .35em; font-size:15.5px; }
+.idea-card__body.md ul,
+.idea-card__body.md ol{ margin:.5em 0; padding-left:1.25em; }
+.idea-card__body.md blockquote{ margin:.6em 0; }
+.idea-card__body.md pre{ margin:.6em 0; font-size:12.5px; }
+.idea-card__raw{ margin:0; color:var(--text-dim); white-space:pre-wrap; }
+
+.idea-card__foot{
+  display:flex; align-items:center; justify-content:space-between;
+  gap:10px; flex-wrap:wrap; margin-top:12px;
+}
+.idea-card__meta{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; min-width:0; }
+.idea-card__date{ font-size:11.5px; color:var(--text-mute); font-variant-numeric:tabular-nums; }
+.idea-card__tags{ display:inline-flex; align-items:center; gap:6px; flex-wrap:wrap; }
+.idea-card__tags .tag{ padding:2px 9px; font-size:11.5px; }
+.idea-card__ops{ display:inline-flex; align-items:center; gap:6px; }
+
+.idea-mini{
+  padding:3px 7px; border:0; border-radius:8px; background:none;
+  font:inherit; font-size:12px; color:var(--text-mute); cursor:pointer;
+  transition:color .2s var(--ease), background .2s var(--ease);
+}
+.idea-mini:hover{ color:var(--a1); background:var(--glass-hi); }
+.idea-mini--del:hover{ color:#ff8f8f; }
+
+/* 就地编辑 */
+.idea-edit{
+  display:block; width:100%; min-height:92px; resize:vertical;
+  padding:10px 12px; border:0; border-radius:12px; outline:none;
+  background:var(--glass-hi); color:var(--text);
+  font:inherit; font-size:14.5px; line-height:1.8;
+}
+.idea-edit__ops{ display:flex; justify-content:flex-end; gap:8px; margin-top:10px; }
+/* 卡片里的「取消 / 保存」用正常尺寸会把卡撑得很高，小一号正好 */
+.idea-edit__ops .btn--mini{ height:32px; padding:0 13px; border-radius:9px; font-size:12.5px; }
+
+@media (max-width:960px){
+  .idea-tools{ width:100%; justify-content:flex-start; }
+}
+@media (max-width:640px){
+  .page-head--idea{ align-items:stretch; }
+  .idea-tools{ justify-content:center; }
+  .idea-grid{ columns:1; }
+  .idea-composer{ padding:14px 15px 12px; }
+  .idea-composer textarea{ min-height:88px; font-size:14.5px; }
+  .idea-composer__foot{ flex-direction:column-reverse; align-items:stretch; }
+  .idea-composer__foot .btn{ width:100%; }
+  .idea-tip{ text-align:center; }
+  .idea-rail{ gap:7px; margin:16px 0 14px; }
+}
+
+/* =========================================================
    后台 · 分享条目（列表行复用 .post-admin-row）
    ========================================================= */
 .feed-preview{ padding:16px 18px; }

@@ -3056,15 +3056,28 @@
   }
 
   /* ---------- 备份数据打包 ---------- */
+  /* 灵感随记（#/idea）的正文只存在本机，前台自己管自己的 key；
+     备份 / 云同步这边直接读写同一个 key，换设备时不会把它落下。 */
+  var IDEA_STORE = 'xingyu.idea.v1';
+  function ideasAll() {
+    try { var v = JSON.parse(localStorage.getItem(IDEA_STORE)); return Array.isArray(v) ? v : []; }
+    catch (e) { return []; }
+  }
+  function setIdeas(list) {
+    try { localStorage.setItem(IDEA_STORE, JSON.stringify(Array.isArray(list) ? list : [])); return true; }
+    catch (e) { return false; }
+  }
+
   function backupObject() {
     return {
       app: 'xingyu',
-      version: 4,
+      version: 5,
       exportedAt: new Date().toISOString(),
       config: Store.get(),
       data: Store.dataAll(),
       feed: Store.feedAll(),
-      posts: Store.postsAll()
+      posts: Store.postsAll(),
+      ideas: ideasAll()      /* v123 起：灵感随记也一起带走（老备份里没有这个字段，恢复时跳过） */
     };
   }
 
@@ -3084,6 +3097,7 @@
     }
     if (Array.isArray(obj.feed)) parts.push(obj.feed.length + ' 条分享');
     if (Array.isArray(obj.posts)) parts.push(obj.posts.length + ' 篇文章');
+    if (Array.isArray(obj.ideas)) parts.push(obj.ideas.length + ' 条灵感');
     if (obj.config && typeof obj.config === 'object') {
       var cn = (obj.config.customLinks || []).length;
       parts.push('站点设置' + (cn ? '（含 ' + cn + ' 个自定义链接）' : ''));
@@ -3097,6 +3111,7 @@
     if (Array.isArray(obj.data)) Store.setData(obj.data);
     if (Array.isArray(obj.feed)) Store.setFeed(obj.feed);
     if (Array.isArray(obj.posts)) Store.setPosts(obj.posts);
+    if (Array.isArray(obj.ideas)) setIdeas(obj.ideas);
   }
 
   function stamp() {
@@ -3146,14 +3161,15 @@
     var a = app();
     return {
       app: 'xingyu',
-      version: 4,
+      version: 5,
       exportedAt: new Date().toISOString(),
       config: Store.get(),
       data: Store.dataAll(),
       feed: Store.feedAll(),
       posts: Store.postsAll(),
       fav: (a.fav && a.fav.get) ? a.fav.get() : [],
-      visits: (a.visits && a.visits.get) ? a.visits.get() : {}
+      visits: (a.visits && a.visits.get) ? a.visits.get() : {},
+      ideas: ideasAll()
     };
   }
 
@@ -3484,6 +3500,8 @@
       kv('<code>xingyu.feed.v1</code>', '分享条目；没改过就用 <code>data.js</code> 里的'),
       kv('<code>xingyu.posts.v1</code>', '文章；没写过就用 <code>data.js</code> 里的'),
       kv('<code>xingyu.fav.v1</code>', '收藏夹（星标过的站点网址）；和最近访问一起会进「云备份」'),
+      kv('<code>xingyu.idea.v1</code>', '灵感随记的条目（正文 / 标签 / 时间）；会跟着「下载备份」和「云备份」一起走'),
+      kv('<code>xingyu.idea.draft.v1</code>', '灵感随记里还没提交的草稿，切页不丢，保存后自动清掉'),
       kv('<code>xingyu.recent.v1</code>', '最近访问'),
       kv('<code>xingyu.export.v1</code>', '上次「发布到虚拟主机」导出的时间与签名，用来判断有没有没导出的改动'),
       kv('<code>xingyu.hist.v1</code>', '版本历史：改动前的旧版本 + 手动快照，最多 14 份 / 1.6 MB。手动快照不会被自动记录挤掉，最多留 5 份')
