@@ -842,7 +842,7 @@ html[data-theme="light"] .btn--primary{ color:#fff; }
    注意：卡片里那两颗 ☆ / ⧉ 按钮是参与布局的（常驻宽度、只是透明度为 0），
    所以卡片宽度 = 名字 + 按钮 + 内距，这也是把按钮做小的原因（见 .mini-btn）。 */
 .link-grid{
-  display:flex; flex-wrap:wrap; align-items:stretch; gap:10px;
+  display:flex; flex-wrap:wrap; align-items:stretch; gap:8px;
 }
 .link-card{
   position:relative; display:flex; align-items:center; gap:10px;
@@ -889,7 +889,7 @@ html[data-cat-icon="off"] #headerCatEmoji{ display:none; }
    （宽度不用管了 —— 现在是 flex，卡片本来就贴着名字。） */
 @media (min-width:641px){
   html[data-icons="off"][data-desc="off"] .link-card{ padding:4px 11px; gap:8px; }
-  html[data-icons="off"][data-desc="off"] .link-grid{ gap:7px; }
+  html[data-icons="off"][data-desc="off"] .link-grid{ gap:5px; }
 }
 
 /* ---------- 置顶 ---------- */
@@ -928,11 +928,11 @@ html[data-cat-icon="off"] #headerCatEmoji{ display:none; }
    现在卡片宽度由文字决定，密度只调「字号 / 内距 / 间距」，不再改列宽。
    只在宽屏生效：手机端有自己的一套（见 max-width:640px 那条规则）。 */
 @media (min-width:641px){
-  html[data-density="compact"] .link-grid{ gap:6px; }
+  html[data-density="compact"] .link-grid{ gap:4px; }
   html[data-density="compact"] .link-card{ padding:3px 9px; gap:6px; border-radius:10px; }
   html[data-density="compact"] .link-card__name{ font-size:13.5px; }
   html[data-density="compact"] .link-card__desc{ font-size:11px; }
-  html[data-density="comfy"] .link-grid{ gap:13px; }
+  html[data-density="comfy"] .link-grid{ gap:10px; }
   html[data-density="comfy"] .link-card{ padding:15px 16px; gap:12px; }
   html[data-density="comfy"] .link-card__name{ font-size:15.5px; }
   html[data-density="comfy"] .link-card__desc{ font-size:12.5px; margin-top:4px; }
@@ -1497,7 +1497,7 @@ html[data-theme="light"] .tl-date{ box-shadow:none; }
   .link-grid,
   html[data-density] .link-grid,
   html[data-icons="off"][data-desc="off"] .link-grid{
-    display:flex; flex-wrap:wrap; align-items:flex-start; gap:7px;
+    display:flex; flex-wrap:wrap; align-items:flex-start; gap:5px;   /* 上下行距也收一点，一屏能多看一排 */
     grid-template-columns:none;   /* 桌面是网格，手机端换成 flex，这句把网格列清掉 */
   }
   .link-card,
@@ -1508,7 +1508,7 @@ html[data-theme="light"] .tl-date{ box-shadow:none; }
     display:flex; flex-direction:column; flex:0 1 auto;
     align-items:stretch;   /* 必须显式写：桌面那条 align-items:center 在竖排里会变成横向居中，名字就忽左忽右了 */
     min-width:0; max-width:100%;
-    padding:9px 11px; border-radius:11px;
+    padding:7px 11px; border-radius:11px;   /* 竖向内距收到 7px：行距再压一档，一屏多一排站点 */
     -webkit-touch-callout:none;   /* 长按时别弹系统自带的链接菜单 */
   }
   .link-card .glyph{ display:none; }   /* 手机端卡片不带左侧图标，只留名称 + 简介 */
