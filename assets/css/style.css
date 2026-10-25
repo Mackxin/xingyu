@@ -570,6 +570,35 @@ html[data-theme="light"] .btn--primary{ color:#fff; }
 /* 用自定义图片替换内置插画时 */
 .portrait-inner--img{ padding:0; }
 .portrait-img{ display:block; width:100%; height:100%; }
+
+/* ---- 大图形状（后台「首页内容 → 首屏图片 → 大图形状」） ----
+   square 正方形：原来的样子，300px 见方。
+   wide   长方形：铺满右栏、16:9，适合横幅 / 截图这类长图（右栏窄的时候不至于只剩一条）。
+   auto   跟随原图比例：完全不裁，高度由图片自己撑开 —— 方图、长图、竖图都对。 */
+.hero__portrait--wide{
+  width:100%; max-width:520px; aspect-ratio:16 / 9; border-radius:24px;
+}
+.hero__portrait--wide::before{ border-radius:28px; }
+.hero__portrait--wide .portrait-inner{ border-radius:22px; }
+.hero__portrait--auto{
+  width:100%; max-width:520px; aspect-ratio:auto; height:auto; border-radius:24px;
+}
+.hero__portrait--auto::before{ border-radius:28px; }
+.hero__portrait--auto .portrait-inner{ border-radius:22px; height:auto; }
+.hero__portrait--auto .portrait-img{ height:auto; }
+/* 大图设了跳转：整块变成链接，给一点点「能点」的反馈 */
+.hero__portrait--link{ display:block; text-decoration:none; }
+.hero__portrait--link .portrait-inner{ transition:transform .45s var(--ease); }
+.hero__portrait--link:hover .portrait-inner{ transform:translateY(-4px); }
+.hero__portrait--link::after{
+  content:"↗"; position:absolute; right:14px; top:12px; z-index:2;
+  width:26px; height:26px; border-radius:50%;
+  display:grid; place-items:center; font-size:13px; line-height:1;
+  color:var(--text); background:var(--glass-hi);
+  backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+  opacity:0; transform:scale(.8); transition:all .35s var(--ease);
+}
+.hero__portrait--link:hover::after{ opacity:1; transform:none; }
 .portrait-badge{
   position:absolute; left:50%; bottom:-16px; transform:translateX(-50%);
   padding:8px 18px; border-radius:99px; white-space:nowrap;
@@ -642,6 +671,20 @@ html[data-theme="light"] .btn--primary{ color:#fff; }
   opacity:.75; transition:transform .6s var(--ease);
 }
 .bento__item:hover .bento__spark{ transform:scale(1.35); }
+
+/* 大屏（≥1180px）：一行最多 4 列。
+   6 列 + 每张占 2 列的老排法一行只放得下 3 张，4 张卡时第 4 张会孤零零落到第二行、
+   右边还空一大块。改成 4 列后 4 张正好铺满一行。
+   卡变窄了，所以图标和内距跟着收一点，标题才不会被挤成两行。 */
+@media (min-width:1180px){
+  .bento{ grid-template-columns:repeat(4,1fr); }
+  .bento__item,
+  .bento__item:last-child{ grid-column:span 1; padding:20px; column-gap:12px; }
+  .bento__item--wide{ grid-column:span 2; }
+  .bento__icon{ width:46px; height:46px; border-radius:14px; font-size:21px; }
+  .bento__item h3{ font-size:17.5px; }
+  .bento__item p{ font-size:12.8px; line-height:1.7; }
+}
 
 /* 首页精选轨道 */
 .featured{ margin-top:clamp(34px,5vw,60px); }
@@ -1295,6 +1338,9 @@ html[data-theme="light"] .tl-date{ box-shadow:none; }
 @media (max-width:960px){
   .hero{ grid-template-columns:1fr; text-align:left; }
   .hero__portrait{ order:-1; width:min(220px,58vw); }
+  /* 长方形 / 跟随原图这两档在窄屏上给足宽度，别跟正方形一样憋成 220px */
+  .hero__portrait--wide,
+  .hero__portrait--auto{ width:min(420px,100%); max-width:100%; }
   .stats{ grid-template-columns:repeat(2,1fr); }
   .bento__item{ grid-column:span 3; }
   .bento__item:last-child{ grid-column:span 6; }
@@ -2026,6 +2072,43 @@ body.is-dragging-row, body.is-dragging-row *{ cursor:grabbing !important; }
 
 /* --- 首页：统计 / 卡片编辑行 --- */
 .arows{ display:flex; flex-direction:column; gap:6px; margin-top:14px; }
+
+/* ---- 赞助收款码编辑行（后台「首页内容 → 赞助」） ----
+   一行 = 左边 64px 小预览 + 右边三行输入（名字 / 跳转 / 图片网址）。
+   名字那行还塞了「上传 / 清除 / 删除」三个小按钮，所以单独一层 flex。 */
+.coderows{ display:flex; flex-direction:column; gap:10px; margin-top:12px; }
+.coderow{
+  display:flex; align-items:flex-start; gap:12px;
+  padding:12px; border-radius:14px; background:var(--glass);
+}
+.coderow__prev{
+  flex:0 0 auto; width:64px; height:64px; border-radius:12px; overflow:hidden;
+  display:grid; place-items:center; background:var(--glass-2);
+  font-size:11px; color:var(--text-mute); text-align:center;
+}
+.coderow__prev img{ width:100%; height:100%; object-fit:contain; display:block; }
+.coderow__body{ flex:1 1 auto; min-width:0; display:flex; flex-direction:column; gap:7px; }
+.coderow__line{ display:flex; align-items:center; gap:7px; }
+.coderow__line input{ flex:1 1 auto; min-width:0; }
+.coderow input[type="text"]{
+  width:100%; height:33px; padding:0 9px; border-radius:8px; font-size:12.5px;
+  background:var(--glass-hi); border:1px solid transparent; color:var(--text-dim); outline:none;
+  font-family:inherit; transition:box-shadow .25s var(--ease), color .25s var(--ease);
+}
+.coderow input[type="text"]:focus{ color:var(--text); box-shadow:0 0 0 3px rgba(124,156,255,.14); }
+.coderow .btn--mini{ height:33px; padding:0 11px; border-radius:9px; font-size:12px; flex:0 0 auto; }
+.coderow__del{
+  flex:0 0 auto; width:30px; height:30px; border-radius:9px; display:grid; place-items:center;
+  color:var(--text-mute); font-size:13px; cursor:pointer;
+  transition:all .25s var(--ease);
+}
+.coderow__del:hover{ color:#e2675c; background:var(--glass-hi); }
+@media (max-width:640px){
+  .coderow{ flex-wrap:wrap; }
+  .coderow__body{ flex-basis:100%; }
+  .coderow__line{ flex-wrap:wrap; }
+}
+
 .srow{ display:grid; grid-template-columns:auto 158px 96px minmax(70px,1fr) auto; gap:8px; align-items:center; }
 .erow{ display:grid; grid-template-columns:auto 54px minmax(60px,1fr) minmax(0,1.6fr) minmax(0,1.2fr) auto auto; gap:8px; align-items:center; }
 .srow input, .srow select, .erow input{
@@ -2923,8 +3006,36 @@ html[data-readfont="serif"] .look-paper{
   font-size:46px; line-height:1;
   background:radial-gradient(circle at 40% 30%, rgba(124,156,255,.24), rgba(180,124,255,.13));
 }
+
+/* 多张收款码：支付宝 / 微信 / 云闪付…各一张，横向排开，放不下自动换行。
+   每张 = 图 + 下面一行小名字（名字留空就只有图）。设了跳转的整张可点。 */
+.sponsor__codes{
+  /* flex:0 1 auto —— 必须能「缩」。写 0 0 auto 的话几张码加起来超过一行宽时
+     它会硬顶出去（3 张 112px 在 390 屏上就溢出 38px，整页多出一条横向滚动），
+     改成可收缩后由内部的 flex-wrap 自己换行。 */
+  flex:0 1 auto; min-width:0; max-width:100%;
+  display:flex; align-items:flex-start; justify-content:flex-end;
+  flex-wrap:wrap; gap:12px; margin-left:auto;
+}
+.sponsor__code{
+  display:flex; flex-direction:column; align-items:center; gap:7px;
+  text-decoration:none; color:inherit;
+}
+.sponsor__code img{
+  display:block; width:132px; height:132px; object-fit:contain;
+  border-radius:16px; background:var(--glass-2);
+  transition:transform .35s var(--ease);
+}
+.sponsor__code-label{
+  font-size:11.5px; color:var(--text-mute); letter-spacing:.04em; white-space:nowrap;
+}
+a.sponsor__code:hover img{ transform:translateY(-4px); }
+a.sponsor__code:hover .sponsor__code-label{ color:var(--text); }
 @media (max-width:640px){
   .sponsor{ gap:18px; }
   .sponsor__media{ width:100%; max-width:170px; height:auto; aspect-ratio:1; }
+  /* 手机上收款码靠左排、缩到 112px，两张并排正好放下 */
+  .sponsor__codes{ flex:1 1 100%; justify-content:flex-start; margin-left:0; gap:10px; }
+  .sponsor__code img{ width:112px; height:112px; border-radius:14px; }
   .about-actions .btn{ height:42px; font-size:13px; padding:0 18px; }
 }

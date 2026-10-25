@@ -75,6 +75,8 @@
       badge: '🛰️ 持续更新中',
       image: '',               // 首页右侧大图；空 = 内置插画
       imageFit: 'cover',       // cover | contain
+      imageShape: 'square',    // square 正方形 | wide 长方形 | auto 跟随图片原比例
+      imageLink: '',           // 点大图跳到哪；留空 = 图不可点
       stats: [
         { auto: 'cats',  n: '', s: '主题岛屿' },
         { auto: 'links', n: '', s: '站点坐标' },
@@ -98,6 +100,11 @@
       sponsorDesc: '这座小岛是一个人搭的，没有广告，也没有赞助商 banner。如果这里的东西帮到过你，可以随意打赏一杯咖啡的钱；不方便也完全没关系——常来坐坐就很好。',
       sponsorNote: '微信 / 支付宝扫码 · 随意就好',
       sponsorImage: '',        // 收款码 / 赞助图（data URL 或网址）；空 = 只显示文字
+      /* 收款码可以放好几张（支付宝 / 微信 / 云闪付…），每张单独配名字和跳转链接。
+         一条 = { src: 图片, label: 名字, link: 点击去哪 }；src 为空的那条直接忽略。
+         这个数组有内容时优先用它；为了兼容老配置，空数组 + sponsorImage 有图时
+         会退化成一张（见 app.js 的渲染）。 */
+      sponsorCodes: [],
       sponsorLink: ''          // 可选：点一下跳到你的赞赏页
     },
 
@@ -176,6 +183,7 @@
   var AUTO_KEYS = ['cats', 'links', 'feed', 'days', 'posts'];
   var MAX_STATS = 6;
   var MAX_ENTRIES = 8;
+  var MAX_SPONSOR_CODES = 6;        // 首页赞助最多几张收款码（支付宝 / 微信 / 云闪付…）
   var MAX_FEATURED_PICKS = 12;      // 「今日精选」最多指定几条，和 featuredCount 上限一致
   var MAX_IMG_CHARS = 2200000;   // 图片 data URL 上限（约 1.6MB 二进制）
   var ACCENTS = ['aurora', 'ocean', 'sunset', 'forest', 'grape', 'sakura', 'ink', 'custom'];
@@ -239,6 +247,22 @@
     });
   }
 
+  /* 赞助收款码：一个数组，每条 { src, label, link }。
+     src 走 imgStr 白名单（data: / http(s) / 相对路径都行），超长直接丢掉；
+     名字 12 字、链接 300 字封顶；最多 MAX_SPONSOR_CODES 条。
+     只留 src 有内容的那几条 —— 后台点了「＋ 添加」还没传图时不会冒出个空框。 */
+  function normCodes(list) {
+    if (!Array.isArray(list)) return [];
+    return list.slice(0, MAX_SPONSOR_CODES).map(function (c) {
+      c = c || {};
+      return {
+        src: imgStr(c.src),
+        label: str(c.label, '', 12),
+        link: str(c.link, '', 300)
+      };
+    });
+  }
+
   /* 「今日精选」指定了哪几条：存的是 feedKey（日期|标题），去重、最多 12 条 */
   function normPicks(list) {
     if (!Array.isArray(list)) return [];
@@ -270,6 +294,8 @@
       badge: src.badge == null ? d.badge : String(src.badge).slice(0, 40),
       image: imgStr(src.image),
       imageFit: src.imageFit === 'contain' ? 'contain' : 'cover',
+      imageShape: ['square', 'wide', 'auto'].indexOf(src.imageShape) >= 0 ? src.imageShape : d.imageShape,
+      imageLink: str(src.imageLink, d.imageLink, 300),
       stats: normStats(src.stats, d.stats),
       entries: normEntries(src.entries),
       featuredTitle: str(src.featuredTitle, d.featuredTitle, 24),
@@ -282,6 +308,7 @@
       sponsorDesc: str(src.sponsorDesc, d.sponsorDesc, 200),
       sponsorNote: str(src.sponsorNote, d.sponsorNote, 60),
       sponsorImage: imgStr(src.sponsorImage),
+      sponsorCodes: normCodes(src.sponsorCodes),
       sponsorLink: str(src.sponsorLink, d.sponsorLink, 300)
     };
   }
@@ -448,6 +475,7 @@
     MAX_LINKS: MAX_LINKS,
     MAX_STATS: MAX_STATS,
     MAX_ENTRIES: MAX_ENTRIES,
+    MAX_SPONSOR_CODES: MAX_SPONSOR_CODES,
     MAX_FEATURED_PICKS: MAX_FEATURED_PICKS,
     MAX_IMG_CHARS: MAX_IMG_CHARS,
     AUTO_KEYS: AUTO_KEYS,

@@ -464,19 +464,50 @@
 
     var cta1Ext = !isInternal(h.cta1Url);
 
+    /* 首页大图：形状三档 + 可选点击跳转。
+       square 正方形（原来的 300px）｜ wide 长方形（铺满右栏，16:9）｜ auto 跟着图片原始比例走，不裁。
+       后台没放图时一律按正方形（内置插画本来就是方的）。 */
+    var pShape = (h.image && (h.imageShape === 'wide' || h.imageShape === 'auto')) ? h.imageShape : 'square';
+    var pLink = String(h.imageLink || '').trim();
+    var pCls = 'hero__portrait' + (h.image ? ' hero__portrait--img' : '') + ' hero__portrait--' + pShape +
+               (pLink ? ' hero__portrait--link' : '');
+    var portraitInner =
+      '<div class="portrait-inner' + (h.image ? ' portrait-inner--img' : '') +
+        (pShape === 'auto' ? ' portrait-inner--auto' : '') + '">' +
+        (h.image
+          ? '<img class="portrait-img" src="' + esc(h.image) + '" alt="" style="object-fit:' + (h.imageFit === 'contain' ? 'contain' : 'cover') + '" />'
+          : portraitSvg()) +
+      '</div>' +
+      (h.badge ? '<span class="portrait-badge">' + esc(h.badge) + '</span>' : '');
+    var portraitHtml = pLink
+      ? '<a class="' + pCls + '" href="' + hrefOf(pLink) + '"' + (isInternal(pLink) ? '' : ' target="_blank" rel="noopener"') +
+        ' aria-label="' + esc(h.titleMain || '首页大图') + '">' + portraitInner + '</a>'
+      : '<div class="' + pCls + '">' + portraitInner + '</div>';
+
     /* 赞助：首页最下面那块小尾巴。
-       有图就摆图（一般是收款码截图），没图用一个 ☕ 徽章顶着，不至于空一块。
+       收款码可以放好几张（支付宝 / 微信 / 云闪付…），每张能单独配名字和跳转；
+       一张都没传就摆一个 ☕ 徽章顶着，不至于空一块。
        图 / 链接 / 开关都在后台「首页内容 → 赞助」里改。 */
     var sponsorBlock = '';
     if (h.sponsorOn) {
-      var spImg = h.sponsorImage || '';
       var spLink = h.sponsorLink || '';
-      var spMedia = spImg
-        ? (spLink
-            ? '<a class="sponsor__media" href="' + hrefOf(spLink) + '" target="_blank" rel="noopener">' +
-                '<img src="' + esc(spImg) + '" alt="赞助" loading="lazy" /></a>'
-            : '<span class="sponsor__media"><img src="' + esc(spImg) + '" alt="赞助" loading="lazy" /></span>')
-        : '<span class="sponsor__media sponsor__media--none" aria-hidden="true">☕</span>';
+      var codes = (h.sponsorCodes || []).filter(function (c) { return c && c.src; });
+      /* 老配置兼容：只有 sponsorImage 一张图的年代也能照常显示 */
+      if (!codes.length && h.sponsorImage) codes = [{ src: h.sponsorImage, label: '', link: spLink }];
+      var spMedia;
+      if (codes.length) {
+        spMedia = '<div class="sponsor__codes">' + codes.map(function (c) {
+          var inner = '<img src="' + esc(c.src) + '" alt="' + esc(c.label || '赞助码') + '" loading="lazy" />' +
+            (c.label ? '<span class="sponsor__code-label">' + esc(c.label) + '</span>' : '');
+          return c.link
+            ? '<a class="sponsor__code" href="' + hrefOf(c.link) + '"' +
+                (isInternal(c.link) ? '' : ' target="_blank" rel="noopener"') +
+                ' title="' + esc(c.label || '扫码支持') + '">' + inner + '</a>'
+            : '<span class="sponsor__code" title="' + esc(c.label || '扫码支持') + '">' + inner + '</span>';
+        }).join('') + '</div>';
+      } else {
+        spMedia = '<span class="sponsor__media sponsor__media--none" aria-hidden="true">☕</span>';
+      }
       sponsorBlock =
         '<div class="sponsor">' +
           '<div class="sponsor__copy">' +
@@ -510,14 +541,7 @@
             '<button class="btn btn--ghost" id="heroRandom" type="button">' + I.shuffle + ' ' + esc(h.cta2Text) + '</button>' +
           '</div>' +
         '</div>' +
-        '<div class="hero__portrait' + (h.image ? ' hero__portrait--img' : '') + '">' +
-          '<div class="portrait-inner' + (h.image ? ' portrait-inner--img' : '') + '">' +
-            (h.image
-              ? '<img class="portrait-img" src="' + esc(h.image) + '" alt="" style="object-fit:' + (h.imageFit === 'contain' ? 'contain' : 'cover') + '" />'
-              : portraitSvg()) +
-          '</div>' +
-          (h.badge ? '<span class="portrait-badge">' + esc(h.badge) + '</span>' : '') +
-        '</div>' +
+        portraitHtml +
       '</div>' +
       (statsHtml ? '<div class="stats">' + statsHtml + '</div>' : '') +
       (entriesHtml ? '<div class="bento">' + entriesHtml + '</div>' : '') +

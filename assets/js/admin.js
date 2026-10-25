@@ -2080,8 +2080,35 @@
       '</div>';
   }
 
-  /* 「今日精选」勾选列表：把「分享」里的条目全摆出来，勾上哪条首页就显示哪条。
-     笔记一条：分享现在有几百条（含「壹号讯息」导入的那批），一次全铺进 DOM 太重，
+  /* 一张收款码：左边预览，右边「名字 / 跳转 / 图片网址」三行。
+     图片可以上传（压到 480px）也可以直接填网址；上传过的行，网址框故意留空。 */
+  function codeRow(c, i) {
+    c = c || {};
+    var has = !!c.src;
+    var isData = has && c.src.indexOf('data:') === 0;
+    return '<div class="coderow" data-ci="' + i + '">' +
+        '<div class="coderow__prev" data-code-preview="' + i + '">' +
+          (has ? '<img src="' + esc(c.src) + '" alt="" />' : '<span>未放图</span>') +
+        '</div>' +
+        '<div class="coderow__body">' +
+          '<div class="coderow__line">' +
+            '<input type="text" data-code-f="label" value="' + esc(c.label) + '" maxlength="12"' +
+              ' placeholder="名字：支付宝 / 微信 / 云闪付" aria-label="收款码名称" />' +
+            '<button class="btn btn--ghost btn--mini" type="button" data-code-pick="' + i + '">📁 上传</button>' +
+            '<button class="btn btn--ghost btn--mini" type="button" data-code-clear="' + i + '"' +
+              (has ? '' : ' disabled') + '>↺ 清除</button>' +
+            '<button class="coderow__del" type="button" data-code-del="' + i + '" title="删掉这张">✕</button>' +
+          '</div>' +
+          '<input type="text" data-code-f="link" value="' + esc(c.link) + '" spellcheck="false"' +
+            ' placeholder="点击跳转（可选）：https://… 或 #/nav" aria-label="点击跳转地址" />' +
+          '<input type="text" data-code-f="src" value="' + (isData ? '' : esc(c.src)) + '" spellcheck="false"' +
+            ' placeholder="' + (isData ? '当前用的是上传的图片' : '或者填图片网址 https://…') + '" aria-label="图片网址" />' +
+          '<input type="file" accept="image/*" hidden data-code-file="' + i + '" />' +
+        '</div>' +
+      '</div>';
+  }
+
+  /* 「今日精选」勾选列表：把「分享」里的条目全摆出来，勾上哪条首页就显示哪条。     笔记一条：分享现在有几百条（含「壹号讯息」导入的那批），一次全铺进 DOM 太重，
      所以带个搜索框，最多只渲染 80 行，剩下的靠搜。 */
   var picksQuery = '';
   var PICKS_RENDER_MAX = 80;
@@ -2141,6 +2168,12 @@
     var a = Store.about();
     var stats = h.stats || [];
     var entries = h.entries || [];
+    /* 收款码列表。老配置只有一张 sponsorImage 时，把它当成第一张显示出来，
+       这样他第一次进这个面板就能直接改名 / 补链接，而不是看到一片空白。 */
+    var codes = (h.sponsorCodes || []).slice();
+    if (!codes.length && h.sponsorImage) {
+      codes = [{ src: h.sponsorImage, label: '', link: h.sponsorLink || '' }];
+    }
 
     return '<div class="admin-card">' +
         '<h2>首屏文字</h2>' +
@@ -2157,9 +2190,19 @@
 
       '<div class="admin-card">' +
         '<h2>首屏图片</h2>' +
-        '<p>默认是一张内置的星轨插画。你可以<b>上传自己的照片</b>替换它，也可以填一个网络图片地址。</p>' +
+        '<p>默认是一张内置的星轨插画。你可以<b>上传自己的照片</b>替换它，也可以填一个网络图片地址；' +
+          '图片是长方形还是正方形、点了要不要跳转，都在下面设。</p>' +
         imgPicker({ scope: 'home', key: 'image', val: h.image, wide: true, fit: true, fitVal: h.imageFit,
                     none: '内置星轨插画' }) +
+        '<label class="admin-field"><span class="admin-field__label">大图形状' +
+          '<em>图片本身是长方形就选长方形 / 跟随原图，方图就选正方形</em></span>' +
+          '<select data-home="imageShape">' +
+            '<option value="square"' + (h.imageShape === 'square' ? ' selected' : '') + '>正方形（300px 见方）</option>' +
+            '<option value="wide"' + (h.imageShape === 'wide' ? ' selected' : '') + '>长方形（铺满右栏，16:9）</option>' +
+            '<option value="auto"' + (h.imageShape === 'auto' ? ' selected' : '') + '>跟随图片原始比例（完全不裁切）</option>' +
+          '</select></label>' +
+        hfield('点击跳转', 'imageLink', h.imageLink,
+          '可选：点这张图跳到哪（站内写 #/nav，站外写完整网址）；留空 = 图不可点') +
         '<p class="admin-tip">上传的图片会自动压缩到 1100px 以内再保存，不会拖慢打开速度。' +
           '想换回插画，点「↺ 用回默认」。</p>' +
       '</div>' +
@@ -2245,8 +2288,8 @@
       '<div class="admin-card">' +
         '<div class="admin-card__head">' +
           '<div><h2>赞助</h2>' +
-            '<p>首页最下面那块小卡片。放一张收款码或赞助图，右边就会出现图片；' +
-            '填了链接还会多一个「去支持」按钮。</p></div>' +
+            '<p>首页最下面那块小卡片。收款码可以放<b>好几张</b>（支付宝 / 微信 / 云闪付…），' +
+            '一张一张排开；填了链接还会多一个「去支持」按钮。</p></div>' +
           '<span class="admin-count" id="spBadge">' + (h.sponsorOn ? '首页显示中' : '已隐藏') + '</span>' +
         '</div>' +
         '<label class="sn-check" style="margin-top:0">' +
@@ -2258,9 +2301,17 @@
           '<textarea rows="3" data-home="sponsorDesc">' + esc(h.sponsorDesc) + '</textarea></label>' +
         hfield('小字备注', 'sponsorNote', h.sponsorNote, '图下面那行小字；留空就不显示') +
         hfield('链接', 'sponsorLink', h.sponsorLink, '可选：点「去支持」跳这里，留空就只显示图') +
-        imgPicker({ scope: 'home', key: 'sponsorImage', val: h.sponsorImage, none: '还没放图' }) +
-        '<p class="admin-tip">建议放<b>收款码截图</b>（正方形、300px 以上最好看）。上传会自动压缩后存进配置，' +
-          '导出 <code>site-data.js</code> 时一起带走；不放图也不难看，会显示一个 ☕。</p>' +
+        '<div class="admin-sub">收款码<em>最多 ' + Store.MAX_SPONSOR_CODES +
+          ' 张，支付宝 / 微信 / 云闪付各放一张；每张都能单独配名字和跳转地址</em></div>' +
+        (codes.length
+          ? '<div class="coderows" id="adminCodes">' + codes.map(codeRow).join('') + '</div>'
+          : '<p class="admin-empty">还没有收款码。</p>') +
+        '<div class="admin-actions">' +
+          '<button class="btn btn--ghost" type="button" id="adminAddCode"' +
+            (codes.length >= Store.MAX_SPONSOR_CODES ? ' disabled' : '') + '>＋ 添加收款码</button>' +
+        '</div>' +
+        '<p class="admin-tip">建议放<b>收款码截图</b>（正方形最好看，上传会自动压到 480px 以内）。' +
+          '名字留空就只显示图；跳转地址留空那张就不可点。一张都不放会显示一个 ☕。</p>' +
       '</div>' +
 
       '<div class="admin-card">' +
@@ -3823,7 +3874,7 @@
         var patch = {};
         if (key === 'rotator') patch.rotator = parseList(v);
         else if (key === 'featuredCount') patch.featuredCount = v;
-        else patch[key] = (key === 'image' || key === 'sponsorImage') ? String(v).trim() : v;
+        else patch[key] = (key === 'image' || key === 'sponsorImage' || key === 'imageLink') ? String(v).trim() : v;
         Store.setHome(patch);
         if (key === 'image') updatePreview(root, 'image', patch.image);
         if (key === 'sponsorImage') updatePreview(root, 'sponsorImage', patch.sponsorImage);
@@ -4034,6 +4085,91 @@
       btn.addEventListener('click', function () {
         saveImg(root, btn.getAttribute('data-img-scope'), btn.getAttribute('data-img-clear'), '');
       });
+    });
+
+    /* ---------- 赞助收款码：多张，每张单独认名字 / 图片 / 跳转 ---------- */
+    function writeCodes(list) {
+      /* 顺手把老的单图字段清空：它已经搬进列表第一行了，留着只会跟列表打架 */
+      Store.setHome({ sponsorCodes: list, sponsorImage: '' });
+    }
+    function setCode(i, patch) {
+      var list = (Store.home().sponsorCodes || []).slice();
+      var cur = list[i] || {};
+      var next = { src: cur.src || '', label: cur.label || '', link: cur.link || '' };
+      Object.keys(patch).forEach(function (k) { next[k] = patch[k]; });
+      list[i] = next;
+      writeCodes(list);
+    }
+    body.querySelectorAll('[data-code-f]').forEach(function (el) {
+      var row = el.parentNode.parentNode;
+      while (row && !row.getAttribute('data-ci')) row = row.parentNode;
+      if (!row) return;
+      var i = parseInt(row.getAttribute('data-ci'), 10);
+      var f = el.getAttribute('data-code-f');
+      function apply() {
+        var v = String(el.value == null ? '' : el.value).trim();
+        var patch = {};
+        patch[f] = v;
+        setCode(i, patch);
+        if (f === 'src') codePreview(root, i, v);
+      }
+      el.addEventListener('input', apply);
+      el.addEventListener('change', apply);
+    });
+    body.querySelectorAll('[data-code-pick]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var input = body.querySelector('[data-code-file="' + btn.getAttribute('data-code-pick') + '"]');
+        if (input) input.click();
+      });
+    });
+    body.querySelectorAll('[data-code-file]').forEach(function (input) {
+      input.addEventListener('change', function () {
+        var f = input.files && input.files[0];
+        if (!f) return;
+        var i = parseInt(input.getAttribute('data-code-file'), 10);
+        if (f.size > 6 * 1024 * 1024) { toast('图片超过 6MB，换一张小一点的吧'); input.value = ''; return; }
+        shrinkImage(f, function (dataUrl) {
+          if (!dataUrl) return;
+          setCode(i, { src: dataUrl });
+          applyChrome();
+          refreshBody(root);
+          toast('收款码已更新 ✦');
+        }, 480);
+        input.value = '';
+      });
+    });
+    body.querySelectorAll('[data-code-clear]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var i = parseInt(btn.getAttribute('data-code-clear'), 10);
+        setCode(i, { src: '' });
+        refreshBody(root);
+        toast('已清掉这张图');
+      });
+    });
+    body.querySelectorAll('[data-code-del]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var i = parseInt(btn.getAttribute('data-code-del'), 10);
+        var list = (Store.home().sponsorCodes || []).slice();
+        askConfirm({
+          title: '删掉这张收款码？',
+          desc: '只会从首页那块掉下来，别的地方不受影响。',
+          ok: '删掉'
+        }, function () {
+          list.splice(i, 1);
+          writeCodes(list);
+          applyChrome();
+          refreshBody(root);
+          toast('已删掉');
+        });
+      });
+    });
+    var addCode = body.querySelector('#adminAddCode');
+    if (addCode) addCode.addEventListener('click', function () {
+      var list = (Store.home().sponsorCodes || []).slice();
+      if (list.length >= Store.MAX_SPONSOR_CODES) { toast('最多 ' + Store.MAX_SPONSOR_CODES + ' 张'); return; }
+      list.push({ src: '', label: '', link: '' });
+      writeCodes(list);
+      refreshBody(root);
     });
 
     /* ---------- 备份 ---------- */
@@ -4447,11 +4583,21 @@
     }
   }
 
+  /* 收款码那一行的小预览 */
+  function codePreview(root, i, src) {
+    var box = root.querySelector('[data-code-preview="' + i + '"]');
+    if (!box) return;
+    box.innerHTML = src ? '<img src="' + esc(src) + '" alt="" />' : '<span>未放图</span>';
+  }
+
   /* 把图片读成 data URL；过大就等比缩到 1100px 以内再输出 */
   var IMG_MAX_PX = 1100;
   var IMG_MAX_CHARS = 900000;
 
-  function shrinkImage(file, cb) {
+  function shrinkImage(file, cb, maxPx) {
+    /* maxPx：这一张最多缩到多少像素。收款码只需显示 130px 左右，传 480 就够，
+       六张加起来也不会把 localStorage 撑爆；大图 / Logo 走默认的 1100。 */
+    var cap = maxPx || IMG_MAX_PX;
     var fr = new FileReader();
     fr.onerror = function () { toast('图片读取失败'); cb(null); };
     fr.onload = function () {
@@ -4467,7 +4613,7 @@
         var w = img.naturalWidth || img.width || 0;
         var h = img.naturalHeight || img.height || 0;
         if (!w || !h) { cb(raw, raw.length > IMG_MAX_CHARS); return; }
-        var scale = Math.min(1, IMG_MAX_PX / Math.max(w, h));
+        var scale = Math.min(1, cap / Math.max(w, h));
         w = Math.max(1, Math.round(w * scale));
         h = Math.max(1, Math.round(h * scale));
         var cv = document.createElement('canvas');
