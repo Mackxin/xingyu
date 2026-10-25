@@ -844,7 +844,9 @@
     var isHash = f.url.charAt(0) === '#';
     return '<a class="feed-card" href="' + hrefOf(f.url) + '"' + (isHash ? '' : ' target="_blank" rel="noopener"') + '>' +
       '<span class="feed-card__icon">' + esc(f.icon) + '</span>' +
-      '<span>' +
+      /* v120：这层包裹给个类名，窄屏靠 display:contents 把它拆掉，
+         好让标题钻到图标右边、说明和标签仍占整宽（原来图标独占一行）。 */
+      '<span class="feed-card__body">' +
         '<span class="feed-card__title">' + esc(f.title) + ' ' + (isHash ? '' : I.out) + '</span>' +
         '<p class="feed-card__desc">' + esc(f.desc) + '</p>' +
         '<span class="feed-card__tags">' + (f.tags || []).map(function (t) {

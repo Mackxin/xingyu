@@ -1285,7 +1285,7 @@
     }).join('');
     return '<div class="feed-card">' +
         '<span class="feed-card__icon">' + esc(f.icon || '✨') + '</span>' +
-        '<span>' +
+        '<span class="feed-card__body">' +
           '<span class="feed-card__title">' + esc(f.title || '标题会显示在这里') +
             (inner || !f.url ? '' : ' ↗') + '</span>' +
           '<p class="feed-card__desc">' + esc(f.desc || '描述会显示在这里，写一两句就够了。') + '</p>' +
