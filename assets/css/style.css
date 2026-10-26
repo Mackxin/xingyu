@@ -3214,34 +3214,54 @@ a.sponsor__code:hover .sponsor__code-label{ color:var(--text); }
    谁写在后面谁赢，放最后就不用给每条都加前缀提特异性。
    ========================================================= */
 
-/* ---------- ① 四个列表页的标题区：整块居中 ---------- */
+/* ---------- ① 列表页的标题区：整块居中 ---------- */
 .page-head--nav,
-.page-head--share,
-.page-head--idea{
+.page-head--share{
   display:flex; flex-direction:column;
   align-items:center; justify-content:center;
   gap:16px; text-align:center;
 }
 /* 竖向排列之后 flex-basis 决定的是「高度」，420px 会把标题区顶开一大块，改回 auto */
 .page-head--nav .page-head__main,
-.page-head--share .page-head__main,
-.page-head--idea .page-head__main{
+.page-head--share .page-head__main{
   flex:0 1 auto; min-width:0; max-width:min(100%, 64ch);
 }
 .page-head--nav p,
-.page-head--share p,
-.page-head--idea p{ margin-left:auto; margin-right:auto; max-width:56ch; }
+.page-head--share p{ margin-left:auto; margin-right:auto; max-width:56ch; }
 .page-head--nav .page-head__side,
-.page-head--share .page-head__side,
-.page-head--idea .page-head__side{
+.page-head--share .page-head__side{
   padding-bottom:0; justify-content:center;
 }
-/* 灵感随记那边统计卡后面还跟着四颗工具按钮，挤在同一行会把这一行拉得很长；
-   拆成「统计一行 / 按钮一行」，两行都对着中轴线。 */
-.page-head--idea .page-head__side{
-  flex-direction:column; align-items:center; gap:12px;
+
+/* ---------- ①b 灵感随记：改成左右两栏（v131） ----------
+   这一页内容本来就短（一张写卡片 + 一列随记），标题竖排居中会把首屏顶出一大片空白；
+   标题留在左边、统计与四个工具按钮收到右边一列，视线一行就能扫完，页面也矮了一截。 */
+.page-head--idea{
+  display:flex; flex-direction:row; flex-wrap:wrap;
+  align-items:flex-end; justify-content:space-between;
+  gap:18px 40px; text-align:left;
 }
-.page-head--idea .idea-tools{ margin-top:0; justify-content:center; }
+.page-head--idea .page-head__main{
+  flex:1 1 420px; min-width:0; max-width:56ch;
+}
+.page-head--idea p{ margin-left:0; margin-right:0; max-width:56ch; }
+/* 右栏：统计一行、工具一行，都靠右对齐到同一条竖线上 */
+.page-head--idea .page-head__side{
+  flex:0 1 auto; padding-bottom:0;
+  flex-direction:column; align-items:flex-end; gap:12px;
+}
+.page-head--idea .head-stats{ justify-content:flex-end; }
+.page-head--idea .idea-tools{ margin-top:0; justify-content:flex-end; }
+/* 窄屏铺不下就退回竖排：标题在上，统计与工具在下面左对齐（别在手机上硬挤两栏）。
+   960 是算出来的临界点：右栏最少 446px（4 张统计卡）+ 间距 40 + 主栏 420 = 906，
+   容器再窄就得换行 —— 与其让它半吊子地「标题一行、右侧块跑到第二行还靠右」，
+   不如整块竖过来左对齐。 */
+@media (max-width:960px){
+  .page-head--idea{ align-items:stretch; gap:16px; }
+  .page-head--idea .page-head__side{ align-items:stretch; gap:12px; }
+  .page-head--idea .head-stats{ justify-content:flex-start; }
+  .page-head--idea .idea-tools{ justify-content:flex-start; }
+}
 
 /* ---------- ② 统计卡：底色 / 描边走主题色 ---------- */
 .head-stats{ justify-content:center; }
