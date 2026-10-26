@@ -921,7 +921,9 @@ html[data-theme="light"] .btn--primary{ color:#fff; }
 .link-card{
   position:relative; display:flex; align-items:center; gap:10px;
   flex:0 1 auto; min-width:0; max-width:100%;   /* 宽度跟着内容走；超长名字才允许缩（缩的时候末尾省略） */
-  padding:10px 13px; border-radius:var(--r);
+  /* v127：上下收到 6px、左右放到 15px —— 卡片变扁、名字两边松一点，
+     两千张铺开时行距不再那么「一格一格」的。 */
+  padding:6px 15px; border-radius:var(--r);
   /* 不画底色、不描边：卡片直接贴在页面的极光背景上，靠间距和留白分组。
      边框留着但是透明色，只为让排版尺寸和以前一模一样（不会因为去掉 1px 而挪位）。 */
   background:none; border:1px solid transparent;
@@ -960,10 +962,11 @@ html[data-desc="off"] .link-card__desc{ display:none; }
 html[data-cat-icon="off"] .cat-ico,
 html[data-cat-icon="off"] #headerCatEmoji{ display:none; }
 
-/* 图标和介绍都关掉时，卡片就是一行名字：把内边距收一点，卡片更扁更紧凑。
-   （宽度不用管了 —— 现在是 flex，卡片本来就贴着名字。） */
+/* 图标和介绍都关掉时，卡片就是一行名字：只把间距收一点，卡片更紧凑。
+   （内距不再单独改 —— 默认就是「图标关 + 描述关」，以前这里写死 padding:4px 11px，
+   特异性比密度档高，导致紧凑 / 宽松两档的内距其实一直没生效过。v127 交给基础值。） */
 @media (min-width:641px){
-  html[data-icons="off"][data-desc="off"] .link-card{ padding:4px 11px; gap:8px; }
+  html[data-icons="off"][data-desc="off"] .link-card{ gap:8px; }
   html[data-icons="off"][data-desc="off"] .link-grid{ gap:5px; }
 }
 
@@ -1006,11 +1009,11 @@ html[data-cat-icon="off"] #headerCatEmoji{ display:none; }
    只在宽屏生效：手机端有自己的一套（见 max-width:640px 那条规则）。 */
 @media (min-width:641px){
   html[data-density="compact"] .link-grid{ gap:4px; }
-  html[data-density="compact"] .link-card{ padding:3px 9px; gap:6px; border-radius:10px; }
+  html[data-density="compact"] .link-card{ padding:3px 11px; gap:6px; border-radius:10px; }
   html[data-density="compact"] .link-card__name{ font-size:13.5px; }
   html[data-density="compact"] .link-card__desc{ font-size:11px; }
   html[data-density="comfy"] .link-grid{ gap:10px; }
-  html[data-density="comfy"] .link-card{ padding:15px 16px; gap:12px; }
+  html[data-density="comfy"] .link-card{ padding:15px 20px; gap:12px; }
   html[data-density="comfy"] .link-card__name{ font-size:15.5px; }
   html[data-density="comfy"] .link-card__desc{ font-size:12.5px; margin-top:4px; }
 }
@@ -3180,4 +3183,160 @@ a.sponsor__code:hover .sponsor__code-label{ color:var(--text); }
   .sponsor__codes{ flex:1 1 100%; justify-content:flex-start; margin-left:0; gap:10px; }
   .sponsor__code img{ width:112px; height:112px; border-radius:14px; }
   .about-actions .btn{ height:42px; font-size:13px; padding:0 18px; }
+}
+
+/* =========================================================
+   v127
+   ---------------------------------------------------------
+   ① 分享 / 文章 / 灵感随记三个列表页的标题区：从「左标题 + 右统计」
+      的两栏改成一整块居中（统计卡也回到中轴线上）；
+   ② 统计卡染主题色 —— 数字还是那条渐变，卡片底与描边也用同一套蓝紫；
+   ③ 灵感随记新增件：搜索框、随机回顾、置顶角标、标签管理弹层。
+
+   写在文件最后是有意的：上面 max-width:1100 / 900 / 640 那几段里有
+   `.page-head--share{ align-items:flex-start }` 之类的老规则，同权重下
+   谁写在后面谁赢，放最后就不用给每条都加前缀提特异性。
+   ========================================================= */
+
+/* ---------- ① 三个列表页的标题区：整块居中 ---------- */
+.page-head--share,
+.page-head--idea{
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  gap:16px; text-align:center;
+}
+/* 竖向排列之后 flex-basis 决定的是「高度」，420px 会把标题区顶开一大块，改回 auto */
+.page-head--share .page-head__main,
+.page-head--idea .page-head__main{
+  flex:0 1 auto; min-width:0; max-width:min(100%, 64ch);
+}
+.page-head--share p,
+.page-head--idea p{ margin-left:auto; margin-right:auto; max-width:56ch; }
+.page-head--share .page-head__side,
+.page-head--idea .page-head__side{
+  padding-bottom:0; justify-content:center;
+}
+/* 灵感随记那边统计卡后面还跟着四颗工具按钮，挤在同一行会把这一行拉得很长；
+   拆成「统计一行 / 按钮一行」，两行都对着中轴线。 */
+.page-head--idea .page-head__side{
+  flex-direction:column; align-items:center; gap:12px;
+}
+.page-head--idea .idea-tools{ margin-top:0; justify-content:center; }
+
+/* ---------- ② 统计卡：底色 / 描边走主题色 ---------- */
+.head-stats{ justify-content:center; }
+.head-stat{
+  align-items:center; text-align:center; min-width:104px;
+  /* 数字那条渐变（.head-stat b）本来就有，这里给卡片底也铺一层同色系的极淡渐变，
+     再补一条 1px 同色描边 —— 原来 border 是 transparent 的，改色不动尺寸。 */
+  background:linear-gradient(135deg,
+    rgba(124,156,255,.13), rgba(180,124,255,.10) 55%, rgba(79,227,208,.08));
+  border-color:rgba(124,156,255,.16);
+}
+/* 标签从 --text-mute 提一档：卡片底变亮了，原来的灰字会显得更弱 */
+.head-stat span{ color:var(--text-dim); }
+
+/* ---------- ③ 灵感随记：搜索 + 随机回顾 ---------- */
+.idea-bar{
+  display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+  margin:14px 0 0;
+}
+.idea-search{
+  position:relative; display:flex; align-items:center;
+  flex:1 1 240px; min-width:0; height:38px;
+  padding:0 12px 0 36px; border-radius:99px;
+  background:var(--glass); border:1px solid transparent;
+  transition:background .3s var(--ease);
+}
+.idea-search:focus-within{ background:var(--glass-2); }
+.idea-search__ico{
+  position:absolute; left:13px; width:15px; height:15px; flex-shrink:0;
+  fill:none; stroke:var(--text-mute); stroke-width:2; stroke-linecap:round;
+  pointer-events:none;
+}
+.idea-search input{
+  flex:1 1 auto; min-width:0; height:100%;
+  padding:0; border:0; outline:none; background:none;
+  color:var(--text); font:inherit; font-size:13.5px;
+  -webkit-appearance:none; appearance:none;
+}
+.idea-search input::placeholder{ color:var(--text-mute); }
+/* Safari / Chrome 自带的那个小 ×，样式各端不一样，用自己的 */
+.idea-search input::-webkit-search-cancel-button,
+.idea-search input::-webkit-search-decoration{ -webkit-appearance:none; display:none; }
+.idea-search__clear{
+  display:none; place-items:center; flex-shrink:0;
+  width:22px; height:22px; margin-left:6px;
+  border:0; border-radius:50%; background:var(--glass-hi);
+  color:var(--text-mute); font:inherit; font-size:14px; line-height:1; cursor:pointer;
+  transition:color .2s var(--ease);
+}
+.idea-search__clear:hover{ color:var(--text); }
+.idea-search.has-val .idea-search__clear{ display:grid; }
+.idea-bar__btn{ height:38px; padding:0 16px; border-radius:99px; font-size:13px; white-space:nowrap; }
+
+/* ---------- ④ 灵感卡片：置顶 / 随机回顾闪烁 ---------- */
+.idea-card{ position:relative; }
+.idea-card.is-pinned{ background:var(--glass-2); }
+/* 📌 挂在右上角，正文让出 18px，否则长句会从图钉底下穿过去 */
+.idea-card__pin{
+  position:absolute; top:11px; right:13px;
+  font-size:12px; line-height:1; opacity:.8; pointer-events:none;
+}
+.idea-card.is-pinned .idea-card__body{ padding-right:18px; }
+/* 置顶按钮的「已置顶」状态：底变亮 + 字变亮，别用色相区分（浅色主题下蓝字对比度不够） */
+.idea-mini.is-on{ color:var(--text); background:var(--glass-hi); font-weight:600; }
+/* 随机回顾抽到的那张：闪两下，眼能跟上它落在哪儿 */
+.idea-card.is-flash{ animation:ideaFlash 1.1s var(--ease) 2; }
+@keyframes ideaFlash{
+  0%, 100%{ background:var(--glass); }
+  45%{ background:rgba(124,156,255,.26); }
+}
+
+/* ---------- ⑤ 标签管理 ---------- */
+.idea-rail__manage{
+  margin-left:auto; padding:6px 11px;
+  border:0; border-radius:99px; background:none;
+  color:var(--text-mute); font:inherit; font-size:12px; cursor:pointer;
+  transition:color .2s var(--ease), background .2s var(--ease);
+}
+.idea-rail__manage:hover{ color:var(--text); background:var(--glass-hi); }
+.idea-tagbox{ width:min(520px,100%); }
+.idea-taglist{
+  display:flex; flex-direction:column; gap:2px;
+  margin:16px 0 0; max-height:min(52vh,420px); overflow-y:auto;
+}
+.idea-tagrow{
+  display:flex; align-items:center; gap:8px;
+  padding:9px 10px; border-radius:12px; background:var(--glass);
+  transition:background .2s var(--ease);
+}
+.idea-tagrow:hover{ background:var(--glass-2); }
+.idea-tagrow.is-renaming{ background:var(--glass-2); }
+.idea-tagrow__n{
+  flex:1 1 auto; min-width:0; font-size:13.5px; color:var(--text);
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.idea-tagrow__c{
+  flex:0 0 auto; font-size:11.5px; color:var(--text-mute);
+  font-variant-numeric:tabular-nums;
+}
+.idea-tagrow__input{
+  display:block; width:100%; padding:4px 8px;
+  border:0; border-radius:8px; outline:none;
+  background:var(--glass-hi); color:var(--text); font:inherit; font-size:13px;
+}
+
+@media (max-width:640px){
+  /* 手机上搜索框和「随机回顾」各占一整行，都够宽好点 */
+  .idea-bar{ gap:8px; }
+  .idea-search{ flex:1 1 100%; }
+  .idea-bar__btn{ flex:1 1 100%; }
+  /* 标签条会换行，「⚙ 标签」跟着往回缩，别被 margin-left:auto 推到孤零零一行 */
+  .idea-rail__manage{ margin-left:0; }
+  .idea-tagbox{ padding:22px 18px 16px; }
+  .idea-taglist{ max-height:min(56vh,360px); }
+  /* 手机端四张统计卡排成 2×2，别出现「三张一行、第四张孤零零占一整行」 */
+  .page-head--idea .head-stats{ width:100%; }
+  .page-head--idea .head-stat{ flex:1 1 calc(50% - 5px); padding:12px 12px; }
 }

@@ -226,6 +226,7 @@
     postId: '',         // 正在阅读的文章 id（空 = 文章列表）
     postTag: 'all',     // 文章列表的标签筛选
     ideaTag: 'all',     // 灵感随记的标签筛选
+    ideaQ: '',          // 灵感随记的搜索词（paint() 会带上它）
     fav: loadFav()
   };
   function loadFav() {
@@ -997,9 +998,28 @@
         text: String(x.text).slice(0, IDEA_MAX_LEN),
         tags: Array.isArray(x.tags) && x.tags.length ? x.tags.slice(0, IDEA_MAX_TAGS).map(String) : ideaTagsOf(x.text),
         ts: Number(x.ts) || Date.parse(x.ts) || Date.parse(x.date) || 0,
-        date: String(x.date || '')
+        date: String(x.date || ''),
+        pinned: !!x.pinned
       };
-    }).sort(function (a, b) { return (b.ts || 0) - (a.ts || 0); });
+    }).sort(function (a, b) {
+      /* 置顶的浮到最前，其余仍按时间倒序（sort 是稳定排序，同一档里顺序不变） */
+      return (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || (b.ts || 0) - (a.ts || 0);
+    });
+  }
+  /* 搜一条：正文 / 标签 / 显示出来的时间都算，空格分开的多个词要全部命中 */
+  function ideaMatch(it, q) {
+    var s = String(q || '').trim().toLowerCase();
+    if (!s) return true;
+    var hay = (it.text + ' ' + (it.tags || []).join(' ') + ' ' + ideaTime(it)).toLowerCase();
+    return s.split(/\s+/).every(function (w) { return hay.indexOf(w) > -1; });
+  }
+  /* 去掉标签、去掉空白之后的字数 —— 头部那个「字」就是它 */
+  function ideaWords(list) {
+    var n = 0;
+    (list || []).forEach(function (it) {
+      n += ideaBody(it.text).replace(/\s+/g, '').length;
+    });
+    return n;
   }
   function saveIdeas(list) {
     try { localStorage.setItem(IDEA_KEY, JSON.stringify(list)); return true; }
@@ -1030,9 +1050,11 @@
     order.sort(function (a, b) { return map[b] - map[a] || String(a).localeCompare(String(b)); });
     return order.map(function (t) { return { name: t, n: map[t] }; });
   }
-  function ideaFiltered(list, tag) {
-    if (!tag || tag === 'all') return list;
-    return list.filter(function (it) { return (it.tags || []).indexOf(tag) > -1; });
+  function ideaFiltered(list, tag, q) {
+    return list.filter(function (it) {
+      if (tag && tag !== 'all' && (it.tags || []).indexOf(tag) < 0) return false;
+      return ideaMatch(it, q);
+    });
   }
 
   function ideaCardHtml(it) {
@@ -1042,7 +1064,8 @@
     var tags = (it.tags || []).map(function (t) {
       return '<button class="tag" type="button" data-idea-tag="' + esc(t) + '">#' + esc(t) + '</button>';
     }).join('');
-    return '<article class="idea-card" data-idea-card="' + esc(it.id) + '">' +
+    return '<article class="idea-card' + (it.pinned ? ' is-pinned' : '') + '" data-idea-card="' + esc(it.id) + '">' +
+        (it.pinned ? '<span class="idea-card__pin" aria-hidden="true">📌</span>' : '') +
         '<div class="idea-card__body md">' + html + '</div>' +
         '<footer class="idea-card__foot">' +
           '<div class="idea-card__meta">' +
@@ -1050,18 +1073,24 @@
             (tags ? '<span class="idea-card__tags">' + tags + '</span>' : '') +
           '</div>' +
           '<span class="idea-card__ops">' +
+            '<button class="idea-mini' + (it.pinned ? ' is-on' : '') + '" type="button" data-idea-pin="' + esc(it.id) + '"' +
+              ' aria-pressed="' + (it.pinned ? 'true' : 'false') + '"' +
+              ' title="' + (it.pinned ? '取消置顶' : '置顶，让它排在前面') + '">' +
+              (it.pinned ? '取消置顶' : '置顶') + '</button>' +
             '<button class="idea-mini" type="button" data-idea-edit="' + esc(it.id) + '">编辑</button>' +
             '<button class="idea-mini idea-mini--del" type="button" data-idea-del="' + esc(it.id) + '">删除</button>' +
           '</span>' +
         '</footer>' +
       '</article>';
   }
-  function ideaGridHtml(list, tag) {
-    var show = ideaFiltered(list, tag);
+  /* 列表：标签筛选 + 搜索词一起生效；三种空状态分开说，别让人以为数据没了 */
+  function ideaGridHtml(list, tag, q) {
+    var show = ideaFiltered(list, tag, q);
     if (!list.length) {
       return emptyHtml('💡', '还没有记下什么', '在下面写一句就行 —— 想法、链接、半句诗，都可以。');
     }
     if (!show.length) {
+      if (q) return emptyHtml('🔍', '没搜到「' + esc(String(q).trim()) + '」', '换个词试试，或者点右边那个 × 清掉搜索。');
       return emptyHtml('🔍', '「#' + esc(tag) + '」下还是空的', '换个标签看看，或者先记一条带这个标签的。');
     }
     return show.map(ideaCardHtml).join('');
@@ -1076,13 +1105,17 @@
       stats.map(function (s) {
         return '<button class="tag' + (cur === s.name ? ' is-active' : '') + '" type="button" data-idea-tag="' + esc(s.name) + '">' +
           '#' + esc(s.name) + ' <span class="idea-rail__n">' + s.n + '</span></button>';
-      }).join('') + '</div>';
+      }).join('') +
+      /* 改名 / 删标签都藏在最右边这颗小按钮里，不占视线 */
+      '<button class="idea-rail__manage" type="button" data-idea-tagmanage="1" title="管理标签（改名 / 删除）">⚙ 标签</button>' +
+      '</div>';
   }
 
   function renderIdea() {
     var list = loadIdeas();
     var stats = ideaTagStats(list);
     var cur = state.ideaTag || 'all';
+    var q = state.ideaQ || '';
     if (cur !== 'all' && !stats.some(function (s) { return s.name === cur; })) { cur = 'all'; state.ideaTag = 'all'; }
 
     /* 本周：最近 7 天（含今天）记了几条 */
@@ -1094,6 +1127,7 @@
       '<div class="head-stat"><b>' + list.length + '</b><span>条灵感</span></div>' +
       '<div class="head-stat"><b>' + stats.length + '</b><span>个标签</span></div>' +
       '<div class="head-stat"><b>' + week + '</b><span>本周</span></div>' +
+      '<div class="head-stat"><b>' + ideaWords(list) + '</b><span>字</span></div>' +
       '</div>';
 
     return '<section class="page page--idea">' +
@@ -1105,7 +1139,8 @@
         '</div>' +
         '<div class="page-head__side">' + statsHtml +
           '<div class="idea-tools">' +
-            '<button class="btn btn--ghost" type="button" id="ideaExport">导出</button>' +
+            '<button class="btn btn--ghost" type="button" id="ideaExport">导出 JSON</button>' +
+            '<button class="btn btn--ghost" type="button" id="ideaMd">导出 .md</button>' +
             '<button class="btn btn--ghost" type="button" id="ideaImport">导入</button>' +
             '<button class="btn btn--ghost" type="button" id="ideaClear">清空</button>' +
             '<input type="file" id="ideaFile" accept=".json,application/json" hidden />' +
@@ -1120,8 +1155,19 @@
             '<button class="btn btn--primary" type="button" id="ideaSave">记下来</button>' +
           '</div>' +
         '</div>' +
+        /* 这一条不在 paint() 的重绘范围内，否则一边打字一边被换掉 */
+        '<div class="idea-bar">' +
+          '<div class="idea-search' + (q ? ' has-val' : '') + '">' +
+            '<svg class="idea-search__ico" viewBox="0 0 24 24" aria-hidden="true">' +
+              '<circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.4 15.4l4.1 4.1"/></svg>' +
+            '<input id="ideaSearch" type="search" value="' + esc(q) + '" placeholder="搜正文 / 标签 / 日期" ' +
+              'aria-label="搜索灵感" autocomplete="off" />' +
+            '<button class="idea-search__clear" type="button" id="ideaSearchClear" aria-label="清掉搜索">×</button>' +
+          '</div>' +
+          '<button class="btn btn--ghost idea-bar__btn" type="button" id="ideaRandom" title="随手抽一条，重新遇见以前的想法">🎲 随机回顾</button>' +
+        '</div>' +
         ideaRailHtml(stats, list, cur) +
-        '<div class="idea-grid" id="ideaGrid">' + ideaGridHtml(list, cur) + '</div>' +
+        '<div class="idea-grid" id="ideaGrid">' + ideaGridHtml(list, cur, q) + '</div>' +
       '</div>' +
       '</section>';
   }
@@ -1145,6 +1191,7 @@
       var list = loadIdeas();
       var stats = ideaTagStats(list);
       var cur = state.ideaTag || 'all';
+      var q = state.ideaQ || '';
       if (cur !== 'all' && !stats.some(function (s) { return s.name === cur; })) {
         cur = 'all'; state.ideaTag = 'all';
       }
@@ -1154,8 +1201,8 @@
         rail.replaceWith(tmp.firstElementChild);
         rail = $('#ideaRail');
       }
-      if (grid) grid.innerHTML = ideaGridHtml(list, cur);
-      /* 头部的三个数字也跟着变 */
+      if (grid) grid.innerHTML = ideaGridHtml(list, cur, q);
+      /* 头部那四个数字也跟着变 */
       var statsEl = document.querySelector('.page-head--idea .head-stats');
       if (statsEl) {
         var t0 = new Date(); t0.setHours(0, 0, 0, 0);
@@ -1165,13 +1212,14 @@
         if (bs[0]) bs[0].textContent = list.length;
         if (bs[1]) bs[1].textContent = stats.length;
         if (bs[2]) bs[2].textContent = week;
+        if (bs[3]) bs[3].textContent = ideaWords(list);
       }
     }
     function add() {
       var text = ta.value.trim();
       if (!text) { toast('写点什么再记下来'); ta.focus(); return; }
       var list = loadIdeas();
-      if (!saveIdeas([{ id: ideaId(), text: text.slice(0, IDEA_MAX_LEN), tags: ideaTagsOf(text), ts: Date.now(), date: '' }].concat(list))) return;
+      if (!saveIdeas([{ id: ideaId(), text: text.slice(0, IDEA_MAX_LEN), tags: ideaTagsOf(text), ts: Date.now(), date: '', pinned: false }].concat(list))) return;
       ta.value = '';
       clearDraft();
       paint();
@@ -1255,13 +1303,29 @@
       });
     }
 
+    /* 置顶：只动这一条，别的不碰 */
+    function togglePin(id) {
+      var list = loadIdeas();
+      var it = null;
+      for (var i = 0; i < list.length; i++) if (list[i].id === id) { it = list[i]; break; }
+      if (!it) return;
+      it.pinned = !it.pinned;
+      saveIdeas(list);
+      paint();
+      toast(it.pinned ? '已置顶 📌' : '取消置顶');
+    }
+
     box.addEventListener('click', function (e) {
       var t = e.target;
       if (!t || !t.closest) return;
+      var pn = t.closest('[data-idea-pin]');
+      if (pn) { togglePin(pn.getAttribute('data-idea-pin')); return; }
       var ed = t.closest('[data-idea-edit]');
       if (ed) { startEdit(ed.getAttribute('data-idea-edit')); return; }
       var dl = t.closest('[data-idea-del]');
       if (dl) { askDelete(dl.getAttribute('data-idea-del')); return; }
+      var mg = t.closest('[data-idea-tagmanage]');
+      if (mg) { openTagPanel(); return; }
       var tg = t.closest('[data-idea-tag]');
       if (tg) {
         state.ideaTag = tg.getAttribute('data-idea-tag') || 'all';
@@ -1269,25 +1333,193 @@
       }
     });
 
-    /* 导出 / 导入 / 清空 */
-    function exportIdeas() {
-      var list = loadIdeas();
-      if (!list.length) { toast('还没有可以导出的灵感'); return; }
-      /* 字段跟参考版「灵感随记」一致，两边能互相导入 */
-      var out = list.map(function (it) {
-        return { text: it.text, tags: it.tags, ts: it.ts, date: it.date || ideaTime(it) };
+    /* 搜索：只换列表，不碰输入框（输入框不在 paint 的重绘范围里） */
+    var sch = $('#ideaSearch');
+    var schWrap = box.querySelector('.idea-search');
+    if (sch) {
+      sch.addEventListener('input', debounce(function () {
+        state.ideaQ = sch.value;
+        if (schWrap) schWrap.classList.toggle('has-val', !!sch.value);
+        paint();
+      }, 160));
+      sch.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') { e.preventDefault(); sch.value = ''; state.ideaQ = ''; if (schWrap) schWrap.classList.remove('has-val'); paint(); }
       });
+    }
+    var schClr = $('#ideaSearchClear');
+    if (schClr) schClr.addEventListener('click', function () {
+      if (sch) { sch.value = ''; sch.focus(); }
+      state.ideaQ = '';
+      if (schWrap) schWrap.classList.remove('has-val');
+      paint();
+    });
+
+    /* 随机回顾：在当前筛选结果里抽一条，滚过去闪一下 */
+    var rndBtn = $('#ideaRandom');
+    if (rndBtn) rndBtn.addEventListener('click', function () {
+      var show = ideaFiltered(loadIdeas(), state.ideaTag, state.ideaQ);
+      if (!show.length) { toast('这里没有可回顾的灵感'); return; }
+      var pick = show[Math.floor(Math.random() * show.length)];
+      var card = box.querySelector('[data-idea-card="' + pick.id + '"]');
+      if (!card) { toast('没找到那张卡，刷新一下试试'); return; }
+      try { card.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch (e) { card.scrollIntoView(); }
+      card.classList.remove('is-flash');
+      void card.offsetWidth;             /* 强制回流，连着点两次动画也能重播 */
+      card.classList.add('is-flash');
+      setTimeout(function () { card.classList.remove('is-flash'); }, 2000);
+    });
+
+    /* 标签管理：改名 / 删除，改的是一次性的批量操作，走确认框 */
+    function openTagPanel() {
+      var list = loadIdeas();
+      var stats = ideaTagStats(list);
+      if (!stats.length) { toast('还没有标签，写的时候带上 #话题 就行'); return; }
+      closeTagPanel();
+      var mask = document.createElement('div');
+      mask.className = 'confirm-mask';
+      mask.id = 'ideaTagMask';
+      mask.innerHTML =
+        '<div class="confirm-box idea-tagbox" role="dialog" aria-modal="true" aria-label="管理标签">' +
+          '<div class="confirm-box__icon">🏷</div>' +
+          '<h3>管理标签</h3>' +
+          '<p>改名会应用到所有带这个标签的灵感；删标签只是把标签摘掉，正文不动。</p>' +
+          '<div class="idea-taglist">' +
+            stats.map(function (s) {
+              return '<div class="idea-tagrow" data-tag="' + esc(s.name) + '">' +
+                '<span class="idea-tagrow__n">#' + esc(s.name) + '</span>' +
+                '<span class="idea-tagrow__c">' + s.n + ' 条</span>' +
+                '<button class="idea-mini" type="button" data-tag-rename="' + esc(s.name) + '">改名</button>' +
+                '<button class="idea-mini idea-mini--del" type="button" data-tag-drop="' + esc(s.name) + '">删除</button>' +
+              '</div>';
+            }).join('') +
+          '</div>' +
+          '<div class="confirm-actions"><button class="btn btn--ghost" type="button" data-confirm="no">关掉</button></div>' +
+        '</div>';
+      document.body.appendChild(mask);
+      if (!document.body.classList.contains('no-scroll')) { mask._lock = true; document.body.classList.add('no-scroll'); }
+      mask.addEventListener('click', function (e) {
+        if (e.target === mask || (e.target.closest && e.target.closest('[data-confirm]'))) { closeTagPanel(); return; }
+        var rn = e.target.closest && e.target.closest('[data-tag-rename]');
+        if (rn) { startRename(rn.getAttribute('data-tag-rename')); return; }
+        var dp = e.target.closest && e.target.closest('[data-tag-drop]');
+        if (dp) { askDropTag(dp.getAttribute('data-tag-drop')); }
+      });
+      mask._esc = function (e) { if (e.key === 'Escape') closeTagPanel(); };
+      document.addEventListener('keydown', mask._esc);
+
+      function closeTagPanel() {
+        var m = document.getElementById('ideaTagMask');
+        if (!m) return;
+        if (m._esc) document.removeEventListener('keydown', m._esc);
+        if (m._lock) document.body.classList.remove('no-scroll');
+        m.remove();
+      }
+      function startRename(name) {
+        var row = mask.querySelector('.idea-tagrow[data-tag="' + name + '"]');
+        if (!row || row.classList.contains('is-renaming')) return;
+        var nEl = row.querySelector('.idea-tagrow__n');
+        var bak = nEl.textContent;
+        var cnt = row.querySelector('.idea-tagrow__c');
+        row.classList.add('is-renaming');
+        nEl.innerHTML = '<input class="idea-tagrow__input" type="text" value="' + esc(name) + '" maxlength="24" />';
+        if (cnt) cnt.textContent = '';
+        var inp = nEl.querySelector('input');
+        inp.focus(); inp.select();
+        inp.addEventListener('keydown', function (e) {
+          if (e.key === 'Enter') { e.preventDefault(); save(); }
+          if (e.key === 'Escape') { e.preventDefault(); row.classList.remove('is-renaming'); nEl.textContent = bak; reCount(); }
+        });
+        inp.addEventListener('blur', function () { save(); });
+        function reCount() {
+          var s = null;
+          ideaTagStats(loadIdeas()).forEach(function (x) { if (x.name === name) s = x; });
+          if (cnt) cnt.textContent = s ? s.n + ' 条' : '';
+        }
+        function save() {
+          var v = inp.value.trim().replace(/^#/, '');
+          if (!v || v === name) { row.classList.remove('is-renaming'); nEl.textContent = bak; reCount(); return; }
+          if (!/^[\u4e00-\u9fa5A-Za-z0-9_]+$/.test(v)) { toast('标签只能用中文、字母、数字、下划线'); inp.focus(); return; }
+          var list = loadIdeas();
+          list.forEach(function (it) {
+            var i = (it.tags || []).indexOf(name);
+            if (i < 0) return;
+            it.tags.splice(i, 1);
+            if (it.tags.indexOf(v) < 0) it.tags.push(v);   /* 改成已有的标签 = 合并 */
+            it.tags = it.tags.slice(0, IDEA_MAX_TAGS);
+          });
+          saveIdeas(list);
+          if (state.ideaTag === name) state.ideaTag = v;
+          closeTagPanel();
+          paint();
+          toast('已改名为 #' + v);
+        }
+      }
+      function askDropTag(name) {
+        var n = ideaTagStats(loadIdeas()).filter(function (s) { return s.name === name; })[0];
+        askConfirm({
+          icon: '🏷',
+          title: '删掉标签 #' + name + '？',
+          desc: '会从 ' + (n ? n.n : 0) + ' 条灵感上摘掉这个标签，<b>正文和这条灵感本身都还在</b>。',
+          ok: '摘掉标签'
+        }, function () {
+          var list = loadIdeas();
+          list.forEach(function (it) {
+            var i = (it.tags || []).indexOf(name);
+            if (i > -1) it.tags.splice(i, 1);
+          });
+          saveIdeas(list);
+          if (state.ideaTag === name) state.ideaTag = 'all';
+          closeTagPanel();
+          paint();
+          toast('标签已摘掉');
+        });
+      }
+    }
+
+    /* 导出 / 导入 / 清空 */
+    function ideaStamp() {
       var d = new Date();
-      var name = '灵感随记_' + d.getFullYear() + p2(d.getMonth() + 1) + p2(d.getDate()) + '_' + p2(d.getHours()) + p2(d.getMinutes()) + '.json';
-      var blob = new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' });
+      return d.getFullYear() + p2(d.getMonth() + 1) + p2(d.getDate()) + '_' + p2(d.getHours()) + p2(d.getMinutes());
+    }
+    function download(name, text, mime) {
+      var blob = new Blob([text], { type: mime });
       var url = URL.createObjectURL(blob);
       var a = document.createElement('a');
       a.href = url; a.download = name;
       document.body.appendChild(a); a.click(); document.body.removeChild(a);
       setTimeout(function () { URL.revokeObjectURL(url); }, 1500);
+    }
+    function exportIdeas() {
+      var list = loadIdeas();
+      if (!list.length) { toast('还没有可以导出的灵感'); return; }
+      /* 字段跟参考版「灵感随记」一致，两边能互相导入；pinned 是本站多出来的，那边会忽略掉 */
+      var out = list.map(function (it) {
+        return {
+          text: it.text, tags: it.tags, ts: it.ts,
+          date: it.date || ideaTime(it),
+          pinned: it.pinned ? true : undefined
+        };
+      });
+      download('灵感随记_' + ideaStamp() + '.json', JSON.stringify(out, null, 2), 'application/json');
       toast('导出 ' + list.length + ' 条');
     }
+    /* 导出 Markdown：直接能贴进任何笔记软件，按标签/时间分小标题 */
+    function exportMarkdown() {
+      var list = loadIdeas();
+      if (!list.length) { toast('还没有可以导出的灵感'); return; }
+      var lines = ['# 灵感随记', '', '> 导出于 ' + new Date().toLocaleString('zh-CN') + '，共 ' + list.length + ' 条。', ''];
+      list.forEach(function (it) {
+        var stamp = ideaTime(it);
+        var tg = (it.tags || []).map(function (t) { return '#' + t; }).join(' ');
+        lines.push('## ' + stamp + (it.pinned ? ' · 📌' : ''));
+        if (tg) lines.push('', '_' + tg + '_');
+        lines.push('', it.text.trim(), '');
+      });
+      download('灵感随记_' + ideaStamp() + '.md', lines.join('\n'), 'text/markdown;charset=utf-8');
+      toast('导出 Markdown，共 ' + list.length + ' 条');
+    }
     var exp = $('#ideaExport'); if (exp) exp.addEventListener('click', exportIdeas);
+    var mdBtn = $('#ideaMd'); if (mdBtn) mdBtn.addEventListener('click', exportMarkdown);
     var imp = $('#ideaImport');
     var file = $('#ideaFile');
     if (imp && file) {
