@@ -851,9 +851,9 @@
   function feedCardHtml(f) {
     var isHash = f.url.charAt(0) === '#';
     return '<a class="feed-card" href="' + hrefOf(f.url) + '"' + (isHash ? '' : ' target="_blank" rel="noopener"') + '>' +
-      '<span class="feed-card__icon">' + esc(f.icon) + '</span>' +
-      /* v120：这层包裹给个类名，窄屏靠 display:contents 把它拆掉，
-         好让标题钻到图标右边、说明和标签仍占整宽（原来图标独占一行）。 */
+      /* v129：前面那个彩色小方块图标去掉了 —— 一块图占 46px 宽还压着标题，
+         时间线本来就是一列文字更好读。数据里的 icon 还留着（今日精选、
+         搜索结果还在用），只是这张卡不画了。 */
       '<span class="feed-card__body">' +
         '<span class="feed-card__title">' + esc(f.title) + ' ' + (isHash ? '' : I.out) + '</span>' +
         '<p class="feed-card__desc">' + esc(f.desc) + '</p>' +

@@ -1224,12 +1224,21 @@
   }
 
   /* ======================= 分享条目 ======================= */
-  /* 列表直接按 Store 里排好的顺序（日期倒序），下标即真实下标，改完回写不会错位 */
-  function feedRowHtml(f, i) {
-    var isEditing = !!(feedEditing && !feedEditing.isNew && feedEditing.idx === i);
+  /* 列表按 Store 里排好的顺序（日期倒序），下标即真实下标，改完回写不会错位。
+     v129 起：**全部都列出来**（以前只铺前 60 条，后面 600 多条被藏起来要去搜），
+     一行最多三列（一列一行太占地方），点「编辑」**就在这一行原地展开**，
+     不跳到别处、也不弹窗，改完/取消就自己收回去。 */
+  function feedCellHtml(f, i) {
+    var isNew = i < 0;
+    var editing = !!(feedEditing && (isNew ? feedEditing.isNew : (!feedEditing.isNew && feedEditing.idx === i)));
+    if (editing) {
+      return '<div class="post-admin-row is-editing is-open" data-fidx="' + i + '">' +
+          feedFormHtml(f, isNew) +
+        '</div>';
+    }
     var tags = (f.tags || []).map(function (t) { return '#' + t; }).join(' ');
-    var inner = f.url.charAt(0) === '#';
-    return '<div class="post-admin-row' + (isEditing ? ' is-editing' : '') + '" data-fidx="' + i + '">' +
+    var inner = String(f.url || '').charAt(0) === '#';
+    return '<div class="post-admin-row" data-fidx="' + i + '">' +
         '<div class="post-admin-row__main">' +
           '<div class="post-admin-row__title">' +
             '<i>' + esc(f.icon || '✨') + '</i>' +
@@ -1249,15 +1258,8 @@
       '</div>';
   }
 
-  /* 分享条数可能几百上千（含「壹号讯息」导入的那批），一次全铺进 DOM 又长又慢，
-     所以只渲染前 FEED_RENDER_MAX 条，剩下的靠上面的搜索框找 */
-  var FEED_RENDER_MAX = 60;
-
   function feedListHtml() {
     var list = Store.feedAll();
-    if (!list.length) {
-      return '<p class="admin-empty">还没有分享条目。点上面的「＋ 新增分享」，或者到「备份」页恢复默认数据。</p>';
-    }
     var q = norm(feedQuery);
     /* 保留原数组下标：编辑靠它定位，不能因为筛选就错位 */
     var hits = [];
@@ -1268,13 +1270,14 @@
       }
       hits.push({ f: f, i: i });
     });
-    var shown = hits.slice(0, FEED_RENDER_MAX);
-    var rows = shown.map(function (x) { return feedRowHtml(x.f, x.i); }).join('');
-    if (!rows) return '<p class="admin-empty">没有匹配「' + esc(feedQuery) + '」的分享。</p>';
-    var more = hits.length > shown.length
-      ? '<p class="pick-more">还有 ' + (hits.length - shown.length) + ' 条没列出来，用上面的搜索框找</p>'
-      : '';
-    return '<div class="post-admin-list">' + rows + '</div>' + more;
+    var cells = (feedEditing && feedEditing.isNew) ? feedCellHtml(null, -1) : '';
+    cells += hits.map(function (x) { return feedCellHtml(x.f, x.i); }).join('');
+    if (!cells) {
+      return list.length
+        ? '<p class="admin-empty">没有匹配「' + esc(feedQuery) + '」的分享。</p>'
+        : '<p class="admin-empty">还没有分享条目。点上面的「＋ 新增分享」，或者到「备份」页恢复默认数据。</p>';
+    }
+    return '<div class="feed-admin-list">' + cells + '</div>';
   }
 
   /* 预览用的是一张真卡片（和前台同一套 .feed-card 样式，只是换成 div 防止误点跳走） */
@@ -1284,7 +1287,6 @@
       return '<span class="tag">#' + esc(t) + '</span>';
     }).join('');
     return '<div class="feed-card">' +
-        '<span class="feed-card__icon">' + esc(f.icon || '✨') + '</span>' +
         '<span class="feed-card__body">' +
           '<span class="feed-card__title">' + esc(f.title || '标题会显示在这里') +
             (inner || !f.url ? '' : ' ↗') + '</span>' +
@@ -1294,18 +1296,15 @@
       '</div>';
   }
 
-  function feedEditorHtml() {
-    var isNew = !feedEditing || feedEditing.isNew;
-    var list = Store.feedAll();
-    var f = isNew
-      ? { date: todayStr(), icon: '✨', title: '', url: '', desc: '', tags: [] }
-      : list[feedEditing.idx];
-    if (!f) { feedEditing = null; return ''; }
-    return '<div class="admin-card">' +
-        '<div class="admin-card__head">' +
-          '<div><h2>' + (isNew ? '新增分享' : '编辑分享') + '</h2>' +
-            '<p>填完保存就会出现在 <code>#/share</code> 的时间线里；同一天的几条会并排成一行。</p></div>' +
-          '<span class="admin-count">' + esc(f.date || '') + '</span>' +
+  /* 编辑表单：原来是一张独立的卡片（点了「编辑」要跑到页面顶上去），
+     v129 起就长在那一行里面 —— 就地展开、就地收起。 */
+  function feedFormHtml(f, isNew) {
+    if (!f) f = { date: todayStr(), icon: '✨', title: '', url: '', desc: '', tags: [] };
+    return '<div class="feed-form">' +
+        '<div class="feed-form__head">' +
+          '<b>' + (isNew ? '＋ 新增分享' : '✎ 正在编辑') + '</b>' +
+          (isNew ? '' : '<span class="feed-form__name">' + esc(f.title || '未命名') + '</span>') +
+          '<span class="feed-form__date">' + esc(f.date || '') + '</span>' +
         '</div>' +
         '<div class="post-editor">' +
           '<div class="post-editor__grid">' +
@@ -1322,7 +1321,7 @@
             '<div>' +
               '<label class="admin-field"><span class="admin-field__label">日期</span>' +
                 '<input type="date" data-ff="date" value="' + esc(f.date) + '" /></label>' +
-              '<label class="admin-field"><span class="admin-field__label">图标</span>' +
+              '<label class="admin-field"><span class="admin-field__label">图标<em>卡片上不显示了，用在今日精选和搜索结果里</em></span>' +
                 '<span class="alink-icon">' +
                   '<input data-ff="icon" value="' + esc(f.icon) + '" maxlength="4" placeholder="✨" aria-label="图标" />' +
                   '<button class="alink-icon__pick" type="button" id="feedEmoji" title="挑一个 emoji" aria-label="挑选图标">🙂</button>' +
@@ -1346,11 +1345,11 @@
     var list = Store.feedAll();
     var days = {};
     list.forEach(function (f) { if (f.date) days[f.date] = 1; });
-    return (feedEditing ? feedEditorHtml() : '') +
-      '<div class="admin-card">' +
+    return '<div class="admin-card">' +
         '<div class="admin-card__head">' +
           '<div><h2>分享</h2>' +
-            '<p>前台「分享」页的时间线内容，按日期倒序分组显示。改完立刻生效。</p></div>' +
+            '<p>前台「分享」页的时间线内容，按日期倒序分组显示，改完立刻生效。' +
+              '这里的条目<b>全部列出来</b>，点「编辑」就在那一行原地展开。</p></div>' +
           '<span class="admin-count">' + list.length + ' 条 · ' + Object.keys(days).length + ' 个记录日</span>' +
         '</div>' +
         '<div class="admin-toolbar">' +
@@ -1411,13 +1410,24 @@
   }
 
   function bindFeed(root, body) {
+    /* 打开（或关闭）某一行的编辑器：重绘之后把那一格滚到眼前、光标落到标题上。
+       不这么做的话，点到下面几百条里的某一条时，一重绘人就不知道编辑框在哪了。 */
+    function focusEditor() {
+      var cell = root.querySelector('.feed-admin-list .post-admin-row.is-open');
+      if (cell) {
+        try { cell.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
+        catch (e) { try { cell.scrollIntoView(); } catch (e2) {} }
+      }
+      var t = root.querySelector('[data-ff="title"]');
+      if (t) { try { t.focus({ preventScroll: true }); } catch (e3) { t.focus(); } }
+    }
+
     var newBtn = body.querySelector('#feedNew');
     if (newBtn) newBtn.addEventListener('click', function () {
       feedEditing = { idx: -1, isNew: true };
       feedQuery = '';
       refreshBody(root);
-      var t = root.querySelector('[data-ff="title"]');
-      if (t) t.focus();
+      focusEditor();
     });
 
     var search = body.querySelector('#feedSearch');
@@ -1438,8 +1448,7 @@
       if (op === 'edit') {
         feedEditing = { idx: idx, isNew: false };
         refreshBody(root);
-        var t = root.querySelector('[data-ff="title"]');
-        if (t) t.focus();
+        focusEditor();
         return;
       }
       if (op === 'view') {
@@ -2108,10 +2117,10 @@
       '</div>';
   }
 
-  /* 「今日精选」勾选列表：把「分享」里的条目全摆出来，勾上哪条首页就显示哪条。     笔记一条：分享现在有几百条（含「壹号讯息」导入的那批），一次全铺进 DOM 太重，
-     所以带个搜索框，最多只渲染 80 行，剩下的靠搜。 */
+  /* 「今日精选」勾选列表：把「分享」里的条目全摆出来，勾上哪条首页就显示哪条。
+     v129 起不再只铺前 80 行 —— 后台列表就该是数据的全部，藏起来反而像丢了内容。
+     一行就是四个 span，比分享列表还轻，六百多行一次铺开没压力。 */
   var picksQuery = '';
-  var PICKS_RENDER_MAX = 80;
 
   function picksRowsHtml(h) {
     var list = Store.feedAll();
@@ -2121,8 +2130,7 @@
     var hits = q ? list.filter(function (f) {
       return norm(f.title + ' ' + f.desc + ' ' + (f.tags || []).join('')).indexOf(q) > -1;
     }) : list;
-    var shown = hits.slice(0, PICKS_RENDER_MAX);
-    var rows = shown.map(function (f) {
+    var rows = hits.map(function (f) {
       var key = Store.feedKey(f);
       var on = picked.indexOf(key) > -1;
       return '<label class="pick-row' + (on ? ' is-on' : '') + '">' +
@@ -2135,10 +2143,6 @@
     }).join('');
     if (!rows) {
       return '<p class="admin-empty">没有匹配「' + esc(picksQuery) + '」的条目。</p>';
-    }
-    if (hits.length > shown.length) {
-      rows += '<p class="pick-more">还有 ' + (hits.length - shown.length) +
-        ' 条没列出来，输入关键词缩小范围</p>';
     }
     return rows;
   }

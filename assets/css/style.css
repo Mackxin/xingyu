@@ -1137,8 +1137,10 @@ html[data-theme="light"] .tl-date{ box-shadow:none; }
 .tl-cards{ display:grid; grid-template-columns:minmax(0,1fr); gap:12px; align-items:stretch; }
 .tl-cards > :only-child{ grid-column:1 / -1; }
 
+/* v129：卡片前面那个 46px 的彩色图标方块去掉了，所以这里不再是两列网格，
+   整张卡就是一块「标题 + 说明 + 标签」的文字区（窄屏也不用再拆包裹层）。 */
 .feed-card{
-  display:grid; grid-template-columns:auto minmax(0,1fr); gap:16px;
+  display:block;
   padding:20px 22px;
   border-radius:var(--r-lg);
   /* 同上：不铺白底、不描边，hover 只换一层淡蓝底 */
@@ -1151,10 +1153,7 @@ html[data-theme="light"] .tl-date{ box-shadow:none; }
   box-shadow:none;
   transform:none;
 }
-.feed-card__icon{
-  display:grid; place-items:center; width:46px; height:46px; border-radius:14px;
-  font-size:21px; background:var(--glass-hi); border:1px solid transparent;
-}
+.feed-card__body{ display:block; min-width:0; }
 .feed-card__title{
   display:inline-flex; align-items:center; gap:8px;
   margin:0; font-size:16.5px; font-weight:700; transition:color .3s var(--ease);
@@ -1633,18 +1632,9 @@ html[data-theme="light"] .tl-date{ box-shadow:none; }
   .bento__item{ row-gap:8px; }
   .stats{ gap:10px; }
   .stat{ padding:16px 14px; }
-  /* 分享卡：标题挪到图标右边、同一行（原来图标独占一行、标题在下一行，
-     一屏少看两条）；说明和标签仍从卡片左边整宽铺开，不因图标缩进变窄。
-     包裹层用 display:contents 拆掉，title/desc/tags 直接成为 grid item。 */
-  .feed-card{
-    grid-template-columns:auto minmax(0,1fr);
-    column-gap:12px; row-gap:0; padding:18px; align-items:start;
-  }
-  .feed-card__body{ display:contents; }
-  .feed-card__icon{ grid-area:1 / 1 / 2 / 2; width:40px; height:40px; font-size:18px; }
-  .feed-card__title{ grid-area:1 / 2 / 2 / 3; align-self:center; }
-  .feed-card__desc{ grid-area:2 / 1 / 3 / 3; margin-top:14px; }
-  .feed-card__tags{ grid-area:3 / 1 / 4 / 3; }
+  /* 分享卡：图标去掉之后不用再摆格子，手机上只是把内距收一点、说明的间距紧一点 */
+  .feed-card{ padding:18px; }
+  .feed-card__desc{ margin-top:12px; }
   .head-stats{ width:100%; }
   .head-stat{ flex:1 1 0; min-width:0; padding:12px 14px; border-radius:14px; }
   .head-stat b{ font-size:21px; }
@@ -2966,6 +2956,31 @@ html[data-readfont="serif"] .look-paper{
   transform:none; box-shadow:none; border-color:transparent;
 }
 .feed-preview .feed-card__title{ font-size:15.5px; }
+
+/* v129：所有条目一次铺开成格子（以前只列前 60 条，剩下几百条藏在搜索里，
+   后台看着像「数据丢了」）。一列一行太占地方，宽屏一行放两到三格。 */
+.feed-admin-list{
+  display:grid; gap:8px; margin-top:16px;
+  grid-template-columns:repeat(auto-fill, minmax(340px, 1fr));
+}
+/* 正在编辑的那一格跨满整排 —— 表单里有两栏，挤在 340px 里没法用 */
+.feed-admin-list .post-admin-row.is-open{ grid-column:1 / -1; }
+
+/* 就地展开的表单：顶上一条「正在编辑 xxx」，下面才是表单本体 */
+.feed-form{ min-width:0; }
+.feed-form__head{ display:flex; align-items:center; gap:9px; flex-wrap:wrap; margin-bottom:12px; }
+.feed-form__head b{ font-size:14px; font-weight:700; color:var(--text); }
+.feed-form__name{
+  min-width:0; font-size:12.5px; color:var(--text-dim);
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.feed-form__date{
+  margin-left:auto; font-size:11.5px; color:var(--text-mute);
+  font-variant-numeric:tabular-nums;
+}
+@media (max-width:760px){
+  .feed-admin-list{ grid-template-columns:minmax(0,1fr); }
+}
 
 /* =========================================================
    后台 · 手册 / 技术参数
