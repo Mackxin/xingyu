@@ -3205,6 +3205,7 @@ a.sponsor__code:hover .sponsor__code-label{ color:var(--text); }
    ---------------------------------------------------------
    ① 分享 / 文章 / 灵感随记三个列表页的标题区：从「左标题 + 右统计」
       的两栏改成一整块居中（统计卡也回到中轴线上）；
+      v129 之后**导航页也进了这一套**（见 ① 下方的 `.page-head--nav`）——
    ② 统计卡染主题色 —— 数字还是那条渐变，卡片底与描边也用同一套蓝紫；
    ③ 灵感随记新增件：搜索框、随机回顾、置顶角标、标签管理弹层。
 
@@ -3213,7 +3214,8 @@ a.sponsor__code:hover .sponsor__code-label{ color:var(--text); }
    谁写在后面谁赢，放最后就不用给每条都加前缀提特异性。
    ========================================================= */
 
-/* ---------- ① 三个列表页的标题区：整块居中 ---------- */
+/* ---------- ① 四个列表页的标题区：整块居中 ---------- */
+.page-head--nav,
 .page-head--share,
 .page-head--idea{
   display:flex; flex-direction:column;
@@ -3221,12 +3223,15 @@ a.sponsor__code:hover .sponsor__code-label{ color:var(--text); }
   gap:16px; text-align:center;
 }
 /* 竖向排列之后 flex-basis 决定的是「高度」，420px 会把标题区顶开一大块，改回 auto */
+.page-head--nav .page-head__main,
 .page-head--share .page-head__main,
 .page-head--idea .page-head__main{
   flex:0 1 auto; min-width:0; max-width:min(100%, 64ch);
 }
+.page-head--nav p,
 .page-head--share p,
 .page-head--idea p{ margin-left:auto; margin-right:auto; max-width:56ch; }
+.page-head--nav .page-head__side,
 .page-head--share .page-head__side,
 .page-head--idea .page-head__side{
   padding-bottom:0; justify-content:center;
