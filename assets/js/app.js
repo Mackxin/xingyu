@@ -1057,6 +1057,335 @@
     });
   }
 
+  /* =========================================================
+     把一条灵感画成一张图（卡片右上「存图」）
+     ---------------------------------------------------------
+     纯 Canvas 手绘，不引任何第三方库 —— 一是这站零依赖，
+     二是分享到别处时排版不会被平台改得面目全非：图里就是
+     卡片本来的样子（深浅两套主题各一套配色，跟着当前主题走）。
+
+     写法是「量两遍」：先在一块 760×10 的临时画布上跑一遍布局，
+     拿到总高度，再建真正尺寸的画布（2 倍图）重画一次。
+     ========================================================= */
+  var IMG_W = 760;          /* 逻辑宽度，导出时按 2 倍画，发出去不糊 */
+  var IMG_PAD = 48;
+  var IMG_SCALE = 2;
+  var IMG_MAX_H = 5000;     /* 长文兜底：超了就截断（Chrome 的 canvas 上限是 16384px） */
+  var IMG_FONT = '"PingFang SC","HarmonyOS Sans SC","Hiragino Sans GB","Microsoft YaHei",system-ui,sans-serif';
+  var IMG_MONO = 'ui-monospace,SFMono-Regular,Menlo,Consolas,monospace';
+
+  function ideaImgPal() {
+    var light = document.documentElement.getAttribute('data-theme') === 'light';
+    if (light) {
+      return {
+        bg1: '#f4f7ff', bg2: '#e6ecfa',
+        g1: 'rgba(124,156,255,.30)', g2: 'rgba(180,124,255,.20)', g3: 'rgba(79,227,208,.16)',
+        a2: 'rgba(180,124,255,.55)',
+        text: '#131c31', dim: '#41506d', mute: '#6b7791',
+        rule: 'rgba(124,156,255,.45)',
+        pillBg: 'rgba(124,156,255,.20)', pillText: '#3b4a83',
+        quoteBar: 'rgba(124,156,255,.65)',
+        codeBg: 'rgba(124,156,255,.14)', codeText: '#2f4a6b',
+        edge: 'rgba(124,156,255,.22)'
+      };
+    }
+    return {
+      bg1: '#0a0d18', bg2: '#121729',
+      g1: 'rgba(124,156,255,.34)', g2: 'rgba(180,124,255,.24)', g3: 'rgba(79,227,208,.14)',
+      a2: 'rgba(180,124,255,.6)',
+      text: '#eef1f8', dim: '#a7b0c4', mute: '#79839a',
+      rule: 'rgba(124,156,255,.5)',
+      pillBg: 'rgba(124,156,255,.16)', pillText: '#c6d4ff',
+      quoteBar: 'rgba(143,167,255,.8)',
+      codeBg: 'rgba(124,156,255,.10)', codeText: '#a9e8dc',
+      edge: 'rgba(255,255,255,.10)'
+    };
+  }
+
+  /* 一行文本切成「段」：把 **粗体** / `代码` / [文字](链接) / ~~删~~ / *斜* 拆开，
+     图里粗体就是粗体，代码换个字色 —— 跟屏幕上看到的差不多 */
+  function ideaImgSegs(text) {
+    var segs = [], re = /(\*\*[^*]+\*\*|`[^`]+`|\[[^\]]*\]\([^)]*\)|~~[^~]+~~|\*[^*\n]+\*)/g, last = 0, m;
+    function push(t, st) {
+      if (!t) return;
+      var o = { t: t };
+      if (st) { if (st.bold) o.bold = 1; if (st.code) o.code = 1; }
+      segs.push(o);
+    }
+    while ((m = re.exec(text))) {
+      push(text.slice(last, m.index));
+      var tok = m[0];
+      if (tok.slice(0, 2) === '**') push(tok.slice(2, -2), { bold: 1 });
+      else if (tok.charAt(0) === '`') push(tok.slice(1, -1), { code: 1 });
+      else if (tok.charAt(0) === '[') push(tok.replace(/^\[([^\]]*)\][\s\S]*$/, '$1'));
+      else push(tok.slice(2, -2));
+      last = re.lastIndex;
+    }
+    push(text.slice(last));
+    return segs.length ? segs : [{ t: text }];
+  }
+
+  /* 逐行拆块：标题 / 列表 / 勾选 / 引用 / 代码段 / 分隔线 / 空行 */
+  function ideaImgBlocks(text) {
+    var out = [], fence = false;
+    String(text || '').replace(/\r\n?/g, '\n').split('\n').forEach(function (raw) {
+      var line = raw.replace(/\s+$/, ''), m;
+      if (/^\s*```/.test(line)) { fence = !fence; out.push({ k: 'gap' }); return; }
+      if (fence) { out.push({ k: 'code', s: [{ t: line || ' ' }] }); return; }
+      if (!line.trim()) {
+        if (out.length && out[out.length - 1].k !== 'gap') out.push({ k: 'gap' });
+        return;
+      }
+      if ((m = line.match(/^(#{1,6})\s+(.*)$/))) {
+        out.push({ k: m[1].length <= 2 ? 'h1' : 'h2', s: ideaImgSegs(m[2]) });
+        return;
+      }
+      if (/^\s*(-{3,}|\*{3,}|_{3,})\s*$/.test(line)) { out.push({ k: 'rule' }); return; }
+      if ((m = line.match(/^\s*[-*+]\s+\[( |x|X)\]\s+(.*)$/))) {
+        out.push({ k: 'li', mark: m[1].toLowerCase() === 'x' ? '☑' : '☐', s: ideaImgSegs(m[2]) });
+        return;
+      }
+      if ((m = line.match(/^\s*[-*+]\s+(.*)$/))) { out.push({ k: 'li', mark: '•', s: ideaImgSegs(m[1]) }); return; }
+      if ((m = line.match(/^\s*(\d+)[.)]\s+(.*)$/))) { out.push({ k: 'li', mark: m[1] + '.', s: ideaImgSegs(m[2]) }); return; }
+      if ((m = line.match(/^\s*>\s?(.*)$/))) { out.push({ k: 'quote', s: ideaImgSegs(m[1]) }); return; }
+      out.push({ k: 'p', s: ideaImgSegs(line.trim()) });
+    });
+    while (out.length && out[out.length - 1].k === 'gap') out.pop();
+    return out;
+  }
+
+  /* 切成折行的最小单位：一个汉字 / 一个西文词 / 一串空白。
+     按字符硬切的话英文单词会被劈成两半，所以西文按「连续字母数字」整块走 */
+  function ideaImgUnits(s) {
+    return s.match(/[\u2e80-\u9fff\u3000-\u303f\uff00-\uffef]|[A-Za-z0-9_@#$%&+~=^|/\\.:;'"-]+|\s+|[\s\S]/g) || [];
+  }
+
+  /* 折行：返回 [{ runs:[{t,w,bold,code}], w }]，runs 里同款式的字会合并成一段 */
+  function ideaImgWrap(ctx, segs, maxW, fontOf) {
+    var lines = [], cur = { runs: [], w: 0 };
+    function flush() { if (cur.w > 0 || cur.runs.length) lines.push(cur); cur = { runs: [], w: 0 }; }
+    (segs || []).forEach(function (seg) {
+      ctx.font = fontOf(seg);
+      var units = ideaImgUnits(seg.t);
+      for (var i = 0; i < units.length; i++) {
+        var u = units[i];
+        if (/^\s+$/.test(u) && cur.w === 0) continue;      /* 行首的空格不要 */
+        ctx.font = fontOf(seg);
+        var w = ctx.measureText(u).width;
+        if (cur.w + w > maxW && cur.w > 0 && !/^\s+$/.test(u)) flush();
+        var last = cur.runs[cur.runs.length - 1];
+        if (last && !!last.bold === !!seg.bold && !!last.code === !!seg.code) {
+          last.t += u; last.w += w;
+        } else {
+          cur.runs.push({ t: u, w: w, bold: !!seg.bold, code: !!seg.code });
+        }
+        cur.w += w;
+      }
+    });
+    flush();
+    if (!lines.length) lines.push({ runs: [], w: 0 });
+    return lines;
+  }
+
+  function ideaRoundRect(ctx, x, y, w, h, r) {
+    var rr = Math.min(r, w / 2, h / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + rr, y);
+    ctx.arcTo(x + w, y, x + w, y + h, rr);
+    ctx.arcTo(x + w, y + h, x, y + h, rr);
+    ctx.arcTo(x, y + h, x, y, rr);
+    ctx.arcTo(x, y, x + w, y, rr);
+    ctx.closePath();
+  }
+
+  /* 底色：两层极光 + 一条很淡的描边，跟站里那层背景一个调 */
+  function ideaImgBg(ctx, H) {
+    var P = ideaImgPal();
+    /* 底平涂，靠下面三层光晕出层次：斜向渐变在 canvas 里会被抖动成噪点，
+       整张图白胖 100~300KB，而肉眼几乎看不出它跟平涂的区别。 */
+    ctx.fillStyle = P.bg1;
+    ctx.fillRect(0, 0, IMG_W, H);
+
+    /* 只铺光晕自己的那块方框，别整张画布反复叠三层 —— 少一大截重绘，
+       也不至于让整张图都被渐变的抖动噪点填满（PNG 压不小） */
+    var glow = function (cx, cy, r, color) {
+      var rg = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+      rg.addColorStop(0, color);
+      rg.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = rg;
+      var x0 = Math.max(0, cx - r), y0 = Math.max(0, cy - r);
+      var x1 = Math.min(IMG_W, cx + r), y1 = Math.min(H, cy + r);
+      if (x1 > x0 && y1 > y0) ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
+    };
+    glow(IMG_W * .92, -60, 420, P.g1);
+    glow(-80, H * .55, 380, P.g2);
+    glow(IMG_W * .75, H + 40, 320, P.g3);
+
+    ctx.strokeStyle = P.edge;
+    ctx.lineWidth = 2;
+    ideaRoundRect(ctx, 1, 1, IMG_W - 2, H - 2, 35);
+    ctx.stroke();
+  }
+
+  /* 画正文：返回总高度（第二次调用时就是真实高度） */
+  function ideaImgPaint(ctx, it) {
+    var P = ideaImgPal();
+    var PAD = IMG_PAD, maxW = IMG_W - PAD * 2;
+    var y = PAD, cut = false;
+
+    ctx.textBaseline = 'alphabetic';
+    ctx.textAlign = 'left';
+
+    /* 顶部：左边「星屿 · 灵感随记」，右边时间（置顶带 📌） */
+    ctx.font = '600 13px ' + IMG_FONT;
+    ctx.fillStyle = P.mute;
+    ctx.fillText('星屿 · 灵感随记', PAD, y + 12);
+    ctx.font = '400 13px ' + IMG_FONT;
+    ctx.textAlign = 'right';
+    ctx.fillText((it.pinned ? '📌 ' : '') + ideaTime(it), IMG_W - PAD, y + 12);
+    ctx.textAlign = 'left';
+    y += 24;
+
+    var lg = ctx.createLinearGradient(PAD, 0, IMG_W - PAD, 0);
+    lg.addColorStop(0, P.rule);
+    lg.addColorStop(.5, P.a2);
+    lg.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = lg;
+    ctx.fillRect(PAD, y, maxW, 2);
+    y += 30;
+
+    var fontOf = function (kind, seg) {
+      var size = kind === 'h1' ? 26 : kind === 'h2' ? 22 : kind === 'quote' ? 18 : 19;
+      if (seg && seg.code) return '400 ' + (size - 2) + 'px ' + IMG_MONO;
+      return ((seg && seg.bold) ? '600 ' : '400 ') + size + 'px ' + IMG_FONT;
+    };
+
+    ideaImgBlocks(ideaBody(it.text) || it.text).forEach(function (b) {
+      if (y > IMG_MAX_H - 260) { cut = true; return; }
+      if (b.k === 'gap') { y += 14; return; }
+      if (b.k === 'rule') {
+        ctx.fillStyle = P.rule;
+        ctx.fillRect(PAD, y + 8, maxW, 1);
+        y += 22;
+        return;
+      }
+
+      var kind = b.k, lh, indent = 0, color = P.text;
+      if (kind === 'h1') { lh = 40; y += 12; }
+      else if (kind === 'h2') { lh = 34; y += 10; }
+      else if (kind === 'quote') { lh = 32; indent = 20; color = P.dim; }
+      else if (kind === 'li') { lh = 34; indent = 26; }
+      else if (kind === 'code') { lh = 28; indent = 14; }
+      else { lh = 34; }
+
+      var lines = ideaImgWrap(ctx, b.s, maxW - indent, function (seg) { return fontOf(kind, seg); });
+      var base = lh - Math.round(lh * 0.30);
+
+      lines.forEach(function (ln, li) {
+        if (kind === 'code') {                       /* 代码行铺一条很淡的底 */
+          ctx.fillStyle = P.codeBg;
+          ctx.fillRect(PAD, y, maxW, lh);
+        }
+        if (kind === 'quote') {
+          ctx.fillStyle = P.quoteBar;
+          ctx.fillRect(PAD + 4, y + 5, 3, lh - 10);
+          if (li === 0) { /* 只有第一行画竖线也不好看，所以每行都画 */ }
+        }
+        if (kind === 'li' && li === 0 && b.mark) {
+          ctx.font = '400 19px ' + IMG_FONT;
+          ctx.fillStyle = P.mute;
+          ctx.fillText(b.mark, PAD + 2, y + base);
+        }
+        var x = PAD + indent;
+        ln.runs.forEach(function (r) {
+          ctx.font = fontOf(kind, r);
+          ctx.fillStyle = r.code ? P.codeText : color;
+          ctx.fillText(r.t, x, y + base);
+          x += r.w;
+        });
+        y += lh;
+      });
+      y += (kind === 'h1' || kind === 'h2') ? 6 : 0;
+    });
+
+    if (cut) {
+      ctx.font = '400 19px ' + IMG_FONT;
+      ctx.fillStyle = P.mute;
+      ctx.fillText('……（太长，剩下的留给自己看）', PAD, y + 20);
+      y += 34;
+    }
+
+    /* 标签：玻璃底色的小胶囊，跟着主题 */
+    var tags = it.tags || [];
+    if (tags.length) {
+      y += 12;
+      ctx.font = '500 13px ' + IMG_FONT;
+      var tx = PAD, ty = y, th = 30;
+      tags.forEach(function (tg) {
+        var label = '#' + tg;
+        var tw = Math.round(ctx.measureText(label).width) + 22;
+        if (tx + tw > PAD + maxW) { tx = PAD; ty += th + 8; }
+        ctx.fillStyle = P.pillBg;
+        ideaRoundRect(ctx, tx, ty, tw, th, th / 2);
+        ctx.fill();
+        ctx.fillStyle = P.pillText;
+        ctx.fillText(label, tx + 11, ty + 20);
+        tx += tw + 8;
+      });
+      y = ty + th;
+    }
+
+    /* 页脚：左边站名，右边域名（图被转走之后还能找到出处） */
+    y += 26;
+    ctx.font = '400 12px ' + IMG_FONT;
+    ctx.fillStyle = P.mute;
+    ctx.fillText('星屿 XINGYU', PAD, y + 11);
+    var host = '';
+    try { host = location.host + location.pathname.replace(/index\.html$/, '').replace(/\/$/, ''); } catch (e) {}
+    if (host) {
+      ctx.textAlign = 'right';
+      ctx.fillText(host, IMG_W - PAD, y + 11);
+      ctx.textAlign = 'left';
+    }
+    return Math.ceil(y + 11 + PAD);
+  }
+
+  /* 拼出整张图的 canvas（2 倍图） */
+  function ideaImgCanvas(it) {
+    var probe = document.createElement('canvas');
+    probe.width = IMG_W;
+    probe.height = 10;
+    var pctx = probe.getContext('2d');
+    var H = Math.max(240, ideaImgPaint(pctx, it));
+
+    var cv = document.createElement('canvas');
+    cv.width = IMG_W * IMG_SCALE;
+    cv.height = H * IMG_SCALE;
+    var ctx = cv.getContext('2d');
+    ctx.scale(IMG_SCALE, IMG_SCALE);
+    ctx.save();
+    ideaRoundRect(ctx, 0, 0, IMG_W, H, 36);
+    ctx.clip();                       /* 圆角之外留透明，贴到哪儿都像一张卡片 */
+
+    /* 底色那层极光是「四分之一尺寸画好再放大」的：小图画渐变没那么重的抖动，
+       放大时浏览器自己做插值，看着一样柔，PNG 却能小掉八成。
+       文字必须在放大之后画，才不会被一起拉糊。 */
+    var q = 0.25;
+    var bcv = document.createElement('canvas');
+    bcv.width = Math.max(1, Math.round(IMG_W * q));
+    bcv.height = Math.max(1, Math.round(H * q));
+    var bctx = bcv.getContext('2d');
+    if (bctx.setTransform) bctx.setTransform(q, 0, 0, q, 0, 0);
+    else { bctx.scale(q, q); }
+    ideaImgBg(bctx, H);
+    ctx.drawImage(bcv, 0, 0, IMG_W, H);
+
+    ideaImgPaint(ctx, it);
+    ctx.restore();
+    return cv;
+  }
+
+
   function ideaCardHtml(it) {
     var body = ideaBody(it.text);
     var html = body ? MD.render(body) : '';
@@ -1077,6 +1406,8 @@
               ' aria-pressed="' + (it.pinned ? 'true' : 'false') + '"' +
               ' title="' + (it.pinned ? '取消置顶' : '置顶，让它排在前面') + '">' +
               (it.pinned ? '取消置顶' : '置顶') + '</button>' +
+            '<button class="idea-mini" type="button" data-idea-img="' + esc(it.id) + '"' +
+              ' title="把这张卡导出成一张图片">存图</button>' +
             '<button class="idea-mini" type="button" data-idea-edit="' + esc(it.id) + '">编辑</button>' +
             '<button class="idea-mini idea-mini--del" type="button" data-idea-del="' + esc(it.id) + '">删除</button>' +
           '</span>' +
@@ -1320,6 +1651,8 @@
       if (!t || !t.closest) return;
       var pn = t.closest('[data-idea-pin]');
       if (pn) { togglePin(pn.getAttribute('data-idea-pin')); return; }
+      var im = t.closest('[data-idea-img]');
+      if (im) { saveImage(im.getAttribute('data-idea-img')); return; }
       var ed = t.closest('[data-idea-edit]');
       if (ed) { startEdit(ed.getAttribute('data-idea-edit')); return; }
       var dl = t.closest('[data-idea-del]');
@@ -1476,18 +1809,42 @@
       }
     }
 
+    /* 存图：把这条灵感画成 PNG 存下来（画布逻辑在上面的 ideaImgCanvas） */
+    function saveImage(id) {
+      var it = null;
+      loadIdeas().forEach(function (x) { if (x.id === id) it = x; });
+      if (!it) return;
+      var cv;
+      try { cv = ideaImgCanvas(it); }
+      catch (e) { toast('这张图没画出来，刷新一下再试'); return; }
+      var name = '灵感随记_' + ideaStamp() + '.png';
+      if (!cv.toBlob) {                              /* 老浏览器兜底 */
+        downloadBlob(name, null, cv.toDataURL('image/png'));
+        toast('图片存好了 ✓');
+        return;
+      }
+      cv.toBlob(function (blob) {
+        if (!blob) { toast('图片生成失败，换个浏览器试试'); return; }
+        downloadBlob(name, blob);
+        toast('图片存好了 ✓ ' + Math.round(blob.size / 1024) + ' KB · ' + cv.width + '×' + cv.height);
+      }, 'image/png');
+    }
+
     /* 导出 / 导入 / 清空 */
     function ideaStamp() {
       var d = new Date();
       return d.getFullYear() + p2(d.getMonth() + 1) + p2(d.getDate()) + '_' + p2(d.getHours()) + p2(d.getMinutes());
     }
-    function download(name, text, mime) {
-      var blob = new Blob([text], { type: mime });
-      var url = URL.createObjectURL(blob);
+    /* 下载：blob 直接给，老浏览器可以走 dataURL */
+    function downloadBlob(name, blob, dataUrl) {
+      var url = dataUrl || URL.createObjectURL(blob);
       var a = document.createElement('a');
       a.href = url; a.download = name;
       document.body.appendChild(a); a.click(); document.body.removeChild(a);
-      setTimeout(function () { URL.revokeObjectURL(url); }, 1500);
+      if (!dataUrl) setTimeout(function () { URL.revokeObjectURL(url); }, 1500);
+    }
+    function download(name, text, mime) {
+      downloadBlob(name, new Blob([text], { type: mime }));
     }
     function exportIdeas() {
       var list = loadIdeas();

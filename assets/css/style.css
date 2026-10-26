@@ -2921,7 +2921,7 @@ html[data-readfont="serif"] .look-paper{
 .idea-card__date{ font-size:11.5px; color:var(--text-mute); font-variant-numeric:tabular-nums; }
 .idea-card__tags{ display:inline-flex; align-items:center; gap:6px; flex-wrap:wrap; }
 .idea-card__tags .tag{ padding:2px 9px; font-size:11.5px; }
-.idea-card__ops{ display:inline-flex; align-items:center; gap:6px; }
+.idea-card__ops{ display:inline-flex; align-items:center; gap:6px; margin-left:auto; }
 
 .idea-mini{
   padding:3px 7px; border:0; border-radius:8px; background:none;
