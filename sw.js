@@ -1,5 +1,5 @@
 /* =========================================================================
-   星屿 · Service Worker
+   壹号栈 · Service Worker
    -------------------------------------------------------------------------
    目标：装到手机主屏后像 App 一样打开，断网也能看已经访问过的内容。
 
@@ -11,8 +11,12 @@
 
    ⚠️ 发布新版本时，把 VERSION 和 index.html 里的 ?v= 一起改。
    ========================================================================= */
-var VERSION = 'v133';
-var CACHE = 'xingyu-' + VERSION;
+var VERSION = 'v134';
+/* 缓存前缀跟着站名走（v134 起叫壹号栈）。CACHE_PREFIXES 里留着旧的 xingyu-，
+   activate 时一起清 —— 不然改过名的老用户机器上会一直搁着几份旧站名的缓存。 */
+var CACHE_PREFIX = 'yihaozhan-';
+var CACHE = CACHE_PREFIX + VERSION;
+var CACHE_PREFIXES = [CACHE_PREFIX, 'xingyu-'];
 
 /* 断网兜底：至少这几个文件必须是可用的 */
 var CORE = [
@@ -40,7 +44,8 @@ self.addEventListener('activate', function (e) {
   e.waitUntil(
     caches.keys().then(function (keys) {
       return Promise.all(keys.map(function (k) {
-        if (k.indexOf('xingyu-') === 0 && k !== CACHE) return caches.delete(k);
+        var old = CACHE_PREFIXES.some(function (pre) { return k.indexOf(pre) === 0; });
+        if (old && k !== CACHE) return caches.delete(k);
       }));
     }).then(function () { return self.clients.claim(); })
   );
@@ -65,7 +70,7 @@ self.addEventListener('fetch', function (e) {
       }).catch(function () {
         return caches.match('./index.html').then(function (hit) {
           return hit || caches.match('./') || new Response(
-            '<h1>星屿暂时离线</h1><p>请连上网络后再试。</p>',
+            '<h1>壹号栈暂时离线</h1><p>请连上网络后再试。</p>',
             { headers: { 'Content-Type': 'text/html; charset=utf-8' } }
           );
         });

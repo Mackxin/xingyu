@@ -155,7 +155,7 @@ def main(src_path: str) -> None:
 
     js = [
         '/* =========================================================',
-        '   星屿 XINGYU · 书签数据（自动生成，别手改）',
+        '   壹号栈 YIHAOZHAN · 书签数据（自动生成，别手改）',
         '',
         '   来源：壹号导航 naver.html（%d 个分类 / %d 条链接）' % (len(out), sum(len(c['links']) for c in out)),
         '   重新生成：python3 tools/import-naver.py /path/to/naver.html',

@@ -1,5 +1,5 @@
 /* =========================================================
-   星屿 XINGYU · 书签数据（自动生成，别手改）
+   壹号栈 YIHAOZHAN · 书签数据（自动生成，别手改）
 
    来源：壹号导航 naver.html（50 个分类 / 2078 条链接）
    重新生成：python3 tools/import-naver.py /path/to/naver.html

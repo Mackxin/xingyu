@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<title>og-cover 模板（1200×630，tools/shot-og.js 截图用）</title>
+<style>
+  /* 站点分享封面的源版式：改文案后跑 node tools/shot-og.js 重新出 assets/og-cover.png */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 1200px; height: 630px; overflow: hidden; }
+  body {
+    font-family: -apple-system, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    background: #05060b; color: #fff; position: relative;
+  }
+  /* 极光光斑：右上紫蓝、左下青绿，跟站点背景一个调 */
+  .glow { position: absolute; border-radius: 50%; filter: blur(90px); }
+  .glow--tr { width: 560px; height: 560px; right: -80px; top: -160px;
+    background: radial-gradient(circle, rgba(124,156,255,.38), rgba(180,124,255,.18) 55%, transparent 75%); }
+  .glow--bl { width: 520px; height: 520px; left: -120px; bottom: -200px;
+    background: radial-gradient(circle, rgba(79,227,208,.22), transparent 70%); }
+  /* 细网格，隐约压住纯黑 */
+  .grid { position: absolute; inset: 0;
+    background-image: linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px),
+                      linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px);
+    background-size: 60px 60px; mask-image: radial-gradient(ellipse at 30% 40%, #000 30%, transparent 80%); }
+
+  .wrap { position: absolute; inset: 0; padding: 56px 64px; display: flex; }
+
+  .left { flex: 1 1 auto; display: flex; flex-direction: column; }
+  .brand { display: flex; align-items: center; gap: 14px; }
+  .brand__mark { width: 44px; height: 44px; border-radius: 13px; background: #0a0c14;
+    border: 1px solid rgba(255,255,255,.12); display: grid; place-items: center; }
+  .brand__name b { font-size: 24px; letter-spacing: 2px; }
+  .brand__name em { display: block; font-style: normal; font-size: 12.5px; letter-spacing: 5px;
+    color: rgba(255,255,255,.55); margin-top: 2px; }
+  .eyebrow { margin-top: 64px; font-size: 17px; letter-spacing: 10px; color: rgba(255,255,255,.66); }
+  .slogan { margin-top: 18px; line-height: 1.18; font-weight: 800; letter-spacing: 4px; }
+  .slogan .l1 { font-size: 92px; color: #fff; }
+  .slogan .l2 { font-size: 92px;
+    background: linear-gradient(100deg, #8ea2ff 5%, #b47cff 45%, #4fe3d0 95%);
+    -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .lede { margin-top: 34px; font-size: 23px; line-height: 1.75; color: rgba(255,255,255,.82); letter-spacing: 1px; }
+  .lede b { color: #fff; }
+  .badge { margin-top: 42px; align-self: flex-start; display: inline-flex; align-items: center; gap: 10px;
+    padding: 12px 22px; border-radius: 999px; font-size: 17px; letter-spacing: 1px;
+    background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.14); color: rgba(255,255,255,.85); }
+
+  /* 右侧：大号图标卡（手机主屏图标的放大版） */
+  .right { flex: 0 0 340px; display: grid; place-items: center; }
+  .appcard { width: 268px; height: 268px; border-radius: 60px; position: relative;
+    background: linear-gradient(160deg, rgba(124,156,255,.20), rgba(180,124,255,.12) 55%, rgba(79,227,208,.10));
+    border: 1px solid rgba(255,255,255,.14);
+    box-shadow: 0 30px 80px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.16);
+    display: grid; place-items: center; }
+  .appcard .spark { width: 128px; height: 128px; }
+  .appcard .dot { position: absolute; border-radius: 50%; }
+  .appcard .dot--t { width: 12px; height: 12px; right: 56px; top: 64px; background: #4fe3d0; }
+  .appcard .dot--b { width: 8px; height: 8px; left: 64px; bottom: 72px; background: rgba(142,162,255,.9); }
+</style>
+</head>
+<body>
+  <div class="glow glow--tr"></div>
+  <div class="glow glow--bl"></div>
+  <div class="grid"></div>
+
+  <div class="wrap">
+    <div class="left">
+      <div class="brand">
+        <span class="brand__mark">
+          <svg width="30" height="30" viewBox="0 0 32 32" aria-hidden="true">
+            <defs>
+              <linearGradient id="lg" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stop-color="#8ea2ff"/><stop offset=".55" stop-color="#b47cff"/><stop offset="1" stop-color="#4fe3d0"/>
+              </linearGradient>
+            </defs>
+            <path d="M16 4l2.7 8.4L27 15l-8.3 2.6L16 26l-2.7-8.4L5 15l8.3-2.6z" fill="url(#lg)"/>
+          </svg>
+        </span>
+        <span class="brand__name"><b>壹号栈</b><em>YIHAOZHAN</em></span>
+      </div>
+
+      <div class="eyebrow">探索 · 发现 · 记录</div>
+      <h1 class="slogan"><span class="l1">壹号为栈</span><br /><span class="l2">随处可归</span></h1>
+      <p class="lede">一个收着<b>链接、灵感与文章</b>的数字花园<br />精选导航 · 灵感分享 · 每日新发现</p>
+      <span class="badge">128 个精选站点 · 50 个主题分类</span>
+    </div>
+
+    <div class="right">
+      <div class="appcard">
+        <svg class="spark" viewBox="0 0 32 32" aria-hidden="true">
+          <defs>
+            <linearGradient id="sg" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#b9c6ff"/><stop offset=".55" stop-color="#cfa6ff"/><stop offset="1" stop-color="#8ef0e0"/>
+            </linearGradient>
+          </defs>
+          <path d="M16 2.5l3.4 10.6L30 16.5l-10.6 3.4L16 30.5l-3.4-10.6L2 16.5l10.6-3.4z" fill="url(#sg)"/>
+        </svg>
+        <span class="dot dot--t"></span><span class="dot dot--b"></span>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

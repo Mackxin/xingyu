@@ -1,7 +1,7 @@
 {
-  "name": "星屿 XingYu",
-  "short_name": "星屿",
-  "description": "一座悬浮在夜色里的个人数字花园：精选导航、灵感分享与每日新发现。",
+  "name": "壹号栈 YIHAOZHAN",
+  "short_name": "壹号栈",
+  "description": "一个收着链接、灵感与文章的数字花园：精选导航、灵感分享与每日新发现。",
   "lang": "zh-CN",
   "dir": "ltr",
   "start_url": "./#/home",

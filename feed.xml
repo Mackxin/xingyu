@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>星屿 · 灵感与文章</title>
+    <title>壹号栈 · 灵感与文章</title>
     <link>https://mackxin.github.io/xingyu/</link>
-    <description>以星为图，以屿为家 —— 每天一小条，记录遇见的工具、灵感与小发现，也写点长一点的文章。</description>
+    <description>壹号为栈，随处可归 —— 每天一小条，记录遇见的工具、灵感与小发现，也写点长一点的文章。</description>
     <language>zh-cn</language>
-    <lastBuildDate>Sat, 24 Oct 2026 05:57:47 GMT</lastBuildDate>
-    <generator>XINGYU gen-feed</generator>
+    <lastBuildDate>Tue, 27 Oct 2026 14:28:54 GMT</lastBuildDate>
+    <generator>YIHAOZHAN gen-feed</generator>
     <atom:link href="https://mackxin.github.io/xingyu/feed.xml" rel="self" type="application/rss+xml" />
   <item>
     <title>ComfyUI 无限画布</title>
@@ -131,11 +131,11 @@
     <category>AI</category>
   </item>
   <item>
-    <title>星屿导航 · 新版上线</title>
+    <title>壹号栈导航 · 新版上线</title>
     <link>https://mackxin.github.io/xingyu/#/nav</link>
     <guid isPermaLink="true">https://mackxin.github.io/xingyu/#/nav</guid>
     <pubDate>Sat, 17 Oct 2026 01:00:00 GMT</pubDate>
-    <description>把散落在浏览器书签栏里的网址重新收拢成 50 个主题岛屿，支持拼音与关键词即时搜索、收藏置顶，以及 ⌘K 一键盘点所有站点。</description>
+    <description>把散落在浏览器书签栏里的网址重新收拢成 50 个主题分类，支持拼音与关键词即时搜索、收藏置顶，以及 ⌘K 一键盘点所有站点。</description>
     <category>本站</category>
     <category>导航</category>
   </item>

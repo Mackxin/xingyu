@@ -1,5 +1,5 @@
 /* =========================================================
-   星屿 XINGYU · 数据层
+   壹号栈 YIHAOZHAN · 数据层
    所有内容集中在此，方便自行增删。
    link: { n 名称, u 链接, d 描述 }
    feed: { date 日期, icon 图标, title 标题, url 链接, desc 描述, tags 标签[] }
@@ -31,9 +31,9 @@ window.SITE_DATA = window.SITE_DATA || (function () {
   var feed = [
     {
       date: '2026-10-17', icon: '🧭',
-      title: '星屿导航 · 新版上线',
+      title: '壹号栈导航 · 新版上线',
       url: '#/nav',
-      desc: '把散落在浏览器书签栏里的网址重新收拢成 50 个主题岛屿，支持拼音与关键词即时搜索、收藏置顶，以及 ⌘K 一键盘点所有站点。',
+      desc: '把散落在浏览器书签栏里的网址重新收拢成 50 个主题分类，支持拼音与关键词即时搜索、收藏置顶，以及 ⌘K 一键盘点所有站点。',
       tags: ['本站', '导航']
     },
     {
@@ -137,10 +137,10 @@ window.SITE_DATA = window.SITE_DATA || (function () {
 
   /* ---------------- 首页快捷入口 ---------------- */
   var entries = [
-    { route: '#/nav',   icon: '🧭', title: '星屿导航',   desc: '攒了多年的书签全收在这一页，随时一键盘点。', wide: false, spark: true },
+    { route: '#/nav',   icon: '🧭', title: '壹号栈导航',   desc: '攒了多年的书签全收在这一页，随时一键盘点。', wide: false, spark: true },
     { route: '#/share', icon: '✨', title: '灵感分享',   desc: '像刷动态一样，回看这一年里遇见的工具、灵感与好内容。', wide: false, spark: false },
     { route: '#/post',  icon: '✍️', title: '手记文章',   desc: '写得长一点的东西都在这里：随笔、折腾记录与一点思考。', wide: false, spark: false },
-    { route: '#/about', icon: '🌌', title: '关于星屿',   desc: '一座以星为图、以屿为家的个人数字花园，慢慢生长。', wide: false, spark: false }
+    { route: '#/about', icon: '🌌', title: '关于壹号栈',   desc: '壹号为栈，随处可归的个人数字花园，慢慢生长。', wide: false, spark: false }
   ];
 
   /* ---------------- 文章（Markdown 原文） ----------------
@@ -201,12 +201,12 @@ window.SITE_DATA = window.SITE_DATA || (function () {
     },
     {
       id: 'how-xingyu-built',
-      title: '星屿是怎么搭起来的',
+      title: '壹号栈是怎么搭起来的',
       date: '2026-10-12',
       tags: ['建站', '技术'],
       excerpt: '一个不打包、不依赖、不联网也能打开的静态站点，是怎么组织的。',
       body: [
-        '星屿是一块**纯静态**的地方：没有构建步骤、没有依赖包、没有后端。双击 `index.html` 就能跑，' +
+        '壹号栈是一块**纯静态**的地方：没有构建步骤、没有依赖包、没有后端。双击 `index.html` 就能跑，' +
         '扔进任何静态托管也都能跑。',
         '',
         '## 三层结构',

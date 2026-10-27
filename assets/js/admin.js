@@ -1,5 +1,5 @@
 /* =========================================================================
-   星屿 · 后台管理面板（路由 #/admin）
+   壹号栈 · 后台管理面板（路由 #/admin）
    纯前端实现：改动实时生效并写入 localStorage。
    想对所有访客永久生效 → 「备份」页导出 JSON/JS，粘回 index.html 或 data.js。
    ========================================================================= */
@@ -1674,7 +1674,7 @@
         '<div class="look-preview">' +
           '<div class="look-paper">' +
             '<span class="look-paper__eyebrow">阅读效果预览</span>' +
-            '<h3>星屿是怎么搭起来的</h3>' +
+            '<h3>壹号栈是怎么搭起来的</h3>' +
             '<p>这是一段示例正文。字号、行高、字体和宽度都会立刻反映在这里——上面调一下，下面马上变，不用保存也不用刷新。</p>' +
             '<p>写长文的时候，<b>行高</b>比字号更影响读起来累不累：中文大概 1.8–2.0 最舒服；<b>正文宽度</b>太宽眼睛要来回扫，太窄又频繁换行。</p>' +
             '<p><span class="tag">#随笔</span> <span class="tag">#建站</span></p>' +
@@ -2067,7 +2067,7 @@
           }).join('') +
         '</select>' +
         '<input data-stat-f="n" value="' + esc(t.n) + '" placeholder="数字"' + (auto ? ' disabled' : '') + ' aria-label="数字" />' +
-        '<input data-stat-f="s" value="' + esc(t.s) + '" placeholder="说明文字（如 主题岛屿）" aria-label="说明文字" />' +
+        '<input data-stat-f="s" value="' + esc(t.s) + '" placeholder="说明文字（如 主题分类）" aria-label="说明文字" />' +
         '<span class="admin-link__ops">' +
           '<button type="button" data-stat-op="del" data-si="' + i + '" class="is-danger" title="删除">✕</button>' +
         '</span>' +
@@ -2268,7 +2268,7 @@
       '<div class="admin-card">' +
         '<div class="admin-card__head">' +
           '<div><h2>关于这一页</h2>' +
-            '<p>首页「关于星屿」那张卡片点进去就是它（<code>#/about</code>）。正文用 <b>Markdown</b>，' +
+            '<p>首页「关于壹号栈」那张卡片点进去就是它（<code>#/about</code>）。正文用 <b>Markdown</b>，' +
             '写法和「文章」页完全一样。</p></div>' +
           '<span class="admin-count">' + (a.md ? a.md.replace(/\s+/g, '').length + ' 字' : '内容为空') + '</span>' +
         '</div>' +
@@ -2450,7 +2450,7 @@
     }
 
     var out = [];
-    out.push('/* 星屿 · 站点数据快照');
+    out.push('/* 壹号栈 · 站点数据快照');
     out.push('   由后台「备份 → 发布到虚拟主机」导出，导出于 ' + nowText());
     out.push('   上传位置：assets/js/site-data.js（覆盖同名文件即可，index.html 已经引入它）');
     out.push('   想回到源码里的默认内容：把这个文件清空，只留注释。 */');
@@ -2606,13 +2606,13 @@
       '<?xml version="1.0" encoding="UTF-8"?>',
       '<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">',
       '  <channel>',
-      '    <title>' + xmlEsc((cfg.siteName || '星屿') + ' · 灵感与文章') + '</title>',
+      '    <title>' + xmlEsc((cfg.siteName || '壹号栈') + ' · 灵感与文章') + '</title>',
       '    <link>' + xmlEsc(base) + '</link>',
-      '    <description>' + xmlEsc((cfg.tagline || '以星为图，以屿为家') +
+      '    <description>' + xmlEsc((cfg.tagline || '壹号为栈，随处可归') +
         ' —— 每天一小条，记录遇见的工具、灵感与小发现，也写点长一点的文章。') + '</description>',
       '    <language>zh-cn</language>',
       '    <lastBuildDate>' + new Date().toUTCString() + '</lastBuildDate>',
-      '    <generator>' + xmlEsc((cfg.siteLatin || 'XINGYU') + ' gen-feed') + '</generator>',
+      '    <generator>' + xmlEsc((cfg.siteLatin || 'YIHAOZHAN') + ' gen-feed') + '</generator>',
       '    <atom:link href="' + xmlEsc(base + 'feed.xml') + '" rel="self" type="application/rss+xml" />',
       items,
       '  </channel>',
@@ -3235,7 +3235,7 @@
       var id = gistCfg().id;
       var payload = cloudPayload();
       var body2 = {
-        description: '星屿 XingYu · 自动备份',
+        description: '壹号栈 Yihaozhan · 自动备份',
         public: false,
         files: {}
       };
@@ -3384,7 +3384,7 @@
       ['🧭 导航', '全部分类 + 站点卡片，' + d.links + ' 个站点；顶栏可搜、可只看收藏、可随机漫游'],
       ['📰 分享', '按日期分组的时间线，' + fed + ' 条；点标签筛选，点卡片直接开原链接'],
       ['✍️ 文章', '列表 + 阅读页（右侧目录、上一篇/下一篇、代码高亮）'],
-      ['🌌 关于', '自己的介绍页 <code>#/about</code>：名字来由、岛上有什么、怎么逛、关于我；正文是 Markdown'],
+      ['🌌 关于', '自己的介绍页 <code>#/about</code>：名字来由、栈里有什么、怎么逛、关于我；正文是 Markdown'],
       ['🔐 后台', '就是这里：改完立刻生效，但只存在本机浏览器']
     ].map(function (r) { return gRow(r[0], r[1]); }).join('');
 
@@ -4375,7 +4375,7 @@
           try { obj = JSON.parse(reader.result); } catch (e) { obj = null; }
           var info = describeBackup(obj);
           if (!info) {
-            toast('这个文件不是星屿的备份');
+            toast('这个文件不是壹号栈的备份');
             if (bkName) bkName.textContent = f.name + '（无法识别）';
             bkFile.value = '';
             return;

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /* =========================================================================
-   星屿 · 生成 RSS 订阅源
+   壹号栈 · 生成 RSS 订阅源
    -------------------------------------------------------------------------
    用法：
      node tools/gen-feed.js                       # 用默认线上地址
@@ -105,8 +105,8 @@ var merged = feed.map(function (f) {
 merged.sort(function (a, b) { return String(b.date).localeCompare(String(a.date)); });
 merged = merged.slice(0, LIMIT);
 
-var siteName = loaded.cfg.siteName || '星屿';
-var latin = loaded.cfg.siteLatin || 'XINGYU';
+var siteName = loaded.cfg.siteName || '壹号栈';
+var latin = loaded.cfg.siteLatin || 'YIHAOZHAN';
 var tagline = loaded.cfg.tagline || '以星为图，以屿为家';
 
 var items = merged.map(function (f) {

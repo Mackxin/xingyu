@@ -1,5 +1,5 @@
 /* =========================================================
-   星屿 XINGYU · 应用逻辑
+   壹号栈 YIHAOZHAN · 应用逻辑
    无框架单页应用：hash 路由 + 模板渲染
    ========================================================= */
 (function () {
@@ -361,14 +361,14 @@
   function homeCfg() {
     if (window.XYStore && window.XYStore.home) return window.XYStore.home();
     return {
-      eyebrow: '探索 · 发现 · 记录', titleTop: '欢迎来到', titleMain: '星屿',
+      eyebrow: '探索 · 发现 · 记录', titleTop: '欢迎来到', titleMain: '壹号栈',
       descBefore: '一座悬浮在夜色里的',
-      descAfter: '。把散落的网址、遇见的工具与闪过的念头，安放在同一片星空下——以星为图，以屿为家。',
-      rotator: ['数字花园', '灵感岛屿', '资源航图', '私人书房'],
+      descAfter: '。把散落的网址、遇见的工具与闪过的念头，都收进同一间栈房——壹号为栈，随处可归。',
+      rotator: ['数字花园', '灵感客栈', '资源航图', '私人书房'],
       cta1Text: '开始探索', cta1Url: '#/nav', cta2Text: '随机漫游',
       badge: '🛰️ 持续更新中', image: '', imageFit: 'cover',
       stats: [
-        { auto: 'cats', n: '', s: '主题岛屿' }, { auto: 'links', n: '', s: '站点坐标' },
+        { auto: 'cats', n: '', s: '主题分类' }, { auto: 'links', n: '', s: '站点坐标' },
         { auto: 'feed', n: '', s: '分享条目' }, { auto: 'days', n: '', s: '成长天数' }
       ],
       entries: ENTRIES,
@@ -380,8 +380,8 @@
   function aboutCfg() {
     if (window.XYStore && window.XYStore.about) return window.XYStore.about();
     return {
-      eyebrow: 'About · 关于', title: '关于星屿',
-      lede: '一座以星为图、以屿为家的个人数字花园。',
+      eyebrow: 'About · 关于', title: '关于壹号栈',
+      lede: '壹号为栈，随处可归的个人数字花园。',
       updated: '', md: '内容还没写。到后台「首页内容 → 关于这一页」补上就行。'
     };
   }
@@ -551,7 +551,7 @@
     '</section>';
   }
 
-  var ROTATOR_WORDS = ['数字花园', '灵感岛屿', '资源航图', '私人书房'];
+  var ROTATOR_WORDS = ['数字花园', '灵感客栈', '资源航图', '私人书房'];
   var rotatorIndex = 0;
   function rotatorHtml() {
     var w = ROTATOR_WORDS;
@@ -819,7 +819,7 @@
     return '<div class="page-head page-head--nav">' +
       '<div class="page-head__main">' +
         '<span class="eyebrow">Navigation · 航图</span>' +
-        '<h1>星屿导航</h1>' +
+        '<h1>壹号栈导航</h1>' +
         '<p>攒了多年的老书签全收在这一页 —— 共 <b>' + CATS.length + '</b> 类、<b>' + totalLinks + '</b> 个坐标。' +
           '顶部搜索框随时筛，按 <kbd style="font-family:inherit;padding:1px 6px;border:1px solid var(--border);border-radius:6px;font-size:12px">⌘K</kbd> 一键盘点。' +
           /* 卡片上没有按钮了，收藏 / 复制靠右键（手机长按），这里提示一句，别让人找不着 */
@@ -1236,10 +1236,10 @@
     ctx.textBaseline = 'alphabetic';
     ctx.textAlign = 'left';
 
-    /* 顶部：左边「星屿 · 灵感随记」，右边时间（置顶带 📌） */
+    /* 顶部：左边「壹号栈 · 灵感随记」，右边时间（置顶带 📌） */
     ctx.font = '600 13px ' + IMG_FONT;
     ctx.fillStyle = P.mute;
-    ctx.fillText('星屿 · 灵感随记', PAD, y + 12);
+    ctx.fillText('壹号栈 · 灵感随记', PAD, y + 12);
     ctx.font = '400 13px ' + IMG_FONT;
     ctx.textAlign = 'right';
     ctx.fillText((it.pinned ? '📌 ' : '') + ideaTime(it), IMG_W - PAD, y + 12);
@@ -1339,7 +1339,7 @@
     y += 26;
     ctx.font = '400 12px ' + IMG_FONT;
     ctx.fillStyle = P.mute;
-    ctx.fillText('星屿 XINGYU', PAD, y + 11);
+    ctx.fillText('壹号栈 YIHAOZHAN', PAD, y + 11);
     var host = '';
     try { host = location.host + location.pathname.replace(/index\.html$/, '').replace(/\/$/, ''); } catch (e) {}
     if (host) {
