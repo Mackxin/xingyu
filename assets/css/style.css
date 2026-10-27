@@ -3386,32 +3386,34 @@ a.sponsor__code:hover .sponsor__code-label{ color:var(--text); }
    ---------------------------------------------------------
    原来那张写卡铺满整个内容区（1440 下 1365px 宽），敲一行字
    右边空掉八成，看着像个坏掉的输入框。现在：
-     · 左边一栏 460px 的写作区，滚动时跟住不动；
-     · 右边是搜索栏 + 标签条 + 卡片瀑布流，各占其位。
+     · 左边一栏 400~460px 的写作面板，高度正好一屏、滚动时跟住不动；
+     · 右边（.idea-side）是搜索栏 + 标签条 + 卡片瀑布流，各占其位。
    1000px 以下铺不下两栏，退回单列（手机上本来就该是单列）。
+   v133：写作卡从「只占 230px 高的一小块」改成占满一屏 —— textarea
+   用 flex 撑满卡片，写长文不用在小框里拖滚动条。
+   ⚠️ 用 flex 不用 grid：写作卡跨三行时会把多出来的高度摊进三行行高，
+   右栏会出现「搜索…(空一大截)…卡片」的怪缝隙。
    ========================================================= */
 @media (min-width:1000px){
-  .idea-box{
-    display:grid;
-    grid-template-columns:460px minmax(0, 1fr);
-    gap:16px 30px;
-    align-items:start;
-  }
-  /* 左栏跨满右栏的三行高度，`align-items:start` 让卡片本身只占内容高，
-     这样 sticky 才有地方滑动（滚动看旧想法时写作框一直留在视野里）。 */
+  .idea-box{ display:flex; align-items:flex-start; gap:30px; }
   .idea-composer{
-    grid-column:1; grid-row:1 / span 3;
+    flex:0 0 460px;
     position:sticky; top:calc(var(--header-h, 96px) + 16px);
+    height:calc(100vh - var(--header-h, 96px) - 48px);
+    display:flex; flex-direction:column;
   }
-  .idea-bar{ grid-column:2; grid-row:1; margin:0; }
-  .idea-rail{ grid-column:2; grid-row:2; margin:0; }
-  .idea-grid{ grid-column:2; grid-row:3; columns:250px; }
-  /* 左栏窄，提示那行会跟按钮挤 —— 让它独占一行、按钮跟着拉满 */
-  .idea-composer__foot{ flex-direction:column; align-items:stretch; gap:10px; }
+  .idea-side{ flex:1 1 auto; min-width:0; }
+  .idea-bar{ margin:0; }
+  .idea-rail{ margin:0; }
+  .idea-grid{ columns:250px; }
+  /* textarea 占满卡片剩余高度；高度已经交给 flex 管，就不再让手动拖了 */
+  .idea-composer textarea{ flex:1 1 auto; min-height:120px; resize:none; }
+  .idea-composer__foot{ flex:0 0 auto; flex-direction:column; align-items:stretch; gap:10px; }
   .idea-composer__foot .btn{ width:100%; }
   .idea-tip{ line-height:1.6; }
 }
 /* 1000～1320 之间左栏收一档，右栏还能稳住两到三列 */
 @media (min-width:1000px) and (max-width:1320px){
-  .idea-box{ grid-template-columns:400px minmax(0, 1fr); gap:16px 24px; }
+  .idea-box{ gap:24px; }
+  .idea-composer{ flex-basis:400px; }
 }

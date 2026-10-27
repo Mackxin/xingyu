@@ -1479,13 +1479,16 @@
         '</div>' +
       '</div>' +
       '<div class="idea-box" id="ideaBox">' +
-        '<div class="idea-composer">' +
-          '<textarea id="ideaInput" rows="4" placeholder="想到什么就记一句…&#10;支持 Markdown，用 #标签 归类&#10;⌘ / Ctrl + Enter 保存"></textarea>' +
-          '<div class="idea-composer__foot">' +
-            '<span class="idea-tip">存在这台浏览器里 · 换设备或清缓存前记得「导出」</span>' +
-            '<button class="btn btn--primary" type="button" id="ideaSave">记下来</button>' +
-          '</div>' +
+      '<div class="idea-composer">' +
+        '<textarea id="ideaInput" rows="4" placeholder="想到什么就记一句…&#10;支持 Markdown，用 #标签 归类&#10;⌘ / Ctrl + Enter 保存"></textarea>' +
+        '<div class="idea-composer__foot">' +
+          '<span class="idea-tip">存在这台浏览器里 · 换设备或清缓存前记得「导出」</span>' +
+          '<button class="btn btn--primary" type="button" id="ideaSave">记下来</button>' +
         '</div>' +
+      '</div>' +
+      /* v133：右栏（搜索 + 标签 + 卡片）包进一层，桌面两栏布局才好摆 ——
+         左边写作面板、右边整列内容，flex 一人一列互不干扰。 */
+      '<div class="idea-side">' +
         /* 这一条不在 paint() 的重绘范围内，否则一边打字一边被换掉 */
         '<div class="idea-bar">' +
           '<div class="idea-search' + (q ? ' has-val' : '') + '">' +
