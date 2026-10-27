@@ -1953,10 +1953,10 @@
       '</div>' +
       '<div class="admin-card">' +
         '<h2>顶栏 Logo</h2>' +
-        '<p>默认是那颗内置的渐变色星星。想换成自己的图标就上传一张，' +
+        '<p>默认是内置的渐变色「栈」字。想换成自己的图标就上传一张，' +
         '<b>建议用正方形、背景透明或深色的 PNG</b>，显示效果最好。</p>' +
         imgPicker({ scope: 'site', key: 'logoImage', val: c.logoImage,
-                    none: '内置星形图标' }) +
+                    none: '内置「栈」字图标' }) +
       '</div>' +
       '<div class="admin-card">' +
         '<h2>浏览器标签图标 Favicon</h2>' +

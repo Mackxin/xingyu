@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<title>应用图标模板（正方形，tools/shot-icon.js 截 512/192/180 三档）</title>
+<style>
+  /* 站点应用图标的源版式：满版深底 + 中央渐变「栈」字（v134 前是四角星） */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; overflow: hidden; }
+  body {
+    background: #0a0c14;
+    background-image: radial-gradient(120% 120% at 50% 42%, #131728 0%, #0a0c14 58%, #07080f 100%);
+    display: grid; place-items: center;
+    font-family: -apple-system, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  }
+  .zi {
+    font-size: 58vmin; line-height: 1; font-weight: 800;
+    background: linear-gradient(135deg, #b9c6ff 0%, #b47cff 52%, #8ef0e0 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    filter: drop-shadow(0 0 4vmin rgba(148,130,255,.45));
+    transform: translateY(1.5vmin); /* 视觉重心略上，字往下沉一点找平衡 */
+  }
+</style>
+</head>
+<body><span class="zi">栈</span></body>
+</html>

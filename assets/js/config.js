@@ -38,7 +38,7 @@
     showDesc: false,           // 卡片名称下面那行介绍 / 域名
     showCatIcon: false,        // 分类名前面的 emoji（🎨 设计天才 这种）
     cardDensity: 'normal',     // compact | normal | comfy —— 导航页卡片密度
-    logoImage: '',             // 顶栏 Logo 图片（data URL 或网址）；空 = 内置星形 SVG
+    logoImage: '',             // 顶栏 Logo 图片（data URL 或网址）；空 = 内置「栈」字 SVG
     favicon: '',               // 浏览器标签图标；空 = 内置 SVG
     startDate: '2024-01-01',   // 建站日期（YYYY-MM-DD）—— 首页「成长天数」从这里算
     /* { icon, name, url } —— 最多 MAX_LINKS 个。默认放一条「灵感随记」，
