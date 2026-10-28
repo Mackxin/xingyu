@@ -1418,7 +1418,7 @@
   function ideaGridHtml(list, tag, q) {
     var show = ideaFiltered(list, tag, q);
     if (!list.length) {
-      return emptyHtml('💡', '还没有记下什么', '在下面写一句就行 —— 想法、链接、半句诗，都可以。');
+      return emptyHtml('💡', '还没有记下什么', '随手写一句就好 —— 想法、链接、半句诗，都可以。');
     }
     if (!show.length) {
       if (q) return emptyHtml('🔍', '没搜到「' + esc(String(q).trim()) + '」', '换个词试试，或者点右边那个 × 清掉搜索。');
@@ -1506,6 +1506,26 @@
       '</section>';
   }
 
+  /* v137：写作面板的高度按「屏幕上还剩多少地方」算。
+     面板在文档里是从标题区下面开始的（1440×900 下约 349px），
+     v133 只按 100vh 减顶栏算高度，面板底部会到 1113px —— 超出视口 213px，
+     「记下来」按钮正好落在屏幕外，用户就看不见了。
+     这里量出面板真实的文档起点（用 offsetTop 链，sticky 不会影响它），
+     高度 = 视口高 − 起点 − 16，下限 320（再矮就没法写了，让它滚）。
+     1000px 以下是单列，不需要这个值。 */
+  function fitIdeaComposer() {
+    var box = $('#ideaBox');
+    if (!box) return;
+    var comp = box.querySelector('.idea-composer');
+    if (!comp) return;
+    if (window.innerWidth < 1000) { comp.style.removeProperty('--idea-h'); return; }
+    var y = 0, el = comp;
+    while (el) { y += el.offsetTop || 0; el = el.offsetParent; }
+    var h = Math.round(window.innerHeight - y - 16);
+    h = Math.max(320, Math.min(h, window.innerHeight - 140));
+    comp.style.setProperty('--idea-h', h + 'px');
+  }
+
   /* 灵感页的事件：全部委托在 #ideaBox 上，筛选时只换列表和标签条，不整页重渲
      （整页重渲会把正在写的输入框清掉） */
   function bindIdea() {
@@ -1514,6 +1534,14 @@
     var ta = $('#ideaInput');
     var grid = $('#ideaGrid');
     var rail = $('#ideaRail');
+
+    /* 面板高度跟着屏幕走：进页面算一次、改窗口再算一次（监听只挂一次） */
+    fitIdeaComposer();
+    requestAnimationFrame(fitIdeaComposer);
+    if (!window.__ideaFitBound) {
+      window.__ideaFitBound = true;
+      window.addEventListener('resize', fitIdeaComposer);
+    }
 
     function syncDraft() {
       try { localStorage.setItem(IDEA_DRAFT_KEY, ta.value); } catch (e) {}

@@ -3399,21 +3399,73 @@ a.sponsor__code:hover .sponsor__code-label{ color:var(--text); }
   .idea-composer{
     flex:0 0 460px;
     position:sticky; top:calc(var(--header-h, 96px) + 16px);
-    height:calc(100vh - var(--header-h, 96px) - 48px);
+    /* v137：高度交给 JS 量出来的 --idea-h。只按 100vh 算会忽略标题区占掉的那一段，
+       面板底部会越过视口，「记下来」按钮就落到屏幕外看不见了。
+       这里的 calc 只是 JS 没跑起来时的兜底。 */
+    height:var(--idea-h, calc(100vh - var(--header-h, 96px) - 120px));
+    max-height:calc(100vh - var(--header-h, 96px) - 32px);
     display:flex; flex-direction:column;
+    overflow:hidden;            /* 内容再多也不许顶出面板底边 */
   }
   .idea-side{ flex:1 1 auto; min-width:0; }
   .idea-bar{ margin:0; }
   .idea-rail{ margin:0; }
   .idea-grid{ columns:250px; }
-  /* textarea 占满卡片剩余高度；高度已经交给 flex 管，就不再让手动拖了 */
-  .idea-composer textarea{ flex:1 1 auto; min-height:120px; resize:none; }
-  .idea-composer__foot{ flex:0 0 auto; flex-direction:column; align-items:stretch; gap:10px; }
-  .idea-composer__foot .btn{ width:100%; }
-  .idea-tip{ line-height:1.6; }
+  /* textarea 吃掉面板剩余高度；高度已由 flex 管，就不再让手动拖了。
+     min-height:0 是关键：否则 flex 子项不肯小于内容高度，会把底栏挤出去。 */
+  .idea-composer textarea{ flex:1 1 auto; min-height:0; resize:none; }
+  /* 底栏横排：提示在左、按钮在右，按钮文字居中 */
+  .idea-composer__foot{
+    flex:0 0 auto; flex-direction:row; align-items:center;
+    gap:14px; padding-top:12px;
+  }
+  .idea-composer__foot .btn{
+    flex:0 0 auto; min-width:112px; white-space:nowrap; text-align:center;
+  }
+  .idea-tip{ flex:1 1 auto; min-width:0; line-height:1.5; font-size:11.5px; }
 }
 /* 1000～1320 之间左栏收一档，右栏还能稳住两到三列 */
 @media (min-width:1000px) and (max-width:1320px){
   .idea-box{ gap:24px; }
   .idea-composer{ flex-basis:400px; }
+}
+
+/* =========================================================
+   v137 · 灵感随记：空状态重做
+   ---------------------------------------------------------
+   原来空状态（.empty）会落进 .idea-grid 的 columns 瀑布流里，
+   被拆成两半 —— 💡 和标题挤在左列，那句说明文字被甩到右列，
+   中间还断一截，看着像布局坏了。
+   没有卡片可排的时候就不该用多列：取消 columns，改成一整块
+   居中的虚线卡（圆形图标底 + 标题 + 一句说明）。
+   其它页面的 .empty（分享、导航）照旧不动，只认 .idea-grid 里的。
+   ========================================================= */
+.idea-grid:has(> .empty){ columns:auto; }
+
+.idea-grid > .empty{
+  gap:16px;
+  padding:clamp(44px, 9vh, 84px) 30px;
+  min-height:clamp(260px, 42vh, 380px);
+  align-content:center;
+  border:1px dashed color-mix(in srgb, var(--text-mute) 32%, transparent);
+  background:
+    radial-gradient(120% 110% at 50% 0%, color-mix(in srgb, var(--a1) 9%, transparent), transparent 68%),
+    var(--glass);
+}
+/* 圆形图标底：只给一点品牌渐变，别抢文字 */
+.idea-grid > .empty .empty__emoji{
+  display:grid; place-items:center;
+  width:62px; height:62px; border-radius:50%;
+  font-size:26px; line-height:1;
+  background:
+    radial-gradient(circle at 30% 25%, color-mix(in srgb, var(--a1) 30%, transparent), transparent 72%),
+    var(--glass-2);
+  border:1px solid color-mix(in srgb, var(--a1) 24%, transparent);
+  box-shadow:0 10px 28px rgba(0,0,0,.22);
+}
+.idea-grid > .empty h3{
+  font-size:16.5px; font-weight:600; letter-spacing:.4px; color:var(--text);
+}
+.idea-grid > .empty p{
+  max-width:26em; font-size:13px; line-height:1.8; color:var(--text-mute);
 }
