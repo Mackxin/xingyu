@@ -729,7 +729,7 @@ html[data-theme="light"] .btn--primary{ color:#080a12; }
 }
 .feature-card__top{ display:flex; align-items:center; gap:10px; }
 .feature-card h4{ margin:2px 0 0; font-size:15.5px; font-weight:600; }
-.feature-card p{ margin:0; font-size:12.8px; color:var(--text-dim); line-height:1.7;
+.feature-card p{ margin:0; font-size:12.8px; color:var(--text-dim); line-height:1.7; white-space:pre-line;
   display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
 .feature-card__meta{ margin-top:auto; display:flex; align-items:center; gap:8px; font-size:11.5px; color:var(--text-mute); }
 
@@ -1182,7 +1182,10 @@ html[data-theme="light"] .tl-date{ box-shadow:none; }
   opacity:.45; transition:all .3s var(--ease); }
 .feed-card:hover .feed-card__title{ color:var(--ink-a1); }
 .feed-card:hover .feed-card__title svg{ opacity:1; transform:none; }
-.feed-card__desc{ margin:8px 0 0; color:var(--text-dim); font-size:13.8px; line-height:1.8; }
+/* v141：描述里的换行要照原样显示 —— 后台编辑框是 4 行 textarea，人家按了回车，
+   预览卡和前台卡片以前会把它抹成一整段（看着像「预览没跟着变」）。
+   pre-line 只保换行、仍然折叠多余空格，最贴近「所见即所得」。 */
+.feed-card__desc{ margin:8px 0 0; color:var(--text-dim); font-size:13.8px; line-height:1.8; white-space:pre-line; }
 .feed-card__tags{ display:flex; flex-wrap:wrap; gap:7px; margin-top:13px; }
 .tag{
   display:inline-flex; align-items:center;

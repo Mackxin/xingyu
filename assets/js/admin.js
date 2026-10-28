@@ -1312,10 +1312,10 @@
               '<label class="admin-field"><span class="admin-field__label">标题</span>' +
                 '<input type="text" data-ff="title" value="' + esc(f.title) + '" ' +
                   'placeholder="这条分享讲什么，一句话" maxlength="120" /></label>' +
-              '<label class="admin-field"><span class="admin-field__label">链接<em>站内页面写 #/nav 这种</em></span>' +
+              '<label class="admin-field"><span class="admin-field__label">链接<em>站内页面写 #/nav 这种；留空就是纯文字卡</em></span>' +
                 '<input type="text" data-ff="url" value="' + esc(f.url) + '" spellcheck="false" ' +
-                  'placeholder="https://example.com 或 #/nav" /></label>' +
-              '<label class="admin-field"><span class="admin-field__label">描述<em>一两句话</em></span>' +
+                  'placeholder="https://example.com 或 #/nav（可以留空）" /></label>' +
+              '<label class="admin-field"><span class="admin-field__label">描述<em>一两句话，回车换行会原样显示</em></span>' +
                 '<textarea data-ff="desc" rows="4" placeholder="它是什么、好在哪，随手写两句">' + esc(f.desc) + '</textarea></label>' +
             '</div>' +
             '<div>' +
@@ -1390,7 +1390,8 @@
   function saveFeed(root, body) {
     var data = collectFeedForm(body);
     if (!data.title) { toast('先写个标题吧'); return; }
-    if (!data.url) { toast('还差一个链接（站内可以写 #/nav）'); return; }
+    /* v141：链接不再是必填 —— 留空就是一条「只有文字、点了不跳」的分享（比如站点公告），
+       前台会渲染成 .feed-card--nolink。以前这里硬拦着，连带那两条本来就没链接的老条目都改不动。 */
     var list = Store.feedAll();
     if (feedEditing && !feedEditing.isNew && list[feedEditing.idx]) list[feedEditing.idx] = data;
     else list.unshift(data);
