@@ -2879,7 +2879,8 @@ html[data-readfont="serif"] .look-paper{
 .idea-grid{ columns:300px; column-gap:14px; }
 .idea-card{
   display:inline-block; width:100%; margin:0 0 14px;
-  padding:16px 18px; border-radius:var(--r);
+  /* v138：操作按钮挪到卡片右上角，顶部留出那一行的高度，正文不会从按钮底下穿过 */
+  padding:42px 20px 16px; border-radius:var(--r);
   background:var(--glass); border:1px solid transparent;
   vertical-align:top;
   break-inside:avoid; -webkit-column-break-inside:avoid;
@@ -2911,7 +2912,11 @@ html[data-readfont="serif"] .look-paper{
 .idea-card__date{ font-size:11.5px; color:var(--text-mute); font-variant-numeric:tabular-nums; }
 .idea-card__tags{ display:inline-flex; align-items:center; gap:6px; flex-wrap:wrap; }
 .idea-card__tags .tag{ padding:2px 9px; font-size:11.5px; }
-.idea-card__ops{ display:inline-flex; align-items:center; gap:6px; margin-left:auto; }
+/* v138：操作按钮固定在卡片右上角（原来是压在底部 meta 后面，内容一长就要往下找） */
+.idea-card__ops{
+  position:absolute; top:9px; right:10px; margin:0;
+  display:inline-flex; align-items:center; gap:2px;
+}
 
 .idea-mini{
   padding:3px 7px; border:0; border-radius:8px; background:none;
@@ -3318,12 +3323,11 @@ a.sponsor__code:hover .sponsor__code-label{ color:var(--text); }
 /* ---------- ④ 灵感卡片：置顶 / 随机回顾闪烁 ---------- */
 .idea-card{ position:relative; }
 .idea-card.is-pinned{ background:var(--glass-2); }
-/* 📌 挂在右上角，正文让出 18px，否则长句会从图钉底下穿过去 */
-.idea-card__pin{
-  position:absolute; top:11px; right:13px;
-  font-size:12px; line-height:1; opacity:.8; pointer-events:none;
-}
-.idea-card.is-pinned .idea-card__body{ padding-right:18px; }
+/* 📌 已撤（v138）：右上角让给操作按钮，置顶态靠背景变亮 + 「取消置顶」表示。
+   下面这条留着兜住旧缓存里可能残留的节点，别让它占位。 */
+.idea-card__pin{ display:none; }
+/* 📌 已撤（v138：右上角让给操作按钮），这条规则留着给老缓存里的开关留个空壳 */
+.idea-card__pin{ display:none; }
 /* 置顶按钮的「已置顶」状态：底变亮 + 字变亮，别用色相区分（浅色主题下蓝字对比度不够） */
 .idea-mini.is-on{ color:var(--text); background:var(--glass-hi); font-weight:600; }
 /* 随机回顾抽到的那张：闪两下，眼能跟上它落在哪儿 */
@@ -3410,7 +3414,9 @@ a.sponsor__code:hover .sponsor__code-label{ color:var(--text); }
   .idea-side{ flex:1 1 auto; min-width:0; }
   .idea-bar{ margin:0; }
   .idea-rail{ margin:0; }
-  .idea-grid{ columns:250px; }
+  /* v138：250 → 300。250 时右栏能塞三列，每列才 270 出头，长句一行没几个字；
+     300 之后右栏落成两列（846 宽时每列 416），卡片读起来宽松多了。 */
+  .idea-grid{ columns:300px; }
   /* textarea 吃掉面板剩余高度；高度已由 flex 管，就不再让手动拖了。
      min-height:0 是关键：否则 flex 子项不肯小于内容高度，会把底栏挤出去。 */
   .idea-composer textarea{ flex:1 1 auto; min-height:0; resize:none; }
@@ -3468,4 +3474,16 @@ a.sponsor__code:hover .sponsor__code-label{ color:var(--text); }
 }
 .idea-grid > .empty p{
   max-width:26em; font-size:13px; line-height:1.8; color:var(--text-mute);
+}
+
+/* =========================================================
+   v138 · 窄桌面（1000～1200）的列宽收一档
+   ---------------------------------------------------------
+   这档右栏只有 540 出头：300 的列宽塞不下两列（会退成一张大卡占满全宽），
+   收到 260 正好两列、每列约 266，比改版前的 250 略宽一点。
+   ========================================================= */
+@media (min-width:1000px) and (max-width:1200px){
+  .idea-grid{ columns:260px; }
+  /* 卡只有 266 宽，四个按钮排一行几乎顶满，字号和内距各收一点 */
+  .idea-card__ops .idea-mini{ padding:3px 5px; font-size:11.5px; }
 }

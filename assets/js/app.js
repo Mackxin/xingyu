@@ -1394,7 +1394,8 @@
       return '<button class="tag" type="button" data-idea-tag="' + esc(t) + '">#' + esc(t) + '</button>';
     }).join('');
     return '<article class="idea-card' + (it.pinned ? ' is-pinned' : '') + '" data-idea-card="' + esc(it.id) + '">' +
-        (it.pinned ? '<span class="idea-card__pin" aria-hidden="true">📌</span>' : '') +
+        /* v138：置顶不再挂 📌（它和右上角的「取消置顶」按钮抢位置，也重复），
+           置顶态靠背景变亮 + 按钮变「取消置顶」表示 */
         '<div class="idea-card__body md">' + html + '</div>' +
         '<footer class="idea-card__foot">' +
           '<div class="idea-card__meta">' +
