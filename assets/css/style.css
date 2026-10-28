@@ -3876,3 +3876,35 @@ html[data-theme="light"] .card-menu__i.is-later{ color:var(--ink-a1); }
     mask-image:linear-gradient(90deg,#000 calc(100% - 26px),transparent);
   }
 }
+
+/* =========================================================
+   v143 · 去掉点击 / 长按那一下的「浅色背景一闪」
+   ========================================================= */
+
+/* 成因：浏览器给所有可点元素（button / a / [role]）默认糊一层
+   -webkit-tap-highlight-color = rgba(0,0,0,.18) 的手指点按高亮。
+   浅色主题下那块浅灰肉眼就是「点一下闪一下」，长按也跟着亮，松手才退。
+   本站的点击反馈自己做（.is-active 渐变、:active 的 translateY/scale），
+   这层默认高亮纯属噪音，全部关掉。
+   写 * 而不是 body：它虽是继承属性，但部分 WebKit 版本只认元素自身的声明。 */
+*{
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* 长按按钮 / 胶囊 / 标签时也别选中它们的文字 ——
+   选中会糊一块浅色选区（:root 的 ::selection 是强调色 35%），同样是「闪一下」。
+   正文、输入框、代码块不列进来，该选还得能选。 */
+button,
+[role="button"],
+[role="tab"],
+.nav__item,
+.pill,
+.tag,
+.hcat,
+.admin-tab,
+.admin-lockbtn,
+.card-menu__i,
+.dock{
+  -webkit-user-select: none;
+  user-select: none;
+}
