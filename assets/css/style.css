@@ -18,11 +18,22 @@
 
   --text:      #eef1f8;
   --text-dim:  #a7b0c4;
-  --text-mute: #6d7688;
+  /* v140：原来的 #6d7688 落在最亮的玻璃层（--glass-hi 叠完 ≈ #131826）上只有 3.82:1，
+     纯 --bg 上 4.43:1 —— 12px 小字（.eyebrow / .count / .footer__meta）按 WCAG AA 要求 4.5，
+     差一点点。提到 #7b8496 后最差也是 4.64:1（--glass-hi），纯底 5.38:1，
+     和 --text-dim 之间仍看得出层次，不至于把「次要信息」做成「正文」。 */
+  --text-mute: #7b8496;
 
   --a1: #7c9cff;
   --a2: #b47cff;
   --a3: #4fe3d0;
+  /* v140：强调色拆成两套 —— --aN 是「光」（渐变底、描边、图形），
+     --ink-aN 是「字」（文字、图标）。深色主题两者同值；浅色主题下
+     #7c9cff / #b47cff / #4fe3d0 落在淡蓝底上只有 2.2 / 2.5 / 1.3:1，
+     直接当文字色等于隐形，所以浅色另给一档压深的值（见 data-theme="light"）。 */
+  --ink-a1: #7c9cff;
+  --ink-a2: #b47cff;
+  --ink-a3: #4fe3d0;
   /* 「已收藏」用的星色。深色主题是亮金；浅色主题另给一档深琥珀（见 data-theme="light"），
      否则 #ffcf6b 落在淡蓝玻璃上对比度只有 1.3:1，字基本看不见（v121 修）。 */
   --star: #ffcf6b;
@@ -64,7 +75,8 @@ html[data-theme="light"]{
   --border-strong: transparent;
   --text:      #0d1424;
   --text-dim:  #333d57;
-  --text-mute: #556080;
+  /* v140：同深色主题的理由，#556080 在 --glass-hi（≈ #CDD5EC）上只有 4.15:1，压深到 #4e5878 后 4.68:1 */
+  --text-mute: #4e5878;
   /* 浅色主题下的「已收藏」色：深琥珀。算过实际合成底（--glass-hi 淡蓝 ≈ #C7D3EF）
      和「已选中」那层 14% 暖底（≈ #BCC1CE）：4.7~5.6:1，13.5px 小字也读得清。
      #7a5200 只有 3.9:1，不够，所以再压深一档。 */
@@ -296,7 +308,7 @@ html[data-theme="light"] .hdr-hits{ box-shadow:none; }
   font-size:13.5px; color:var(--text);
   overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
 }
-.hdr-hits__name mark{ background:none; color:var(--a1); font-weight:700; }
+.hdr-hits__name mark{ background:none; color:var(--ink-a1); font-weight:700; }
 .hdr-hits__sub{
   font-size:11.5px; color:var(--text-mute);
   overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
@@ -551,7 +563,9 @@ html[data-theme="light"] .pill.is-active{ color:#fff; }
   color:#080a12; background:var(--grad);
   box-shadow:none;
 }
-html[data-theme="light"] .btn--primary{ color:#fff; }
+html[data-theme="light"] .btn--primary{ color:#080a12; }
+/* v140：浅色主题里主按钮曾经硬写白字，压在亮渐变上最浅的一段只有 1.59:1，
+   比深色主题（深墨 6.8~12.5:1）差一大截。改回深墨，两套主题一个观感。 */
 .btn--primary:hover{ transform:translateY(-3px); box-shadow:none; }
 .btn--ghost{
   color:var(--text-dim); background:var(--glass); border:1px solid transparent;
@@ -779,7 +793,7 @@ html[data-theme="light"] .btn--primary{ color:#fff; }
 .nav-meta b{ color:var(--text); font-weight:700; font-variant-numeric:tabular-nums; }
 .head-toggle{ display:inline-flex; align-items:center; gap:7px; height:36px; padding:0 15px; border-radius:99px; white-space:nowrap; }
 .head-toggle[aria-pressed="true"]{
-  color:#fff; border-color:transparent; background:var(--grad);
+  color:#080a12; border-color:transparent; background:var(--grad);
   box-shadow:none;
 }
 .searchbox__clear{
@@ -834,7 +848,7 @@ html[data-theme="light"] .btn--primary{ color:#fff; }
 }
 .cat-rail__n{
   margin-left:7px; letter-spacing:.06em; font-variant-numeric:tabular-nums;
-  color:var(--text-mute); opacity:.7;
+  color:var(--text-mute);
 }
 /* 手机端才会变成底部选择面板；桌面端 display:contents → 筛选框和列表直接参与侧栏排版 */
 .cat-rail__sheet{ display:contents; }
@@ -1103,7 +1117,7 @@ html[data-cat-icon="off"] #headerCatEmoji{ display:none; }
 .tag-rail__head{ display:none; }
 .tag-rail__n{
   letter-spacing:.06em; font-variant-numeric:tabular-nums;
-  color:var(--text-mute); opacity:.7;
+  color:var(--text-mute);
 }
 .timeline{ position:relative; padding-left:0; }
 .tl-group{ margin-top:32px; }
@@ -1154,13 +1168,19 @@ html[data-theme="light"] .tl-date{ box-shadow:none; }
   transform:none;
 }
 .feed-card__body{ display:block; min-width:0; }
+/* v140：链接填错的分享条目（url 是空 / 只有 '#' / 相对路径）不再包成 <a>，
+   渲染成这一版：外观和普通卡片一致，但去掉「可以点」的所有暗示——
+   不出现指针手势、不出现 hover 变色和那个 ↗ 小图标（图标由 JS 不输出）。 */
+.feed-card--nolink{ cursor:default; }
+.feed-card--nolink:hover{ background:none; }
+.feed-card--nolink:hover .feed-card__title{ color:inherit; }
 .feed-card__title{
   display:inline-flex; align-items:center; gap:8px;
   margin:0; font-size:16.5px; font-weight:700; transition:color .3s var(--ease);
 }
 .feed-card__title svg{ width:14px; height:14px; fill:none; stroke:currentColor; stroke-width:2;
   opacity:.45; transition:all .3s var(--ease); }
-.feed-card:hover .feed-card__title{ color:var(--a1); }
+.feed-card:hover .feed-card__title{ color:var(--ink-a1); }
 .feed-card:hover .feed-card__title svg{ opacity:1; transform:none; }
 .feed-card__desc{ margin:8px 0 0; color:var(--text-dim); font-size:13.8px; line-height:1.8; }
 .feed-card__tags{ display:flex; flex-wrap:wrap; gap:7px; margin-top:13px; }
@@ -1172,7 +1192,7 @@ html[data-theme="light"] .tl-date{ box-shadow:none; }
   transition:all .28s var(--ease); cursor:pointer;
 }
 .tag:hover{ color:var(--text); border-color:transparent; background:var(--glass-hi); }
-.tag.is-active{ color:#fff; border-color:transparent; background:var(--grad); }
+.tag.is-active{ color:#080a12; border-color:transparent; background:var(--grad); }
 
 /* =========================================================
    搜索面板
@@ -1713,7 +1733,7 @@ html[data-theme="light"] .tl-date{ box-shadow:none; }
   transition:all .25s var(--ease);
 }
 .admin-tab:hover{ color:var(--text); background:var(--glass-hi); }
-.admin-tab.is-active{ color:#fff; background:var(--grad); box-shadow:none; }
+.admin-tab.is-active{ color:#080a12; background:var(--grad); box-shadow:none; }
 .admin-tab__ico{ width:18px; text-align:center; font-size:14px; line-height:1; flex-shrink:0; }
 .admin-tab__label{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .admin-tab__n{
@@ -2290,7 +2310,7 @@ html[data-theme="light"] /* 危险操作卡片：描边没了，改用一层很�
   display:block; font-size:16.5px; font-weight:700; color:var(--text); line-height:1.45;
   transition:color .28s var(--ease);
 }
-.post-card:hover .post-card__title{ color:var(--a1); }
+.post-card:hover .post-card__title{ color:var(--ink-a1); }
 .post-card__pin{ font-style:normal; margin-right:6px; font-size:13px; }
 .post-card__desc{
   display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
@@ -2375,7 +2395,7 @@ html[data-route="post"] .post-head::after{
 .post-swipe-hint b{ color:var(--text-dim); font-weight:600; }
 .post-swipe-hint::before{ content:"⇠⇢"; letter-spacing:-1px; opacity:.55; font-size:13px; }
 .post-foot__end{ margin-top:24px; text-align:center; font-size:12px; color:var(--text-mute); }
-.post-foot__end span{ color:var(--a2); }
+.post-foot__end span{ color:var(--ink-a2); }
 .post-foot__back{ margin-top:18px; height:42px; padding:0 18px; border-radius:12px; font-size:13.5px; }
 
 /* --- 目录（宽屏才出现） --- */
@@ -2422,7 +2442,7 @@ html[data-toc="off"] .post-toc{ display:none; }
 .md em{ font-style:italic; }
 .md del{ opacity:.6; }
 .md a{
-  color:var(--a1); border-bottom:1px solid color-mix(in srgb, var(--a1) 38%, transparent);
+  color:var(--ink-a1); border-bottom:1px solid color-mix(in srgb, var(--a1) 38%, transparent);
   transition:border-color .25s var(--ease);
 }
 .md a:hover{ border-bottom-color:var(--a1); }
@@ -2872,7 +2892,7 @@ html[data-readfont="serif"] .look-paper{
   display:flex; align-items:center; flex-wrap:wrap; gap:8px;
   margin:18px 0 16px;
 }
-.idea-rail__n{ margin-left:3px; font-size:11px; opacity:.7; font-variant-numeric:tabular-nums; }
+.idea-rail__n{ margin-left:3px; font-size:11px; font-variant-numeric:tabular-nums; }
 .idea-rail__tip{ font-size:12px; color:var(--text-mute); }
 
 /* ---- 卡片墙：瀑布流，省高度也不留空格 ---- */
@@ -2923,7 +2943,7 @@ html[data-readfont="serif"] .look-paper{
   font:inherit; font-size:12px; color:var(--text-mute); cursor:pointer;
   transition:color .2s var(--ease), background .2s var(--ease);
 }
-.idea-mini:hover{ color:var(--a1); background:var(--glass-hi); }
+.idea-mini:hover{ color:var(--ink-a1); background:var(--glass-hi); }
 .idea-mini--del:hover{ color:#ff8f8f; }
 
 /* 就地编辑 */
@@ -3511,14 +3531,14 @@ html[data-theme="light"]{ --danger:#bf2e28; }
   border-radius:99px; box-shadow:0 2px 8px rgba(0,0,0,.4);
 }
 .icon-btn__n[hidden]{ display:none; }
-.header__actions .icon-btn.has-new svg{ color:var(--a1); }
+.header__actions .icon-btn.has-new svg{ color:var(--ink-a1); }
 
 /* ---------- ② 失效站点：整卡淡下去、名字划一道 ---------- */
 .link-card.is-dead{ opacity:.4; filter:saturate(.35); }
 .link-card.is-dead:hover{ opacity:.62; }
 .link-card.is-dead .link-card__nmtxt{ text-decoration:line-through; text-decoration-thickness:1px; }
 /* 菜单里「已存稍后读 / 已标记失效」两项的选中态（不用 .is-on，那条给星星填了实心） */
-.card-menu__i.is-later{ color:var(--a1); background:color-mix(in srgb, var(--a1) 13%, transparent); }
+.card-menu__i.is-later{ color:var(--ink-a1); background:color-mix(in srgb, var(--a1) 13%, transparent); }
 .card-menu__i.is-dead{ color:var(--danger); background:color-mix(in srgb, var(--danger) 13%, transparent); }
 
 /* ---------- ③ 那年今日 ---------- */
@@ -3532,7 +3552,7 @@ html[data-theme="light"]{ --danger:#bf2e28; }
 .otd__k{
   font-size:12.5px; font-weight:700; letter-spacing:.04em;
   background:var(--grad); -webkit-background-clip:text; background-clip:text;
-  -webkit-text-fill-color:transparent; color:var(--a1);
+  -webkit-text-fill-color:transparent; color:var(--ink-a1);
 }
 .otd__d{ font-size:11.5px; color:var(--text-mute); }
 /* 列数由 JS 给出的 --otd-n 决定：1 条就铺满一整行，3 条就三等分。
@@ -3548,7 +3568,7 @@ html[data-theme="light"]{ --danger:#bf2e28; }
   transition:background .25s var(--ease), transform .25s var(--ease);
 }
 .otd-card:hover{ background:var(--glass-hi); transform:translateY(-1px); }
-.otd-card__y{ font-size:10.5px; font-weight:700; letter-spacing:.08em; color:var(--a1); font-variant-numeric:tabular-nums; }
+.otd-card__y{ font-size:10.5px; font-weight:700; letter-spacing:.08em; color:var(--ink-a1); font-variant-numeric:tabular-nums; }
 .otd-card__t{
   font-size:13.5px; font-weight:600; color:var(--text);
   overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
@@ -3605,7 +3625,7 @@ html[data-theme="light"]{ --danger:#bf2e28; }
   display:block; font-size:26px; font-weight:700; letter-spacing:-.02em;
   font-variant-numeric:tabular-nums;
   background:var(--grad); -webkit-background-clip:text; background-clip:text;
-  -webkit-text-fill-color:transparent; color:var(--a1);
+  -webkit-text-fill-color:transparent; color:var(--ink-a1);
 }
 .year-cell span{ display:block; margin-top:4px; font-size:11.5px; color:var(--text-mute); }
 
@@ -3662,7 +3682,7 @@ html[data-theme="light"]{ --danger:#bf2e28; }
   overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
 }
 .top-row__c{ flex:0 0 auto; font-size:11.5px; color:var(--text-mute); }
-.top-row--cold .top-row__i{ color:var(--a3); }
+.top-row--cold .top-row__i{ color:var(--ink-a3); }
 
 .dead-list{ display:flex; flex-wrap:wrap; gap:8px; }
 .dead-row{
@@ -3674,7 +3694,7 @@ html[data-theme="light"]{ --danger:#bf2e28; }
 
 /* ---------- ⑥ 标签落地页（#/tag/xx）---------- */
 .tag-bar__link{
-  margin-left:10px; font-size:11.5px; color:var(--a1);
+  margin-left:10px; font-size:11.5px; color:var(--ink-a1);
   text-decoration:none; white-space:nowrap;
 }
 .tag-bar__link:hover{ text-decoration:underline; }
@@ -3713,7 +3733,7 @@ html[data-theme="light"]{ --danger:#bf2e28; }
   transition:background .22s var(--ease), transform .22s var(--ease);
 }
 .rsheet__card:hover{ background:var(--glass-hi); transform:translateY(-1px); }
-.rsheet__cat{ font-size:10.5px; font-weight:700; letter-spacing:.06em; color:var(--a1); }
+.rsheet__cat{ font-size:10.5px; font-weight:700; letter-spacing:.06em; color:var(--ink-a1); }
 .rsheet__n{ font-size:14.5px; font-weight:600; color:var(--text); }
 .rsheet__d{
   font-size:12px; color:var(--text-mute);
@@ -3746,8 +3766,12 @@ html[data-theme="light"]{ --danger:#bf2e28; }
    小字（年份、标签、分类名）基本看不清。这里统一换成同一色系压深后的值。
    数字格 / 年份沿用渐变文字，所以只换渐变的两端。 */
 html[data-theme="light"]{
-  --ink-a1:#4a63c8;
-  --ink-grad: linear-gradient(120deg, #4a63c8, #7a45c9 52%, #0f8f7d);
+  /* v140：三档都重算过 —— 落在最亮的卡片底 #CDD5EC 上也过 4.5:1
+     (#4a63c8 那版只有 3.66，v139 只覆盖了年份/标签几个点，这次全站统一) */
+  --ink-a1:#3b51b8;   /* 页底 5.8 / 卡片 5.3 / 亮玻璃 4.7 */
+  --ink-a2:#6f3fbd;   /* 5.7 / 5.2 / 4.6 */
+  --ink-a3:#086155;   /* 6.2 / 5.7 / 5.0 */
+  --ink-grad: linear-gradient(120deg, #3b51b8, #6f3fbd 52%, #086155);
 }
 /* 渐变文字（background-clip:text）在浅色底上整段都会偏淡，
    这里干脆退回实色 —— 大数字和小标签都按 4.5:1 以上给它一个深蓝。 */
@@ -3756,6 +3780,10 @@ html[data-theme="light"] .otd__k{
 }
 html[data-theme="light"] .otd-card__y{ color:var(--ink-a1); }
 html[data-theme="light"] .year-cell b{
+  background:none; -webkit-text-fill-color:currentColor; color:var(--ink-a1);
+}
+/* v140：导航页/分享页顶部那几个大数字也是渐变文字，浅色底上只剩 ~2:1，同上一并退回实色 */
+html[data-theme="light"] .head-stat b{
   background:none; -webkit-text-fill-color:currentColor; color:var(--ink-a1);
 }
 html[data-theme="light"] .rsheet__cat,

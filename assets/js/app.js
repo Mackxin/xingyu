@@ -997,7 +997,7 @@
       '<div class="page-head__side">' +
         '<span class="nav-meta">' + (meta || '') + '</span>' +
         '<button class="pill pill--btn head-toggle" type="button" id="favToggle" aria-pressed="' + state.favOnly + '">' +
-          I.star + ' 只看收藏 <span style="opacity:.65">' + state.fav.length + '</span></button>' +
+          I.star + ' 只看收藏 <span style="opacity:.85">' + state.fav.length + '</span></button>' +
         /* v139：只在「只看收藏」时露出来 —— 一键把收藏导成浏览器书签文件 */
         (state.favOnly && state.fav.length
           ? '<button class="pill pill--btn head-toggle" type="button" id="favExport" ' +
@@ -1021,20 +1021,32 @@
     return isNaN(d.getTime()) ? '' : WEEKDAYS[d.getDay()];
   }
 
+  /* v140：分享条目的链接有时候是空的，或者只写了个 '#'、一条相对路径 ——
+     以前一律当链接渲染，点下去等于把页面滚回顶部（还带个 ↗ 图标骗人）。
+     这里统一判一次：站内 #/xxx 算有效，http(s) 算有效，其余都不当链接。 */
+  function feedUrlOk(u) {
+    var s = String(u == null ? '' : u).trim();
+    if (!s) return false;
+    if (s.charAt(0) === '#') return s.length > 2;      // 光一个 '#' 是「没有链接」
+    return /^https?:\/\//i.test(s);
+  }
+
   function feedCardHtml(f) {
-    var isHash = f.url.charAt(0) === '#';
-    return '<a class="feed-card" href="' + hrefOf(f.url) + '"' + (isHash ? '' : ' target="_blank" rel="noopener"') + '>' +
-      /* v129：前面那个彩色小方块图标去掉了 —— 一块图占 46px 宽还压着标题，
-         时间线本来就是一列文字更好读。数据里的 icon 还留着（今日精选、
-         搜索结果还在用），只是这张卡不画了。 */
+    var url = String(f.url == null ? '' : f.url);
+    var ok = feedUrlOk(url);
+    var isHash = ok && url.charAt(0) === '#';
+    var inner =
       '<span class="feed-card__body">' +
-        '<span class="feed-card__title">' + esc(f.title) + ' ' + (isHash ? '' : I.out) + '</span>' +
+        '<span class="feed-card__title">' + esc(f.title) + (ok && !isHash ? ' ' + I.out : '') + '</span>' +
         '<p class="feed-card__desc">' + esc(f.desc) + '</p>' +
         '<span class="feed-card__tags">' + (f.tags || []).map(function (t) {
           return '<span class="tag" data-tag="' + esc(t) + '">#' + esc(t) + '</span>';
         }).join('') + '</span>' +
-      '</span>' +
-      '</a>';
+      '</span>';
+    /* 没有可用的链接就渲染成不可点的卡片（外观不变，只是不跳转） */
+    if (!ok) return '<div class="feed-card feed-card--nolink">' + inner + '</div>';
+    return '<a class="feed-card" href="' + hrefOf(url) + '"' + (isHash ? '' : ' target="_blank" rel="noopener"') + '>' +
+      inner + '</a>';
   }
 
   /* 标签筛选栏（分享页 / 文章列表共用一套）
