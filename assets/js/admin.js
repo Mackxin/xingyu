@@ -3075,14 +3075,30 @@
   function backupObject() {
     return {
       app: 'xingyu',
-      version: 5,
+      version: 6,
       exportedAt: new Date().toISOString(),
       config: Store.get(),
       data: Store.dataAll(),
       feed: Store.feedAll(),
       posts: Store.postsAll(),
-      ideas: ideasAll()      /* v123 起：灵感随记也一起带走（老备份里没有这个字段，恢复时跳过） */
+      ideas: ideasAll(),      /* v123 起：灵感随记也一起带走（老备份里没有这个字段，恢复时跳过） */
+      later: laterAll(),      /* v139 起：稍后读 / 失效标记 */
+      dead: deadAll()
     };
+  }
+
+  /* v139：稍后读 / 失效标记存在前台手里（key 是 xingyu.later.v1 / xingyu.dead.v1），
+     后台直接读写 localStorage，不依赖前台有没有加载。 */
+  function laterAll() {
+    try { var v = JSON.parse(localStorage.getItem('xingyu.later.v1')); return Array.isArray(v) ? v : []; }
+    catch (e) { return []; }
+  }
+  function deadAll() {
+    try { var v = JSON.parse(localStorage.getItem('xingyu.dead.v1')); return Array.isArray(v) ? v : []; }
+    catch (e) { return []; }
+  }
+  function restoreLocal(key, val) {
+    try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) {}
   }
 
   /* 描述一份备份的内容，用于确认框；不是备份则返回 null */
@@ -3102,6 +3118,8 @@
     if (Array.isArray(obj.feed)) parts.push(obj.feed.length + ' 条分享');
     if (Array.isArray(obj.posts)) parts.push(obj.posts.length + ' 篇文章');
     if (Array.isArray(obj.ideas)) parts.push(obj.ideas.length + ' 条灵感');
+    if (Array.isArray(obj.later)) parts.push(obj.later.length + ' 条稍后读');
+    if (Array.isArray(obj.dead)) parts.push(obj.dead.length + ' 个失效标记');
     if (obj.config && typeof obj.config === 'object') {
       var cn = (obj.config.customLinks || []).length;
       parts.push('站点设置' + (cn ? '（含 ' + cn + ' 个自定义链接）' : ''));
@@ -3116,6 +3134,8 @@
     if (Array.isArray(obj.feed)) Store.setFeed(obj.feed);
     if (Array.isArray(obj.posts)) Store.setPosts(obj.posts);
     if (Array.isArray(obj.ideas)) setIdeas(obj.ideas);
+    if (Array.isArray(obj.later)) restoreLocal('xingyu.later.v1', obj.later);
+    if (Array.isArray(obj.dead)) restoreLocal('xingyu.dead.v1', obj.dead);
   }
 
   function stamp() {
@@ -3165,7 +3185,7 @@
     var a = app();
     return {
       app: 'xingyu',
-      version: 5,
+      version: 6,
       exportedAt: new Date().toISOString(),
       config: Store.get(),
       data: Store.dataAll(),
@@ -3173,7 +3193,9 @@
       posts: Store.postsAll(),
       fav: (a.fav && a.fav.get) ? a.fav.get() : [],
       visits: (a.visits && a.visits.get) ? a.visits.get() : {},
-      ideas: ideasAll()
+      ideas: ideasAll(),
+      later: laterAll(),
+      dead: deadAll()
     };
   }
 
@@ -3385,15 +3407,19 @@
       ['📰 分享', '按日期分组的时间线，' + fed + ' 条；点标签筛选，点卡片直接开原链接'],
       ['✍️ 文章', '列表 + 阅读页（右侧目录、上一篇/下一篇、代码高亮）'],
       ['🌌 关于', '自己的介绍页 <code>#/about</code>：名字来由、栈里有什么、怎么逛、关于我；正文是 Markdown'],
+      ['💡 灵感随记', '想到什么记一句 <code>#/idea</code>：<code>#标签</code> 自动归类，可置顶、可就地编辑、可存成图片；只存本机'],
+      ['🕓 稍后读', '先存下来回头看的链接 <code>#/later</code>：全部 / 未读 / 已读，顶栏时钟是入口，未读数挂在角标上'],
+      ['🌿 足迹', '自己攒出来的统计 <code>#/insight</code>：年度回顾、灵感热力图、最常去、冷落的收藏、失效站点'],
+      ['🏷 标签页', '一个标签一页 <code>#/tag/标签名</code>：分享 + 文章 + 灵感汇总，链接可以直接发给别人'],
       ['🔐 后台', '就是这里：改完立刻生效，但只存在本机浏览器']
     ].map(function (r) { return gRow(r[0], r[1]); }).join('');
 
     var keysRows = [
-      ['<code>⌘K</code> / <code>Ctrl+K</code> / <code>/</code>', '呼出全站搜索面板，跨页面 / 分类 / 站点 / 分享 / 文章一起搜'],
+      ['<code>⌘K</code> / <code>Ctrl+K</code> / <code>/</code>', '呼出全站搜索面板，跨页面 / 分类 / 站点 / 分享 / 文章 / 标签 / 灵感一起搜'],
       ['<code>1</code> <code>2</code> <code>3</code> <code>4</code>', '直达 首页 / 导航 / 分享 / 文章'],
       ['<code>←</code> <code>→</code>', '上一页 / 下一页'],
       ['<code>T</code>', '切明暗主题'],
-      ['<code>R</code>', '随机漫游一个站点'],
+      ['<code>R</code>', '随机漫游：弹出「今日三站」（三个不同分类各抽一个）'],
       ['<code>F</code>', '导航页「只看收藏」'],
       ['<code>?</code>', '弹出快捷键说明'],
       ['<code>Esc</code>', '关掉任何打开的面板']
@@ -3418,7 +3444,7 @@
           '<button class="btn btn--ghost" type="button" data-guide-copy>⧉ 复制这份手册</button>' +
         '</div>' +
 
-        '<div class="admin-sub"><b>前台四个页面</b><em>顶栏 tab / 快捷键 / 手机左右滑都能切</em></div>' +
+        '<div class="admin-sub"><b>前台九个页面</b><em>顶栏 tab / 快捷键 / 手机左右滑都能切（后五个不在 tab 里，走入口或链接进）</em></div>' +
         '<div class="guide-list">' + pagesRows + '</div>' +
 
         '<div class="admin-sub"><b>快捷键</b><em>输入框里打字时不会误触发</em></div>' +

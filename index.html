@@ -43,7 +43,7 @@
 <meta name="mobile-web-app-capable" content="yes" />
 <!-- 订阅源：分享页的更新 -->
 <link rel="alternate" type="application/rss+xml" title="壹号栈 · 灵感与文章" href="feed.xml" />
-<link rel="stylesheet" href="assets/css/style.css?v=138" />
+<link rel="stylesheet" href="assets/css/style.css?v=139" />
 </head>
 <body>
 
@@ -117,6 +117,11 @@
     </nav>
 
     <div class="header__actions">
+      <!-- v139：稍后读（时钟 + 未读角标） -->
+      <button class="icon-btn" id="laterBtn" type="button" aria-label="稍后读" title="稍后读">
+        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="8.4"/><path d="M12 7.6V12l3.1 2"/></svg>
+        <i class="icon-btn__n" hidden>0</i>
+      </button>
       <button class="icon-btn" id="themeBtn" type="button" aria-label="切换主题">
         <svg class="i-sun" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.2 5.2l1.4 1.4M17.4 17.4l1.4 1.4M18.8 5.2l-1.4 1.4M6.6 17.4l-1.4 1.4"/></svg>
         <svg class="i-moon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 019.5 4a8.5 8.5 0 1010.5 10.5z"/></svg>
@@ -147,6 +152,8 @@
     </div>
     <div class="footer__meta">
       <button class="link-btn" id="randomBtn" type="button">🎲 随机漫游</button>
+      <span class="sep">·</span>
+      <button class="link-btn" id="footInsight" type="button">🌿 足迹</button>
       <span class="sep">·</span>
       <button class="link-btn" id="keysBtn" type="button">⌨︎ 快捷键</button>
       <span class="sep">·</span>
@@ -206,13 +213,13 @@
      默认是空的，不影响任何东西。这里故意不带 ?v= 版本号 —— 换数据只换这一个文件，
      不想因为版本号没改而被浏览器缓存住。 -->
 <script src="assets/js/site-data.js"></script>
-<script src="assets/js/config.js?v=138"></script>
-<script src="assets/js/bookmarks.js?v=138"></script>
+<script src="assets/js/config.js?v=139"></script>
+<script src="assets/js/bookmarks.js?v=139"></script>
 <!-- 从「壹号讯息」导入的分享条目；不想要这批数据就删掉这一行 -->
-<script src="assets/js/feed-import.js?v=138"></script>
-<script src="assets/js/data.js?v=138"></script>
-<script src="assets/js/md.js?v=138"></script>
-<script src="assets/js/app.js?v=138"></script>
-<script src="assets/js/admin.js?v=138"></script>
+<script src="assets/js/feed-import.js?v=139"></script>
+<script src="assets/js/data.js?v=139"></script>
+<script src="assets/js/md.js?v=139"></script>
+<script src="assets/js/app.js?v=139"></script>
+<script src="assets/js/admin.js?v=139"></script>
 </body>
 </html>

@@ -143,6 +143,164 @@
     saveVisits();
   }
 
+  /* =========================================================
+     v139 数据层：稍后读 / 失效标记 / 书签导出
+     ---------------------------------------------------------
+     三样都只存本机，跟收藏、访问记录一个待遇：
+     后台「备份」会一起带走（见 admin.js 的 backupObject / cloudPayload）。
+     ========================================================= */
+
+  /* ---- 稍后读：{ u 网址, n 名字, d 简介, t 存的时间, r 读过了吗 } ---- */
+  var LATER_KEY = 'xingyu.later.v1';
+  var LATER_MAX = 300;
+  var later = loadLater();
+  function loadLater() {
+    try {
+      var arr = JSON.parse(localStorage.getItem(LATER_KEY));
+      return Array.isArray(arr)
+        ? arr.filter(function (x) { return x && typeof x.u === 'string' && x.u; })
+        : [];
+    } catch (e) { return []; }
+  }
+  function saveLater() {
+    try {
+      localStorage.setItem(LATER_KEY, JSON.stringify(later));
+      /* 顶栏那枚未读角标跟着一起更新（加/标已读/移除都会走到这儿） */
+      if (typeof updateLaterBadge === 'function') updateLaterBadge();
+      return true;
+    } catch (e) { return false; }
+  }
+  function isLater(u) {
+    for (var i = 0; i < later.length; i++) if (later[i].u === u) return true;
+    return false;
+  }
+  /* 存一条。已经在里面就原样留着（不重复加，也不重置「已读」状态） */
+  function addLater(o) {
+    if (!o || !o.u) return false;
+    if (isLater(o.u)) return false;
+    later.unshift({ u: String(o.u), n: String(o.n || hostOf(o.u)), d: String(o.d || ''), t: Date.now(), r: 0 });
+    /* 超出上限就从最旧的那头删 —— 有上限才不会把 localStorage 撑爆 */
+    if (later.length > LATER_MAX) later = later.slice(0, LATER_MAX);
+    saveLater();
+    return true;
+  }
+  function removeLater(u) {
+    var n = later.length;
+    later = later.filter(function (x) { return x.u !== u; });
+    if (later.length !== n) { saveLater(); return true; }
+    return false;
+  }
+  function markLater(u, read) {
+    for (var i = 0; i < later.length; i++) {
+      if (later[i].u !== u) continue;
+      later[i].r = read ? 1 : 0;
+      saveLater();
+      return true;
+    }
+    return false;
+  }
+  function laterUnread() {
+    return later.filter(function (x) { return !x.r; }).length;
+  }
+  /* 顶栏那颗时钟上的小角标：未读几条。0 条就整个不露 */
+  function updateLaterBadge() {
+    var b = document.getElementById('laterBtn');
+    if (!b) return;
+    var n = laterUnread();
+    var tag = b.querySelector('.icon-btn__n');
+    if (tag) {
+      tag.textContent = n > 99 ? '99+' : String(n);
+      tag.hidden = !n;
+    }
+    b.setAttribute('aria-label', n ? '稍后读，' + n + ' 条未读' : '稍后读');
+    b.classList.toggle('has-new', n > 0);
+  }
+
+  /* ---- 失效标记：只存一串网址，卡片据此置灰 ---- */
+  var DEAD_KEY = 'xingyu.dead.v1';
+  var dead = loadDead();
+  function loadDead() {
+    try {
+      var arr = JSON.parse(localStorage.getItem(DEAD_KEY));
+      return Array.isArray(arr) ? arr.filter(function (x) { return typeof x === 'string' && x; }) : [];
+    } catch (e) { return []; }
+  }
+  function saveDead() {
+    try { localStorage.setItem(DEAD_KEY, JSON.stringify(dead)); } catch (e) {}
+  }
+  function isDead(u) { return dead.indexOf(u) > -1; }
+  function setDead(u, on) {
+    var has = isDead(u);
+    if (on && !has) dead.push(String(u));
+    else if (!on && has) dead = dead.filter(function (x) { return x !== u; });
+    else return false;
+    saveDead();
+    return true;
+  }
+
+  /* ---- 收藏导出成浏览器书签（Netscape bookmark 格式）----
+     Chrome / Edge / Safari / Firefox 都能直接导入这个文件。
+     按分类分组，导进去之后在书签栏里也是一格一格的，不是一团乱麻。 */
+  function bookmarksHtml() {
+    var favs = state.fav.slice();
+    if (!favs.length) return '';
+    var byUrl = {};
+    allLinks.forEach(function (l) { byUrl[l.u] = l; });
+    var groups = [], gi = {};
+    favs.forEach(function (u) {
+      var l = byUrl[u] || { n: hostOf(u) || u, u: u, cat: '未分类' };
+      var cat = l.cat || '未分类';
+      if (!gi[cat]) { gi[cat] = { name: cat, items: [] }; groups.push(gi[cat]); }
+      gi[cat].items.push(l);
+    });
+    var now = Math.floor(Date.now() / 1000);
+    var body = groups.map(function (g) {
+      return '    <DT><H3 ADD_DATE="' + now + '">' + esc(g.name) + '</H3>\n' +
+        '    <DL><p>\n' +
+        g.items.map(function (l) {
+          return '        <DT><A HREF="' + esc(l.u) + '" ADD_DATE="' + now + '">' + esc(l.n) + '</A>';
+        }).join('\n') + '\n' +
+        '    </DL><p>';
+    }).join('\n');
+    return '<!DOCTYPE NETSCAPE-Bookmark-file-1>\n' +
+      '<!-- 由壹号栈导出 · ' + new Date().toISOString() + ' -->\n' +
+      '<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">\n' +
+      '<TITLE>壹号栈收藏</TITLE>\n' +
+      '<H1>壹号栈收藏</H1>\n' +
+      '<DL><p>\n' +
+      '    <DT><H3 ADD_DATE="' + now + '">壹号栈收藏</H3>\n' +
+      '    <DL><p>\n' + body.replace(/^/gm, '    ') + '\n    </DL><p>\n' +
+      '</DL><p>\n';
+  }
+  /* 触发一次浏览器下载。text 内容走 Blob，不占地址栏也不弹新窗口 */
+  function downloadText(name, text, mime) {
+    try {
+      var blob = new Blob([text], { type: (mime || 'text/plain') + ';charset=utf-8' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = name;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(function () { try { URL.revokeObjectURL(url); } catch (e) {} }, 1500);
+      return true;
+    } catch (e) { return false; }
+  }
+  function stampName(tag) {
+    var d = new Date();
+    var p = function (n) { return (n < 10 ? '0' : '') + n; };
+    return 'yihaozhan-' + tag + '-' + d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + '.html';
+  }
+  function exportBookmarks() {
+    if (!state.fav.length) { toast('还没有收藏任何站点，先右键（手机长按）收藏几个吧'); return; }
+    if (!downloadText(stampName('bookmarks'), bookmarksHtml(), 'text/html')) {
+      toast('导出失败，换台浏览器再试');
+      return;
+    }
+    toast('📥 已导出 ' + state.fav.length + ' 个收藏，可在浏览器「导入书签」里打开');
+  }
+
   /* ---------- 确认框 ----------
      前端这里自带一份（后台 admin.js 里那份只能在后台用，拿不到）；
      样式复用 style.css 里的 .confirm-mask / .confirm-box，所以长得和后台的确认框一样。
@@ -199,13 +357,17 @@
     arrow:'<svg viewBox="0 0 24 24"><path d="M5 12h13M13 6.5l5.5 5.5L13 17.5"/></svg>',
     shuffle:'<svg viewBox="0 0 24 24"><path d="M16 3.5l4 4-4 4"/><path d="M20 7.5h-3.5c-2 0-3.2 1-4.5 2.6-1.3 1.6-2.5 2.9-4.5 2.9H4"/><path d="M16 12.5l4 4-4 4"/><path d="M4 19.5h3.5c2 0 3.2-1 4.5-2.6"/></svg>',
     pointer:'<svg viewBox="0 0 24 24"><path d="M5 4l14 7-6 1.6L10.5 19z"/></svg>',
+    clock: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.4"/><path d="M12 7.6V12l3.1 2"/></svg>',
+    ban:   '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.4"/><path d="M6.1 6.1l11.8 11.8"/></svg>',
+    leaf:  '<svg viewBox="0 0 24 24"><path d="M20 4.5C10 5 4.5 9 4.5 15.5c0 2 .7 3.5 2 4.5C8 14 12.5 10.5 18.5 9"/><path d="M4.5 20c2-.5 4-1 6-2"/></svg>',
     search:'<svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M16.5 16.5L21 21"/></svg>',
     chev: '<svg viewBox="0 0 24 24"><path d="M6 9.5l6 6 6-6"/></svg>'
   };
 
   /* ---------- 状态 ---------- */
   var ROUTES = ['home', 'nav', 'share', 'post'];         // 主导航 / 滑动切换顺序
-  var ALL_ROUTES = ['home', 'nav', 'share', 'post', 'idea', 'about', 'admin'];  // 全部可路由页面（idea/about/admin 不占主导航）
+  /* 全部可路由页面。idea / about / later / insight / tag 不占主导航（tag 是带参数的） */
+  var ALL_ROUTES = ['home', 'nav', 'share', 'post', 'idea', 'about', 'later', 'insight', 'tag', 'admin'];
 
   /* 这两个 key 必须在 state 之前赋值：state 的初始化里会调用 loadFav()，
      var 只提升声明不提升值 —— 放在下面的话那一刻 FAV_KEY 还是 undefined，
@@ -225,8 +387,10 @@
     pickMode: false,    // 分类栏是否处于「勾选」模式
     postId: '',         // 正在阅读的文章 id（空 = 文章列表）
     postTag: 'all',     // 文章列表的标签筛选
+    tagName: '',        // #/tag/<tag> 落在这个标签上（route==='tag' 时有效）
     ideaTag: 'all',     // 灵感随记的标签筛选
     ideaQ: '',          // 灵感随记的搜索词（paint() 会带上它）
+    laterView: 'all',   // 稍后读的分组：all | unread | read
     fav: loadFav()
   };
   function loadFav() {
@@ -604,8 +768,12 @@
   }
 
   function linkCard(l) {
-    return '<a class="link-card' + (l.pin ? ' is-pinned' : '') + '" href="' + hrefOf(l.u) + '"' + blankAttr(l.u) +
-      ' data-n="' + esc(l.n) + '" data-u="' + esc(l.u) + '" data-d="' + esc(l.d || '') + '">' +
+    /* v139：标过失效的站点整卡置灰 + 名字划一道，不再抢视线；
+       不额外塞节点，免得手机上「卡片宽度=文字宽度」的规则被撑开 */
+    var d = isDead(l.u);
+    return '<a class="link-card' + (l.pin ? ' is-pinned' : '') + (d ? ' is-dead' : '') + '" href="' + hrefOf(l.u) + '"' + blankAttr(l.u) +
+      ' data-n="' + esc(l.n) + '" data-u="' + esc(l.u) + '" data-d="' + esc(l.d || '') + '"' +
+      (d ? ' title="已标记失效：' + esc(l.n) + '"' : '') + '>' +
       glyph(l.n, 'sm') +
       '<span class="link-card__body">' +
         '<span class="link-card__name"><span class="link-card__nmtxt">' + esc(l.n) + '</span>' +
@@ -830,6 +998,11 @@
         '<span class="nav-meta">' + (meta || '') + '</span>' +
         '<button class="pill pill--btn head-toggle" type="button" id="favToggle" aria-pressed="' + state.favOnly + '">' +
           I.star + ' 只看收藏 <span style="opacity:.65">' + state.fav.length + '</span></button>' +
+        /* v139：只在「只看收藏」时露出来 —— 一键把收藏导成浏览器书签文件 */
+        (state.favOnly && state.fav.length
+          ? '<button class="pill pill--btn head-toggle" type="button" id="favExport" ' +
+            'title="导出成 bookmarks.html，可在 Chrome / Edge / Safari 里导入">📥 导出书签</button>'
+          : '') +
       '</div>' +
       '</div>';
   }
@@ -893,6 +1066,64 @@
       '</div>';
   }
 
+  /* =========================================================
+     v139：那年今日（分享页顶部一条）
+     ---------------------------------------------------------
+     按「月-日」把往年同一天的分享和灵感捞出来 —— 这东西平时想不起来翻，
+     摆在今天这一页最上面才有人看。往年一条都没有就整块不渲染（不留空壳），
+     今天自己写过的退而显示「就是今天」。
+     ========================================================= */
+  function otdExcerpt(s, n) {
+    var t = String(s || '').replace(/[#>*`_\-|]/g, ' ').replace(/\s+/g, ' ').trim();
+    return t.length > n ? t.slice(0, n) + '…' : t;
+  }
+  function onThisDayHtml() {
+    var now = new Date();
+    var mmdd = p2(now.getMonth() + 1) + '-' + p2(now.getDate());
+    var y = now.getFullYear();
+    var hits = [];
+    FEED.forEach(function (f) {
+      var d = String(f.date || '');
+      if (d.length < 10 || d.slice(5) !== mmdd) return;
+      hits.push({ y: parseInt(d.slice(0, 4), 10) || 0, f: f });
+    });
+    loadIdeas().forEach(function (it) {
+      if (!it.ts) return;
+      var d = new Date(it.ts);
+      if (p2(d.getMonth() + 1) + '-' + p2(d.getDate()) !== mmdd) return;
+      hits.push({ y: d.getFullYear(), it: it });
+    });
+    if (!hits.length) return '';
+    var past = hits.filter(function (h) { return h.y < y; });
+    var isPast = past.length > 0;
+    var use = (isPast ? past : hits).sort(function (a, b) { return b.y - a.y; }).slice(0, 3);
+    var cards = use.map(function (h) {
+      var yr = '<b class="otd-card__y">' + h.y + '</b>';
+      if (h.f) {
+        var ext = String(h.f.url || '').charAt(0) !== '#';
+        return '<a class="otd-card" href="' + hrefOf(h.f.url) + '"' + (ext ? ' target="_blank" rel="noopener"' : '') + '>' +
+            yr + '<span class="otd-card__t">' + esc(h.f.icon || '') + ' ' + esc(h.f.title) + '</span>' +
+            '<em class="otd-card__d">' + esc(otdExcerpt(h.f.desc, 64)) + '</em>' +
+          '</a>';
+      }
+      var tg = (h.it.tags || [])[0];
+      return '<a class="otd-card otd-card--idea" href="#/idea">' +
+          yr + '<span class="otd-card__t">💡 ' + (tg ? '#' + esc(tg) : '那天记的一条') + '</span>' +
+          '<em class="otd-card__d">' + esc(otdExcerpt(ideaBody(h.it.text), 64)) + '</em>' +
+        '</a>';
+    }).join('');
+    return '<div class="otd">' +
+        '<div class="otd__head">' +
+          '<span class="otd__k">那年今日</span>' +
+          '<span class="otd__d">' + (now.getMonth() + 1) + ' 月 ' + now.getDate() + ' 日 · ' +
+            (isPast ? use.length + ' 条往事' : '就是今天') + '</span>' +
+        '</div>' +
+        /* 几列由条数决定（--otd-n）：只有一条时它就铺满整条，
+           不会右边空出一大片 —— 卡片宽度按等分算，不用横向滚动 */
+        '<div class="otd__rail" style="--otd-n:' + use.length + '">' + cards + '</div>' +
+      '</div>';
+  }
+
   function renderShare() {
     var tags = ['all'];
     var dateSet = {};
@@ -905,11 +1136,13 @@
       return state.feedTag === 'all' || (f.tags || []).indexOf(state.feedTag) > -1;
     });
 
-    /* 筛选条右侧的实时计数：点了标签立刻知道筛出多少条 */
+    /* 筛选条右侧的实时计数：点了标签立刻知道筛出多少条。
+       v139：选中了某个标签时，多一颗「↗ 标签页」—— 那是一个能直接发给别人的链接 */
     var statHtml = '<span class="tag-bar__stat">' +
         (state.feedTag === 'all'
           ? '共 <b>' + FEED.length + '</b> 条'
-          : '<b>#' + esc(state.feedTag) + '</b> · <b>' + items.length + '</b> 条') +
+          : '<b>#' + esc(state.feedTag) + '</b> · <b>' + items.length + '</b> 条' +
+            '<a class="tag-bar__link" href="#/tag/' + encodeURIComponent(state.feedTag) + '" title="打开这个标签的独立页面">↗ 标签页</a>') +
       '</span>';
 
     /* 宽屏直接铺在标题下；窄屏（≤960）变成顶栏「标签」按钮 + 底部面板 */
@@ -944,6 +1177,9 @@
         '</div>';
     }).join('');
 
+    /* v139：往年今天的条目（没有就不出现） */
+    var otd = onThisDayHtml();
+
     return '<section class="page">' +
       '<div class="page-head page-head--share">' +
         '<div class="page-head__main">' +
@@ -953,6 +1189,7 @@
         '</div>' +
         '<div class="page-head__side">' + statsHtml + '</div>' +
       '</div>' +
+      otd +
       tagBar +
       '<div class="timeline">' + (items.length ? html : emptyHtml('🪶', '这个标签下还没有内容', '换个标签看看吧。')) + '</div>' +
       '</section>';
@@ -1022,7 +1259,12 @@
     return n;
   }
   function saveIdeas(list) {
-    try { localStorage.setItem(IDEA_KEY, JSON.stringify(list)); return true; }
+    try {
+      localStorage.setItem(IDEA_KEY, JSON.stringify(list));
+      /* v139：灵感进了 ⌘K 索引，写完要重建一次，否则刚记的那条搜不到 */
+      if (typeof buildPaletteIndex === 'function') PALETTE_INDEX = buildPaletteIndex();
+      return true;
+    }
     catch (e) { toast('存不下了 —— 浏览器空间满了，先导出再删几条'); return false; }
   }
   function ideaId() { return 'i' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5); }
@@ -1038,6 +1280,23 @@
     }
     if (t.getFullYear() === now.getFullYear()) return (t.getMonth() + 1) + '月' + t.getDate() + '日 ' + hm;
     return t.getFullYear() + '年' + (t.getMonth() + 1) + '月' + t.getDate() + '日';
+  }
+  /* v139：稍后读 / 足迹要的两种「短时间」写法 */
+  function shortDate(ts) {
+    var d = new Date(ts);
+    if (!ts || isNaN(d.getTime())) return '';
+    var p = function (n) { return (n < 10 ? '0' : '') + n; };
+    var now = new Date();
+    var md = p(d.getMonth() + 1) + '/' + p(d.getDate());
+    return d.getFullYear() === now.getFullYear() ? md : d.getFullYear() + '/' + md;
+  }
+  function agoText(ts) {
+    if (!ts) return '从没打开过';
+    var d = Math.floor((Date.now() - ts) / 86400000);
+    if (d <= 0) return '今天打开过';
+    if (d < 30) return d + ' 天前';
+    if (d < 365) return Math.floor(d / 30) + ' 个月前';
+    return Math.floor(d / 365) + ' 年前';
   }
   function ideaTagStats(list) {
     var map = {}, order = [];
@@ -2046,7 +2305,10 @@
     if (tags.length > 1) {
       tagBar = tagRailHtml({
         attr: 'data-post-tag', current: state.postTag, tags: tags,
-        stat: '<span class="tag-bar__stat">共 <b>' + items.length + '</b> 篇</span>'
+        stat: '<span class="tag-bar__stat">共 <b>' + items.length + '</b> 篇' +
+          (state.postTag !== 'all'
+            ? '<a class="tag-bar__link" href="#/tag/' + encodeURIComponent(state.postTag) + '">↗ 标签页</a>'
+            : '') + '</span>'
       });
     }
 
@@ -2212,6 +2474,351 @@
 
   /* ---------- 渲染：路由 ---------- */
   /* 支持 #/home 这类单段路由，以及 #/post/<id> 这种带参数的详情页 */
+  /* =========================================================
+     v139：稍后读（#/later） / 足迹（#/insight） / 标签落地页（#/tag/xx）
+     ---------------------------------------------------------
+     三页都只读本机数据（访问记录、收藏、灵感、稍后读、失效标记），
+     不联网、不上报 —— 跟站里其它地方一个原则。
+     ========================================================= */
+
+  /* ---------- 稍后读 ---------- */
+  function laterItemHtml(x) {
+    return '<article class="later-item' + (x.r ? ' is-read' : '') + '" data-later-u="' + esc(x.u) + '">' +
+        '<a class="later-item__main" href="' + hrefOf(x.u) + '"' + blankAttr(x.u) + '>' +
+          '<span class="later-item__name">' + esc(x.n) + '</span>' +
+          '<span class="later-item__host">' + esc(x.d || hostOf(x.u)) + '</span>' +
+        '</a>' +
+        '<span class="later-item__time">' + esc(shortDate(x.t)) + '</span>' +
+        '<span class="later-item__ops">' +
+          '<button class="idea-mini' + (x.r ? ' is-on' : '') + '" type="button" data-later-read="1" ' +
+            'aria-pressed="' + (x.r ? 'true' : 'false') + '">' + (x.r ? '未读' : '已读') + '</button>' +
+          '<button class="idea-mini idea-mini--del" type="button" data-later-del="1">移除</button>' +
+        '</span>' +
+      '</article>';
+  }
+  function renderLater() {
+    var view = state.laterView || 'all';
+    var unread = laterUnread();
+    var read = later.length - unread;
+    var show = later.filter(function (x) {
+      return view === 'all' || (view === 'unread' ? !x.r : !!x.r);
+    });
+    var list = show.length
+      ? show.map(laterItemHtml).join('')
+      : '<div class="empty later-empty"><span class="empty__emoji">' + (view === 'read' ? '📖' : '🕓') + '</span>' +
+          '<h3>' + (later.length ? (view === 'read' ? '还没有读完的' : '未读的都读完了') : '还没有存过什么') + '</h3>' +
+          '<p>' + (later.length
+            ? '换个分组看看，或者去导航页再存几个进来。'
+            : '在任意站点卡片上点右键（手机上长按），选「稍后看」，它就会排在这里。') + '</p></div>';
+
+    return '<section class="page page--later">' +
+      '<div class="page-head page-head--share">' +
+        '<div class="page-head__main">' +
+          '<span class="eyebrow">Read Later · 稍后读</span>' +
+          '<h1>稍后读</h1>' +
+          '<p>看见好链接先按住存下来，回头有空慢慢看。存在这台浏览器里，不上传 —— 换设备前记得在后台「备份」带走一份。</p>' +
+        '</div>' +
+        '<div class="page-head__side"><div class="head-stats">' +
+          '<div class="head-stat"><b>' + unread + '</b><span>未读</span></div>' +
+          '<div class="head-stat"><b>' + read + '</b><span>已读</span></div>' +
+          '<div class="head-stat"><b>' + later.length + '</b><span>一共</span></div>' +
+        '</div></div>' +
+      '</div>' +
+      '<div class="later-bar">' +
+        '<div class="tag-bar__chips">' +
+          '<button class="tag' + (view === 'all' ? ' is-active' : '') + '" type="button" data-later-view="all">' +
+            '全部 <span class="idea-rail__n">' + later.length + '</span></button>' +
+          '<button class="tag' + (view === 'unread' ? ' is-active' : '') + '" type="button" data-later-view="unread">' +
+            '未读 <span class="idea-rail__n">' + unread + '</span></button>' +
+          '<button class="tag' + (view === 'read' ? ' is-active' : '') + '" type="button" data-later-view="read">' +
+            '已读 <span class="idea-rail__n">' + read + '</span></button>' +
+        '</div>' +
+        '<span class="tag-bar__stat">' +
+          '<button class="pill pill--btn" type="button" id="laterClearRead"' + (read ? '' : ' disabled') + '>清掉已读</button>' +
+        '</span>' +
+      '</div>' +
+      '<div class="later-list">' + list + '</div>' +
+      '</section>';
+  }
+  function bindLater() {
+    var root = $('#app');
+    if (!root) return;
+    $$('[data-later-view]', root).forEach(function (b) {
+      b.addEventListener('click', function () {
+        state.laterView = b.getAttribute('data-later-view');
+        softRender();
+      });
+    });
+    $$('[data-later-read]', root).forEach(function (b) {
+      b.addEventListener('click', function () {
+        var row = b.closest('[data-later-u]');
+        if (!row) return;
+        var u = row.getAttribute('data-later-u');
+        var cur = b.getAttribute('aria-pressed') === 'true';
+        markLater(u, !cur);
+        softRender();
+      });
+    });
+    $$('[data-later-del]', root).forEach(function (b) {
+      b.addEventListener('click', function () {
+        var row = b.closest('[data-later-u]');
+        if (!row) return;
+        removeLater(row.getAttribute('data-later-u'));
+        toast('已移除');
+        softRender();
+      });
+    });
+    var clr = $('#laterClearRead', root);
+    if (clr) clr.addEventListener('click', function () {
+      var n = later.filter(function (x) { return x.r; }).length;
+      if (!n) return;
+      askConfirm({
+        title: '清掉已读的 ' + n + ' 条？',
+        desc: '只会删掉已经标成「已读」的那几条，未读的不动。删了就找不回来了。',
+        ok: '清掉'
+      }, function () {
+        later = later.filter(function (x) { return !x.r; });
+        saveLater();
+        toast('已清掉 ' + n + ' 条');
+        softRender();
+      });
+    });
+  }
+
+  /* ---------- 足迹（#/insight）：常去 / 冷落 / 年度回顾 / 热力图 / 失效 ---------- */
+  var HEAT_DAYS = 126;   /* 18 周 × 7 天，比 120 好排成整周 */
+  function dayKey(d) {
+    var p = function (n) { return (n < 10 ? '0' : '') + n; };
+    return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+  }
+  /* 一天记了几条：灵感按 ts，分享按 date */
+  function ideaDayMap(list) {
+    var m = {};
+    list.forEach(function (it) {
+      if (!it.ts) return;
+      var k = dayKey(new Date(it.ts));
+      m[k] = (m[k] || 0) + 1;
+    });
+    return m;
+  }
+  function heatHtml(list) {
+    var map = ideaDayMap(list);
+    var today = new Date(); today.setHours(0, 0, 0, 0);
+    /* 从今天往回推 HEAT_DAYS 天，起点再往前挪到周日，格子才能按周成列 */
+    var start = new Date(today.getTime() - (HEAT_DAYS - 1) * 86400000);
+    start.setDate(start.getDate() - start.getDay());
+    var cells = [], max = 1, d = new Date(start);
+    while (d.getTime() <= today.getTime()) {
+      var k = dayKey(d);
+      var n = map[k] || 0;
+      if (n > max) max = n;
+      cells.push({ k: k, n: n, w: d.getDay() === 0 });
+      d = new Date(d.getTime() + 86400000);
+    }
+    var cellsHtml = cells.map(function (c) {
+      var lv = c.n === 0 ? 0 : c.n >= 4 ? 4 : c.n;
+      return '<i class="heat__c heat__c--' + lv + '" title="' + esc(c.k + (c.n ? ' · ' + c.n + ' 条' : ' · 没记')) + '"></i>';
+    }).join('');
+    var total = cells.reduce(function (s, c) { return s + c.n; }, 0);
+    var active = cells.filter(function (c) { return c.n > 0; }).length;
+    return '<div class="heat">' +
+        '<div class="heat__grid">' + cellsHtml + '</div>' +
+        '<div class="heat__foot">' +
+          '<span>近 ' + Math.round(HEAT_DAYS / 7) + ' 周记了 <b>' + total + '</b> 条 · 动手 <b>' + active + '</b> 天</span>' +
+          '<span class="heat__legend">少<i class="heat__c heat__c--0"></i><i class="heat__c heat__c--1"></i>' +
+            '<i class="heat__c heat__c--2"></i><i class="heat__c heat__c--3"></i><i class="heat__c heat__c--4"></i>多</span>' +
+        '</div>' +
+      '</div>';
+  }
+  function yearBarsHtml(list) {
+    var y = new Date().getFullYear();
+    var cnt = [];
+    for (var i = 0; i < 12; i++) cnt.push(0);
+    list.forEach(function (it) {
+      if (!it.ts) return;
+      var d = new Date(it.ts);
+      if (d.getFullYear() === y) cnt[d.getMonth()]++;
+    });
+    var max = Math.max.apply(null, cnt.concat([1]));
+    var nowM = new Date().getMonth();
+    /* 高度直接写像素：百分比放在 flex 列里要跟标签抢空间，算出来会被压扁 */
+    var bars = cnt.map(function (n, i) {
+      var h = n ? Math.max(8, Math.round((n / max) * 74)) : 3;
+      return '<span class="ybar' + (i === nowM ? ' is-now' : '') + '" title="' + (i + 1) + ' 月 · ' + n + ' 条">' +
+          '<i style="height:' + h + 'px"></i>' +
+          '<em>' + (i + 1) + '</em>' +
+        '</span>';
+    }).join('');
+    return '<div class="ybars">' + bars + '</div>';
+  }
+  function renderInsight() {
+    var ideas = loadIdeas();
+    var top = visitList('top', 20);
+    var totalOpens = Object.keys(visits).reduce(function (s, k) { return s + (visits[k].c || 0); }, 0);
+    var y = new Date().getFullYear();
+    var yStart = new Date(y, 0, 1).getTime();
+    var yVisits = Object.keys(visits).filter(function (k) { return (visits[k].t || 0) >= yStart; }).length;
+    var yIdeas = ideas.filter(function (it) { return it.ts && it.ts >= yStart; }).length;
+    var yFeed = FEED.filter(function (f) { return String(f.date || '').indexOf(y + '-') === 0; }).length;
+
+    /* 冷落收藏：收藏了但半年没打开过（或从来没打开过） */
+    var half = Date.now() - 180 * 86400000;
+    var byUrl = {};
+    allLinks.forEach(function (l) { byUrl[l.u] = l; });
+    var cold = state.fav.filter(function (u) {
+      var v = visits[u];
+      return !v || !v.t || v.t < half;
+    }).map(function (u) {
+      var l = byUrl[u];
+      var v = visits[u];
+      return { u: u, n: (l && l.n) || hostOf(u) || u, d: (l && l.d) || '', last: v && v.t ? v.t : 0 };
+    }).sort(function (a, b) { return a.last - b.last; }).slice(0, 24);
+
+    var topHtml = top.length ? top.map(function (v, i) {
+      return '<a class="top-row" href="' + hrefOf(v.u) + '"' + blankAttr(v.u) + ' data-u="' + esc(v.u) + '">' +
+          '<b class="top-row__i">' + (i + 1) + '</b>' +
+          '<span class="top-row__n">' + esc(v.n) + '</span>' +
+          '<span class="top-row__c">' + (v.c || 0) + ' 次</span>' +
+        '</a>';
+    }).join('') : emptyHtml('🔥', '还没有「常去」', '去导航页点开几个站点，这里就会按打开次数排出来。');
+
+    var coldHtml = cold.length ? cold.map(function (x) {
+      return '<a class="top-row top-row--cold" href="' + hrefOf(x.u) + '"' + blankAttr(x.u) + ' data-u="' + esc(x.u) + '">' +
+          '<b class="top-row__i">·</b>' +
+          '<span class="top-row__n">' + esc(x.n) + '</span>' +
+          '<span class="top-row__c">' + esc(agoText(x.last)) + '</span>' +
+        '</a>';
+    }).join('') : emptyHtml('🌿', '没有冷落的收藏', '收藏里的站点半年内都点开过，挺勤快。');
+
+    var deadList = dead.map(function (u) {
+      var l = byUrl[u];
+      return { u: u, n: (l && l.n) || hostOf(u) || u };
+    });
+    var deadHtml = deadList.length
+      ? '<div class="dead-list">' + deadList.map(function (x) {
+          return '<span class="dead-row">' +
+              '<span class="dead-row__n">' + esc(x.n) + '</span>' +
+              '<button class="idea-mini" type="button" data-dead-undo="' + esc(x.u) + '">恢复</button>' +
+            '</span>';
+        }).join('') + '</div>'
+      : emptyHtml('✅', '没有标过失效的站点', '发现哪个站点打不开了，在卡片上右键（手机长按）选「标记失效」，它会从视线里淡下去。');
+
+    return '<section class="page page--insight">' +
+      '<div class="page-head page-head--share">' +
+        '<div class="page-head__main">' +
+          '<span class="eyebrow">Footprint · 足迹</span>' +
+          '<h1>我的足迹</h1>' +
+          '<p>这些数字全都来自这台浏览器：打开过哪些站、写过什么、哪天花的时间多。没有账号，也没有上报。</p>' +
+        '</div>' +
+        '<div class="page-head__side"><div class="head-stats">' +
+          '<div class="head-stat"><b>' + totalOpens + '</b><span>次打开</span></div>' +
+          '<div class="head-stat"><b>' + Object.keys(visits).length + '</b><span>个站点</span></div>' +
+          '<div class="head-stat"><b>' + ideas.length + '</b><span>条灵感</span></div>' +
+          '<div class="head-stat"><b>' + state.fav.length + '</b><span>个收藏</span></div>' +
+        '</div></div>' +
+      '</div>' +
+
+      '<section class="insight-sec">' +
+        '<div class="section-head"><div><h2>' + y + ' 年，到今天</h2>' +
+          '<p>今年的数字还在长 —— 明年这会儿再看一次，会更有意思。</p></div>' +
+          '<span class="pill">灵感按月</span></div>' +
+        '<div class="year-grid">' +
+          '<div class="year-cell"><b>' + yVisits + '</b><span>今年打开过的站点</span></div>' +
+          '<div class="year-cell"><b>' + yIdeas + '</b><span>今年写的灵感</span></div>' +
+          '<div class="year-cell"><b>' + yFeed + '</b><span>今年分享的条目</span></div>' +
+          '<div class="year-cell"><b>' + daysSinceStart() + '</b><span>建站天数</span></div>' +
+        '</div>' +
+        yearBarsHtml(ideas) +
+      '</section>' +
+
+      '<section class="insight-sec">' +
+        '<div class="section-head"><div><h2>哪天写得勤</h2>' +
+          '<p>一格一天，颜色越深那天记的灵感越多。空的格子不算失败，只是那天在别处忙。</p></div></div>' +
+        heatHtml(ideas) +
+      '</section>' +
+
+      '<section class="insight-sec">' +
+        '<div class="section-head"><div><h2>最常去</h2><p>按这台浏览器里的打开次数排，点一下就过去。</p></div>' +
+          '<span class="pill">前 ' + top.length + '</span></div>' +
+        '<div class="top-list">' + topHtml + '</div>' +
+      '</section>' +
+
+      '<section class="insight-sec">' +
+        '<div class="section-head"><div><h2>冷落的收藏</h2><p>收藏了却半年没打开过 —— 要么真忘了，要么当时只是手痒。</p></div></div>' +
+        '<div class="top-list">' + coldHtml + '</div>' +
+      '</section>' +
+
+      '<section class="insight-sec">' +
+        '<div class="section-head"><div><h2>标了失效的</h2><p>那些打不开的站，在这儿可以一键恢复。</p></div></div>' +
+        deadHtml +
+      '</section>' +
+      '</section>';
+  }
+  function bindInsight() {
+    var root = $('#app');
+    if (!root) return;
+    $$('[data-dead-undo]', root).forEach(function (b) {
+      b.addEventListener('click', function () {
+        var u = b.getAttribute('data-dead-undo');
+        setDead(u, false);
+        toast('已恢复显示');
+        softRender();
+      });
+    });
+  }
+
+  /* ---------- 标签落地页（#/tag/设计） ---------- */
+  function ideaCardLite(it) {
+    var body = ideaBody(it.text);
+    var html = body ? MD.render(body) : '';
+    if (!html) html = '<p class="idea-card__raw">' + esc(it.text) + '</p>';
+    return '<article class="idea-card idea-card--lite">' +
+        '<div class="idea-card__body md">' + html + '</div>' +
+        '<footer class="idea-card__foot"><div class="idea-card__meta">' +
+          '<span class="idea-card__date">' + esc(ideaTime(it)) + '</span>' +
+        '</div></footer>' +
+      '</article>';
+  }
+  function renderTag() {
+    var tag = String(state.tagName || '').trim();
+    var feeds = FEED.filter(function (f) { return (f.tags || []).indexOf(tag) > -1; });
+    var posts = postList().filter(function (p) { return (p.tags || []).indexOf(tag) > -1; });
+    var ideas = loadIdeas().filter(function (it) { return (it.tags || []).indexOf(tag) > -1; });
+
+    if (!tag) {
+      return '<section class="page">' +
+        emptyHtml('🏷', '没指定标签', '从分享页的标签栏点「↗ 标签页」，或者直接访问 #/tag/设计。') +
+        '</section>';
+    }
+    var total = feeds.length + posts.length + ideas.length;
+    var sec = function (title, n, body) {
+      if (!n) return '';
+      return '<section class="insight-sec">' +
+          '<div class="section-head"><div><h2>' + esc(title) + '</h2></div><span class="pill">' + n + '</span></div>' +
+          body + '</section>';
+    };
+
+    return '<section class="page page--tag">' +
+      '<div class="page-head page-head--share">' +
+        '<div class="page-head__main">' +
+          '<span class="eyebrow">Tag · 标签</span>' +
+          '<h1>#' + esc(tag) + '</h1>' +
+          '<p>' + (total ? '这个标签下攒了 <b>' + total + '</b> 条东西 —— 分享、文章、还有你自己写的灵感。' +
+            '链接可以直接发给别人，打开就是这一页。' : '这个标签下还什么都有。') + '</p>' +
+        '</div>' +
+        '<div class="page-head__side"><div class="head-stats">' +
+          '<div class="head-stat"><b>' + feeds.length + '</b><span>条分享</span></div>' +
+          '<div class="head-stat"><b>' + posts.length + '</b><span>篇文章</span></div>' +
+          '<div class="head-stat"><b>' + ideas.length + '</b><span>条灵感</span></div>' +
+        '</div></div>' +
+      '</div>' +
+      sec('分享', feeds.length, '<div class="tl-cards">' + feeds.map(feedCardHtml).join('') + '</div>') +
+      sec('文章', posts.length, '<div class="post-list">' + posts.map(postCardHtml).join('') + '</div>') +
+      sec('我的灵感', ideas.length, '<div class="idea-grid idea-grid--lite">' + ideas.map(ideaCardLite).join('') + '</div>') +
+      (total ? '' : emptyHtml('🏷', '「#' + esc(tag) + '」下还是空的', '换个标签看看，或者先写一条带这个标签的灵感。')) +
+      '</section>';
+  }
+
   function parseHash() {
     var h = '';
     try { h = location.hash.replace(/^#\/?/, '').split('?')[0]; } catch (e) {}
@@ -2219,9 +2826,16 @@
     if (m) {
       var id = m[1];
       try { id = decodeURIComponent(id); } catch (e) {}
-      return { route: 'post', postId: id };
+      return { route: 'post', postId: id, tagName: '' };
     }
-    return { route: ALL_ROUTES.indexOf(h) > -1 ? h : 'home', postId: '' };
+    /* #/tag/设计 —— 标签落地页，链接可以直接发给别人 */
+    var tm = /^tag\/(.+)$/.exec(h);
+    if (tm) {
+      var tn = tm[1];
+      try { tn = decodeURIComponent(tn); } catch (e2) {}
+      return { route: 'tag', postId: '', tagName: tn };
+    }
+    return { route: ALL_ROUTES.indexOf(h) > -1 ? h : 'home', postId: '', tagName: '' };
   }
   function scrollTop(smooth) {
     /* 注意：html 上有 scroll-behavior:smooth，behavior:'auto' 会跟着 CSS 走变成动画滚动，
@@ -2237,6 +2851,7 @@
     if (state.route === route && !state.postId) { scrollTop(true); return; }
     state.route = route;
     state.postId = '';          // 回到列表页要清掉正在读的那篇
+    state.tagName = '';         // 标签页的标签也一起清掉
     try { history.pushState(null, '', '#/' + route); }
     catch (e) { try { location.hash = '#/' + route; } catch (e2) {} }
     render(dir ? { dir: dir } : { animate: false });
@@ -2249,6 +2864,17 @@
     try { history.pushState(null, '', '#/post/' + encodeURIComponent(state.postId)); }
     catch (e) { try { location.hash = '#/post/' + encodeURIComponent(state.postId); } catch (e2) {} }
     render(dir ? { dir: dir } : { animate: false });
+  }
+  /* 打开某个标签的落地页（#/tag/设计）。标签放在 state.tagName 里，
+     和 postId 一个套路 —— 指到哪一页由它决定。 */
+  function openTag(tag) {
+    var t = String(tag == null ? '' : tag).trim();
+    state.route = 'tag';
+    state.postId = '';
+    state.tagName = t;
+    try { history.pushState(null, '', '#/tag/' + encodeURIComponent(t)); }
+    catch (e) { try { location.hash = '#/tag/' + encodeURIComponent(t); } catch (e2) {} }
+    render({ animate: false });
   }
   /* 下/上一篇的 id：delta=+1 是更早的一篇，-1 是更新的一篇（和 renderPost 里
      「更早一篇 / 更新一篇」用的是同一个 postList 顺序）。到头了返回空。 */
@@ -2265,9 +2891,10 @@
   /* 浏览器前进/后退 */
   function syncFromHash() {
     var nh = parseHash();
-    if (nh.route !== state.route || nh.postId !== state.postId) {
+    if (nh.route !== state.route || nh.postId !== state.postId || (nh.tagName || '') !== (state.tagName || '')) {
       state.route = nh.route;
       state.postId = nh.postId;
+      state.tagName = nh.tagName || '';
       render({ animate: false });
     }
   }
@@ -2291,6 +2918,9 @@
          : route === 'share' ? renderShare()
          : route === 'post' ? (pid ? postHtmlById(pid) : renderPosts())
          : route === 'idea' ? renderIdea()
+         : route === 'later' ? renderLater()
+         : route === 'insight' ? renderInsight()
+         : route === 'tag' ? renderTag()
          : route === 'about' ? renderAbout()
          : renderHome();
   }
@@ -2323,6 +2953,8 @@
     if (state.route === 'nav') { bindNavPage(); }
     if (state.route === 'share' || state.route === 'post') { bindTagRail(); syncTagBtn(); }
     if (state.route === 'idea') { bindIdea(); }
+    if (state.route === 'later') { bindLater(); }
+    if (state.route === 'insight') { bindInsight(); }
     if (state.route === 'admin' && window.XY_ADMIN) window.XY_ADMIN.bind(app);
     if (resetScroll) scrollTop(false);
   }
@@ -2579,6 +3211,8 @@
     closeCardMenu();
     var url = card.getAttribute('href') || '';
     var fav = isFav(url);
+    var lat = isLater(url);
+    var dd = isDead(url);
     var el = document.createElement('div');
     el.className = 'card-menu';
     el.id = 'cardMenu';
@@ -2586,6 +3220,11 @@
     el.innerHTML =
       '<button class="card-menu__i' + (fav ? ' is-on' : '') + '" type="button" role="menuitem" aria-pressed="' + (fav ? 'true' : 'false') + '" data-fav="' + esc(url) + '">' +
         I.star + '<span>' + (fav ? '取消收藏' : '收藏') + '</span></button>' +
+      /* v139：稍后读 / 失效标记 */
+      '<button class="card-menu__i' + (lat ? ' is-later' : '') + '" type="button" role="menuitem" aria-pressed="' + (lat ? 'true' : 'false') + '" data-later="' + esc(url) + '">' +
+        I.clock + '<span>' + (lat ? '移出稍后读' : '稍后看') + '</span></button>' +
+      '<button class="card-menu__i' + (dd ? ' is-dead' : '') + '" type="button" role="menuitem" aria-pressed="' + (dd ? 'true' : 'false') + '" data-dead="' + esc(url) + '">' +
+        I.ban + '<span>' + (dd ? '恢复可用' : '标记失效') + '</span></button>' +
       '<button class="card-menu__i" type="button" role="menuitem" data-copy="' + esc(url) + '">' +
         I.copy + '<span>复制链接</span></button>';
     document.body.appendChild(el);
@@ -2604,12 +3243,36 @@
     el.style.left = Math.round(left) + 'px';
     el.style.top = Math.round(top) + 'px';
     el.addEventListener('click', function (e) {
-      var b = e.target.closest ? e.target.closest('[data-fav],[data-copy]') : null;
+      var b = e.target.closest ? e.target.closest('[data-fav],[data-copy],[data-later],[data-dead]') : null;
       if (!b) return;
       e.preventDefault();
       e.stopPropagation();
-      if (b.hasAttribute('data-fav')) toggleFav(b.getAttribute('data-fav'));
-      else copyUrl(b.getAttribute('data-copy'));
+      if (b.hasAttribute('data-fav')) {
+        toggleFav(b.getAttribute('data-fav'));
+      } else if (b.hasAttribute('data-later')) {
+        var u = b.getAttribute('data-later');
+        if (isLater(u)) {
+          removeLater(u);
+          toast('已移出稍后读');
+        } else {
+          addLater({ u: u, n: card.getAttribute('data-n'), d: card.getAttribute('data-d') });
+          toast('🕓 已存进稍后读 · 点顶栏的时钟去看');
+        }
+        updateLaterBadge();
+      } else if (b.hasAttribute('data-dead')) {
+        var u2 = b.getAttribute('data-dead');
+        var on = !isDead(u2);
+        setDead(u2, on);
+        /* 只改这一张卡，不整页重渲 —— 菜单还开着，重渲会把卡片换掉 */
+        if (card && card.classList) {
+          card.classList.toggle('is-dead', on);
+          if (on) card.setAttribute('title', '已标记失效：' + (card.getAttribute('data-n') || ''));
+          else card.removeAttribute('title');
+        }
+        toast(on ? '已标记失效，卡片会淡下去' : '已恢复显示');
+      } else {
+        copyUrl(b.getAttribute('data-copy'));
+      }
       closeCardMenu();
     });
     /* 电脑上右键弹出来的菜单，按 Esc 能关（手机上也有用，无副作用） */
@@ -2950,10 +3613,11 @@
     var list = [];
     var PAGE_INFO = {
       home: ['首页', '🌌'], nav: ['导航', '🧭'], share: ['分享', '✨'], post: ['文章', '✍️'],
-      about: ['关于', '🌠']
+      about: ['关于', '🌠'], idea: ['灵感随记', '💡'], later: ['稍后读', '🕓'], insight: ['我的足迹', '🌿']
     };
-    /* about 不在主导航里（不参与左右滑动），但搜索 / 命令面板要能搜到 */
-    ROUTES.concat(['about']).forEach(function (r) {
+    /* about / idea / later / insight 不在主导航里（不参与左右滑动），
+       但搜索 / 命令面板要能搜到 —— v139 起把后三个也放进来 */
+    ['home', 'nav', 'share', 'post', 'idea', 'about', 'later', 'insight'].forEach(function (r) {
       var info = PAGE_INFO[r] || [r, '📄'];
       list.push({ type: '页面', name: info[0], sub: '#/' + r, url: '#/' + r, icon: info[1], isRoute: true });
     });
@@ -2972,6 +3636,34 @@
         type: '文章', name: p.title,
         sub: (p.date || '') + ' · ' + (p.tags || []).join(' ') + ' · ' + MD.fmtChars(st.chars),
         url: '#/post/' + encodeURIComponent(p.id), icon: '📄', postId: p.id
+      });
+    });
+    /* v139：标签也进索引 —— 输入「设计」能直接跳到标签落地页 */
+    var tagN = {}, tagOrder = [];
+    var addTag = function (arr) {
+      (arr || []).forEach(function (t) {
+        if (!t) return;
+        if (!(t in tagN)) { tagN[t] = 0; tagOrder.push(t); }
+        tagN[t]++;
+      });
+    };
+    FEED.forEach(function (f) { addTag(f.tags); });
+    POSTS.filter(function (p) { return p && !p.draft; }).forEach(function (p) { addTag(p.tags); });
+    loadIdeas().forEach(function (it) { addTag(it.tags); });
+    tagOrder.forEach(function (t) {
+      list.push({
+        type: '标签', name: '#' + t, sub: tagN[t] + ' 条内容 · 打开标签页',
+        url: '#/tag/' + encodeURIComponent(t), icon: '🏷', tagName: t
+      });
+    });
+    /* v139：灵感随记也进索引（以前 ⌘K 搜不到自己写的东西） */
+    loadIdeas().forEach(function (it) {
+      var txt = String(ideaBody(it.text) || '').replace(/\s+/g, ' ').trim();
+      list.push({
+        type: '灵感',
+        name: txt.slice(0, 30) || '（空的一条）',
+        sub: ideaTime(it) + ((it.tags || []).length ? ' · ' + it.tags.join(' ') : ''),
+        url: '#/idea', icon: '💡', ideaId: it.id
       });
     });
     // 拼音索引：输入 zh / txsp 也能命中
@@ -3043,7 +3735,7 @@
     { k: ['1', '2', '3', '4'], t: '首页 / 导航 / 分享 / 文章', d: '直接跳到对应页面' },
     { k: ['←', '→'], t: '上一页 / 下一页', d: '在 首页 ⇄ 导航 ⇄ 分享 ⇄ 文章 之间切换' },
     { k: ['T'], t: '切换主题', d: '暗色 / 明亮来回切' },
-    { k: ['R'], t: '随机漫游', d: '从全部站点里随机开一个' },
+    { k: ['R'], t: '随机漫游', d: '弹出「今日三站」：三个不同分类各抽一个' },
     { k: ['F'], t: '只看收藏', d: '跳到导航页，只看已收藏的站点' },
     { k: ['?'], t: '快捷键说明', d: '打开这张面板' },
     { k: ['Esc'], t: '关闭面板', d: '收起搜索 / 分类 / 快捷键面板' }
@@ -3294,6 +3986,7 @@
     root.setAttribute('data-density', c.cardDensity || 'normal');
     // 主题配色 / 阅读排版（后台「主题」页）
     applyLook();
+    updateLaterBadge();
   }
 
   /* ---------- Toast ---------- */
@@ -3321,14 +4014,95 @@
     try { document.execCommand('copy'); cb(); } catch (e) { toast('复制失败，请手动复制'); }
     document.body.removeChild(ta);
   }
-  function randomLink() {
-    if (!allLinks.length) return;
-    var l = allLinks[Math.floor(Math.random() * allLinks.length)];
-    toast('🎲 随机前往：' + l.n);
-    /* 站内路由（#/idea 这种）就本页跳，别开新标签页 */
-    if (String(l.u || '').charAt(0) === '#') { setTimeout(function () { location.hash = l.u; }, 380); return; }
-    setTimeout(function () { window.open(l.u, '_blank', 'noopener'); }, 380);
+  /* =========================================================
+     v139：随机漫游升级 —— 「今日三站」
+     ---------------------------------------------------------
+     原来是从全部站点里随机开一个（关掉之后一点印象都没有）。
+     现在从**三个不同分类**里各抽一个，摆成一张小面板：
+     想全开就全开，不想就挑一个。多开标签页会被浏览器拦，所以默认不自动开。
+     ========================================================= */
+  function randomPicks(n) {
+    var byCat = {}, cats = [];
+    allLinks.forEach(function (l) {
+      if (!l || !l.u) return;
+      var c = l.cat || '其它';
+      if (!byCat[c]) { byCat[c] = []; cats.push(c); }
+      byCat[c].push(l);
+    });
+    /* 洗牌分类再逐个抽 —— 直接洗全部站点会在同一个大分类里连抽三个 */
+    for (var i = cats.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = cats[i]; cats[i] = cats[j]; cats[j] = t;
+    }
+    var out = [];
+    for (var k = 0; k < cats.length && out.length < n; k++) {
+      var arr = byCat[cats[k]];
+      out.push(arr[Math.floor(Math.random() * arr.length)]);
+    }
+    return out;
   }
+  function closeRandomSheet() {
+    var el = $('#randomSheet');
+    if (!el) return false;
+    if (el._esc) document.removeEventListener('keydown', el._esc);
+    if (el._lock) document.body.classList.remove('no-scroll');
+    el.remove();
+    return true;
+  }
+  function openRandomSheet() {
+    closeRandomSheet();
+    var picks = randomPicks(3);
+    if (!picks.length) return;
+    var el = document.createElement('div');
+    el.className = 'rsheet';
+    el.id = 'randomSheet';
+    el.innerHTML =
+      '<div class="rsheet__scrim" data-rsheet-close></div>' +
+      '<div class="rsheet__panel" role="dialog" aria-modal="true" aria-label="随机漫游">' +
+        '<div class="rsheet__head">' +
+          '<b>🎲 今日三站</b>' +
+          '<span>三个不同分类，各抽一个</span>' +
+          '<button class="rsheet__x" type="button" data-rsheet-close aria-label="关闭">' +
+            '<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>' +
+        '</div>' +
+        '<div class="rsheet__list">' +
+          picks.map(function (l) {
+            return '<a class="rsheet__card" href="' + hrefOf(l.u) + '"' + blankAttr(l.u) + '>' +
+                '<span class="rsheet__cat">' + esc(l.cat || '其它') + '</span>' +
+                '<span class="rsheet__n">' + esc(l.n) + '</span>' +
+                '<span class="rsheet__d">' + esc(l.d || hostOf(l.u)) + '</span>' +
+              '</a>';
+          }).join('') +
+        '</div>' +
+        '<div class="rsheet__foot">' +
+          '<button class="btn btn--ghost" type="button" data-rsheet-again>🎲 换一批</button>' +
+          '<button class="btn btn--ghost" type="button" data-rsheet-all>三个都开</button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(el);
+    el._lock = !document.body.classList.contains('no-scroll');
+    if (el._lock) document.body.classList.add('no-scroll');
+    el._picks = picks;
+    el.addEventListener('click', function (e) {
+      if (e.target.closest('[data-rsheet-close]')) { closeRandomSheet(); return; }
+      if (e.target.closest('[data-rsheet-again]')) { openRandomSheet(); return; }
+      if (e.target.closest('[data-rsheet-all]')) {
+        var opened = 0;
+        picks.forEach(function (l) {
+          if (String(l.u).charAt(0) === '#') { location.hash = l.u; return; }
+          try { if (window.open(l.u, '_blank', 'noopener')) opened++; } catch (err) {}
+        });
+        closeRandomSheet();
+        toast(opened ? '🎲 开了 ' + opened + ' 个标签页' : '浏览器拦住了弹窗，点卡片一个个开吧');
+        return;
+      }
+      /* 点了某一张卡：面板收起来，正常打开它 */
+      if (e.target.closest('.rsheet__card')) setTimeout(closeRandomSheet, 60);
+    });
+    el._esc = function (e2) { if (e2.key === 'Escape') closeRandomSheet(); };
+    document.addEventListener('keydown', el._esc);
+  }
+  function randomLink() { openRandomSheet(); }
 
   /* ---------- 滚动 / 光标 ---------- */
   var header, progress, cursorGlow;
@@ -3449,6 +4223,15 @@
         openPost(pid);
         return;
       }
+      // 标签落地页：#/tag/<标签>
+      var tgm = /^#\/tag\/(.+)$/.exec(href);
+      if (tgm) {
+        e.preventDefault();
+        var tn = tgm[1];
+        try { tn = decodeURIComponent(tn); } catch (e6) {}
+        openTag(tn);
+        return;
+      }
       var route = href.replace(/^#\/?/, '');
       if (ALL_ROUTES.indexOf(route) < 0) return;
       e.preventDefault();
@@ -3474,8 +4257,14 @@
     bindHeaderSearch();
     var themeBtn = $('#themeBtn');
     if (themeBtn) themeBtn.addEventListener('click', toggleTheme);
+    /* v139：顶栏的时钟 = 稍后读入口（未读条数挂在角标上） */
+    var laterBtn = $('#laterBtn');
+    if (laterBtn) laterBtn.addEventListener('click', function () { navigate('later'); });
     var randomBtn = $('#randomBtn');
     if (randomBtn) randomBtn.addEventListener('click', randomLink);
+    /* v139：页脚的「足迹」入口 */
+    var footInsight = $('#footInsight');
+    if (footInsight) footInsight.addEventListener('click', function () { navigate('insight'); });
     var adminBtn = $('#adminBtn');
     if (adminBtn) adminBtn.addEventListener('click', function () { navigate('admin'); });
 
@@ -3550,6 +4339,7 @@
       if (e.key === 'Escape' && closeCatSheet()) return;
       if (e.key === 'Escape' && closeTagSheet()) return;
       if (e.key === 'Escape' && closeCardMenu()) return;
+      if (e.key === 'Escape' && closeRandomSheet()) return;
       if (meta || e.altKey) return;
       if (e.key === '/' && !isTyping(e.target) && !isPaletteOpen()) { e.preventDefault(); paletteOpen(); return; }
       handleShortcutKeys(e);
@@ -3610,6 +4400,8 @@
       }
       var rand = e.target.closest('#heroRandom');
       if (rand) { randomLink(); return; }
+      /* v139：导航页「只看收藏」状态下的导出按钮 */
+      if (e.target.closest('#favExport')) { exportBookmarks(); return; }
       // 点了站点卡片 / 最近记录 → 记一次访问（收藏、复制按钮已在上面 return 掉）
       var visitEl = e.target.closest('.link-card, .recent-chip');
       if (visitEl) {

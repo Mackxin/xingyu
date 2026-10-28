@@ -11,7 +11,7 @@
 
    ⚠️ 发布新版本时，把 VERSION 和 index.html 里的 ?v= 一起改。
    ========================================================================= */
-var VERSION = 'v138';
+var VERSION = 'v139';
 /* 缓存前缀跟着站名走（v134 起叫壹号栈）。CACHE_PREFIXES 里留着旧的 xingyu-，
    activate 时一起清 —— 不然改过名的老用户机器上会一直搁着几份旧站名的缓存。 */
 var CACHE_PREFIX = 'yihaozhan-';

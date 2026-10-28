@@ -3487,3 +3487,282 @@ a.sponsor__code:hover .sponsor__code-label{ color:var(--text); }
   /* 卡只有 266 宽，四个按钮排一行几乎顶满，字号和内距各收一点 */
   .idea-card__ops .idea-mini{ padding:3px 5px; font-size:11.5px; }
 }
+
+/* =========================================================
+   v139 · 十个新功能的样式
+   ---------------------------------------------------------
+   ① 顶栏「稍后读」角标  ② 失效站点卡片  ③ 那年今日
+   ④ 稍后读页          ⑤ 足迹页        ⑥ 标签落地页
+   ⑦ 随机漫游「今日三站」面板
+   全写在文件最后：上面那些 max-width 断点里有同权重的老规则，
+   靠文件顺序决胜（跟 v127 ~ v138 一个套路）。
+   ========================================================= */
+:root{ --danger:#ff8f8f; }
+html[data-theme="light"]{ --danger:#bf2e28; }
+
+/* ---------- ① 顶栏「稍后读」---------- */
+.header__actions .icon-btn{ position:relative; }
+.icon-btn__n{
+  position:absolute; top:-4px; right:-6px;
+  min-width:15px; height:15px; padding:0 4px;
+  display:grid; place-items:center;
+  font-size:9.5px; font-style:normal; font-weight:700; line-height:1;
+  color:#fff; background:linear-gradient(135deg, var(--a2), var(--a1));
+  border-radius:99px; box-shadow:0 2px 8px rgba(0,0,0,.4);
+}
+.icon-btn__n[hidden]{ display:none; }
+.header__actions .icon-btn.has-new svg{ color:var(--a1); }
+
+/* ---------- ② 失效站点：整卡淡下去、名字划一道 ---------- */
+.link-card.is-dead{ opacity:.4; filter:saturate(.35); }
+.link-card.is-dead:hover{ opacity:.62; }
+.link-card.is-dead .link-card__nmtxt{ text-decoration:line-through; text-decoration-thickness:1px; }
+/* 菜单里「已存稍后读 / 已标记失效」两项的选中态（不用 .is-on，那条给星星填了实心） */
+.card-menu__i.is-later{ color:var(--a1); background:color-mix(in srgb, var(--a1) 13%, transparent); }
+.card-menu__i.is-dead{ color:var(--danger); background:color-mix(in srgb, var(--danger) 13%, transparent); }
+
+/* ---------- ③ 那年今日 ---------- */
+.otd{
+  margin:24px 0 6px; padding:16px 18px 14px; border-radius:var(--r);
+  background:
+    radial-gradient(120% 130% at 0% 0%, color-mix(in srgb, var(--a2) 10%, transparent), transparent 70%),
+    var(--glass);
+}
+.otd__head{ display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; margin-bottom:12px; }
+.otd__k{
+  font-size:12.5px; font-weight:700; letter-spacing:.04em;
+  background:var(--grad); -webkit-background-clip:text; background-clip:text;
+  -webkit-text-fill-color:transparent; color:var(--a1);
+}
+.otd__d{ font-size:11.5px; color:var(--text-mute); }
+/* 列数由 JS 给出的 --otd-n 决定：1 条就铺满一整行，3 条就三等分。
+   原来是横向滚动的轨道，一条时右边空出一大片、看着像忘了填内容。 */
+.otd__rail{
+  display:grid; gap:10px;
+  grid-template-columns:repeat(var(--otd-n, 1), minmax(0, 1fr));
+}
+.otd-card{
+  display:flex; flex-direction:column; gap:5px;
+  padding:11px 13px; border-radius:var(--r-sm);
+  background:var(--glass-2); text-decoration:none;
+  transition:background .25s var(--ease), transform .25s var(--ease);
+}
+.otd-card:hover{ background:var(--glass-hi); transform:translateY(-1px); }
+.otd-card__y{ font-size:10.5px; font-weight:700; letter-spacing:.08em; color:var(--a1); font-variant-numeric:tabular-nums; }
+.otd-card__t{
+  font-size:13.5px; font-weight:600; color:var(--text);
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.otd-card__d{
+  font-style:normal; font-size:12px; line-height:1.55; color:var(--text-mute);
+  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+}
+
+/* ---------- ④ 稍后读（#/later）---------- */
+.later-bar{
+  display:flex; align-items:center; justify-content:space-between;
+  gap:14px; flex-wrap:wrap; margin:28px 0 14px;
+}
+.later-bar .tag-bar__chips{ display:flex; gap:8px; flex-wrap:wrap; }
+.later-list{ display:flex; flex-direction:column; gap:10px; }
+.later-item{
+  display:flex; align-items:center; gap:14px;
+  padding:13px 16px; border-radius:var(--r-sm);
+  background:var(--glass);
+  transition:background .25s var(--ease);
+}
+.later-item:hover{ background:var(--glass-2); }
+.later-item.is-read{ opacity:.66; }
+.later-item__main{
+  flex:1 1 auto; min-width:0;
+  display:flex; flex-direction:column; gap:3px; text-decoration:none;
+}
+.later-item__name{
+  font-size:14.5px; font-weight:500; color:var(--text);
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.later-item.is-read .later-item__name{ color:var(--text-dim); }
+.later-item__host{
+  font-size:11.5px; color:var(--text-mute);
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.later-item__time{ flex:0 0 auto; font-size:11.5px; color:var(--text-mute); font-variant-numeric:tabular-nums; }
+.later-item__ops{ flex:0 0 auto; display:inline-flex; align-items:center; gap:4px; }
+.later-empty{ width:100%; }
+
+/* ---------- ⑤ 足迹（#/insight）---------- */
+.insight-sec{ margin:38px 0 0; }
+.insight-sec:first-of-type{ margin-top:30px; }
+.year-grid{
+  display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:12px;
+  margin:0 0 20px;
+}
+.year-cell{
+  padding:16px 18px; border-radius:var(--r-sm);
+  background:linear-gradient(160deg, color-mix(in srgb, var(--a1) 10%, transparent), var(--glass));
+}
+.year-cell b{
+  display:block; font-size:26px; font-weight:700; letter-spacing:-.02em;
+  font-variant-numeric:tabular-nums;
+  background:var(--grad); -webkit-background-clip:text; background-clip:text;
+  -webkit-text-fill-color:transparent; color:var(--a1);
+}
+.year-cell span{ display:block; margin-top:4px; font-size:11.5px; color:var(--text-mute); }
+
+/* 12 个月的灵感条形：现在这个月高亮 */
+.ybars{ display:flex; align-items:flex-end; gap:6px; height:104px; }
+.ybar{
+  flex:1 1 0; min-width:0; height:100%;
+  display:flex; flex-direction:column; align-items:center; justify-content:flex-end; gap:4px;
+}
+.ybar i{
+  display:block; width:100%; max-width:26px; border-radius:5px 5px 2px 2px;
+  background:color-mix(in srgb, var(--a1) 55%, transparent);
+  transition:background .3s var(--ease);
+}
+.ybar.is-now i{ background:var(--grad); box-shadow:0 0 14px color-mix(in srgb, var(--a2) 45%, transparent); }
+.ybar em{ font-style:normal; font-size:9.5px; color:var(--text-mute); font-variant-numeric:tabular-nums; }
+
+/* 灵感热力图：7 行 × N 列，按周成列 */
+.heat__grid{
+  display:grid; grid-auto-flow:column; grid-template-rows:repeat(7, 12px);
+  gap:3px; overflow-x:auto; padding-bottom:4px; scrollbar-width:none;
+}
+.heat__grid::-webkit-scrollbar{ display:none; }
+.heat__c{
+  display:block; width:12px; height:12px; border-radius:3px;
+  background:var(--glass-2);
+}
+.heat__c--1{ background:color-mix(in srgb, var(--a1) 30%, transparent); }
+.heat__c--2{ background:color-mix(in srgb, var(--a1) 52%, transparent); }
+.heat__c--3{ background:color-mix(in srgb, var(--a1) 76%, transparent); }
+.heat__c--4{ background:var(--a1); }
+.heat__foot{
+  display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
+  margin-top:10px; font-size:11.5px; color:var(--text-mute);
+}
+.heat__legend{ display:inline-flex; align-items:center; gap:3px; }
+.heat__legend .heat__c{ width:10px; height:10px; }
+
+/* 常去 / 冷落：两列紧凑行 */
+.top-list{ display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:8px 18px; }
+.top-row{
+  display:flex; align-items:center; gap:10px;
+  padding:9px 12px; border-radius:var(--r-sm);
+  background:var(--glass); text-decoration:none;
+  transition:background .22s var(--ease);
+}
+.top-row:hover{ background:var(--glass-2); }
+.top-row__i{
+  flex:0 0 22px; font-size:11.5px; font-weight:700; color:var(--text-mute);
+  font-variant-numeric:tabular-nums;
+}
+.top-row__n{
+  flex:1 1 auto; min-width:0; font-size:13.5px; color:var(--text);
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.top-row__c{ flex:0 0 auto; font-size:11.5px; color:var(--text-mute); }
+.top-row--cold .top-row__i{ color:var(--a3); }
+
+.dead-list{ display:flex; flex-wrap:wrap; gap:8px; }
+.dead-row{
+  display:inline-flex; align-items:center; gap:8px;
+  padding:6px 8px 6px 13px; border-radius:99px;
+  background:var(--glass); font-size:13px;
+}
+.dead-row__n{ color:var(--text-dim); }
+
+/* ---------- ⑥ 标签落地页（#/tag/xx）---------- */
+.tag-bar__link{
+  margin-left:10px; font-size:11.5px; color:var(--a1);
+  text-decoration:none; white-space:nowrap;
+}
+.tag-bar__link:hover{ text-decoration:underline; }
+/* 标签页里的灵感是只读的：不带任何操作按钮，一列一列排开 */
+.idea-grid--lite{ columns:auto; display:grid; gap:14px; }
+.idea-card--lite{ display:block; margin:0; padding:18px 20px 12px; }
+.idea-card--lite .idea-card__foot{ margin-top:10px; }
+
+/* ---------- ⑦ 随机漫游「今日三站」---------- */
+.rsheet{ position:fixed; inset:0; z-index:200; display:grid; place-items:center; padding:20px; }
+.rsheet__scrim{ position:absolute; inset:0; background:rgba(4,6,12,.6); -webkit-backdrop-filter:blur(4px); backdrop-filter:blur(4px); }
+.rsheet__panel{
+  position:relative; width:min(520px, 100%);
+  padding:20px; border-radius:var(--r-lg);
+  background:color-mix(in srgb, var(--bg-soft) 82%, transparent);
+  -webkit-backdrop-filter:blur(20px); backdrop-filter:blur(20px);
+  border:1px solid var(--glass-hi);
+  box-shadow:0 30px 80px rgba(0,0,0,.5);
+  animation:rsheetIn .32s var(--ease) both;
+}
+@keyframes rsheetIn{ from{ opacity:0; transform:translateY(14px) scale(.97); } to{ opacity:1; transform:none; } }
+.rsheet__head{ display:flex; align-items:baseline; gap:10px; margin-bottom:14px; }
+.rsheet__head b{ font-size:15px; color:var(--text); }
+.rsheet__head span{ flex:1 1 auto; font-size:11.5px; color:var(--text-mute); }
+.rsheet__x{
+  flex:0 0 auto; width:28px; height:28px; border-radius:9px;
+  display:grid; place-items:center; color:var(--text-mute); background:var(--glass);
+}
+.rsheet__x:hover{ color:var(--text); background:var(--glass-hi); }
+.rsheet__x svg{ width:14px; height:14px; fill:none; stroke:currentColor; stroke-width:2; }
+.rsheet__list{ display:flex; flex-direction:column; gap:9px; }
+.rsheet__card{
+  display:flex; flex-direction:column; gap:3px;
+  padding:13px 15px; border-radius:var(--r-sm);
+  background:var(--glass); text-decoration:none;
+  transition:background .22s var(--ease), transform .22s var(--ease);
+}
+.rsheet__card:hover{ background:var(--glass-hi); transform:translateY(-1px); }
+.rsheet__cat{ font-size:10.5px; font-weight:700; letter-spacing:.06em; color:var(--a1); }
+.rsheet__n{ font-size:14.5px; font-weight:600; color:var(--text); }
+.rsheet__d{
+  font-size:12px; color:var(--text-mute);
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.rsheet__foot{ display:flex; gap:10px; margin-top:16px; }
+.rsheet__foot .btn{ flex:1 1 0; text-align:center; }
+
+/* ---------- 窄屏收一收 ---------- */
+@media (max-width:900px){
+  .year-grid{ grid-template-columns:repeat(2, minmax(0,1fr)); }
+  .top-list{ grid-template-columns:minmax(0,1fr); }
+  .idea-grid--lite{ grid-template-columns:minmax(0,1fr); }
+}
+@media (min-width:900px){
+  .idea-grid--lite{ grid-template-columns:repeat(2, minmax(0,1fr)); }
+}
+@media (max-width:640px){
+  .otd{ padding:14px 14px 12px; }
+  .otd__rail{ grid-template-columns:minmax(0, 1fr); }
+  .later-item{ gap:10px; padding:12px 13px; }
+  .later-item__time{ display:none; }
+  .year-cell{ padding:14px 15px; }
+  .year-cell b{ font-size:22px; }
+  .rsheet{ padding:14px; }
+}
+
+/* ---------- v139 · 明亮主题下把新的强调色压深一档 ----------
+   深色主题用 a1/a2 那套粉紫没问题，落到浅色底上对比度只有 2:1 左右，
+   小字（年份、标签、分类名）基本看不清。这里统一换成同一色系压深后的值。
+   数字格 / 年份沿用渐变文字，所以只换渐变的两端。 */
+html[data-theme="light"]{
+  --ink-a1:#4a63c8;
+  --ink-grad: linear-gradient(120deg, #4a63c8, #7a45c9 52%, #0f8f7d);
+}
+/* 渐变文字（background-clip:text）在浅色底上整段都会偏淡，
+   这里干脆退回实色 —— 大数字和小标签都按 4.5:1 以上给它一个深蓝。 */
+html[data-theme="light"] .otd__k{
+  background:none; -webkit-text-fill-color:currentColor; color:var(--ink-a1);
+}
+html[data-theme="light"] .otd-card__y{ color:var(--ink-a1); }
+html[data-theme="light"] .year-cell b{
+  background:none; -webkit-text-fill-color:currentColor; color:var(--ink-a1);
+}
+html[data-theme="light"] .rsheet__cat,
+html[data-theme="light"] .tag-bar__link{ color:var(--ink-a1); }
+html[data-theme="light"] .ybar.is-now i{ background:var(--ink-grad); box-shadow:none; }
+html[data-theme="light"] .heat__c--4{ background:#5a72d8; }
+html[data-theme="light"] .heat__c--3{ background:rgba(90,114,216,.72); }
+html[data-theme="light"] .heat__c--2{ background:rgba(90,114,216,.46); }
+html[data-theme="light"] .heat__c--1{ background:rgba(90,114,216,.26); }
+html[data-theme="light"] .card-menu__i.is-later{ color:var(--ink-a1); }
