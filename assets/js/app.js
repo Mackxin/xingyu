@@ -388,6 +388,7 @@
     postId: '',         // 正在阅读的文章 id（空 = 文章列表）
     postTag: 'all',     // 文章列表的标签筛选
     tagName: '',        // #/tag/<tag> 落在这个标签上（route==='tag' 时有效）
+    adminTab: '',       // #/admin/<tab> 后台当前面板（空 = 用后台自己的默认值）
     ideaTag: 'all',     // 灵感随记的标签筛选
     ideaQ: '',          // 灵感随记的搜索词（paint() 会带上它）
     laterView: 'all',   // 稍后读的分组：all | unread | read
@@ -2838,16 +2839,26 @@
     if (m) {
       var id = m[1];
       try { id = decodeURIComponent(id); } catch (e) {}
-      return { route: 'post', postId: id, tagName: '' };
+      return { route: 'post', postId: id, tagName: '', adminTab: '' };
     }
     /* #/tag/设计 —— 标签落地页，链接可以直接发给别人 */
     var tm = /^tag\/(.+)$/.exec(h);
     if (tm) {
       var tn = tm[1];
       try { tn = decodeURIComponent(tn); } catch (e2) {}
-      return { route: 'tag', postId: '', tagName: tn };
+      return { route: 'tag', postId: '', tagName: tn, adminTab: '' };
     }
-    return { route: ALL_ROUTES.indexOf(h) > -1 ? h : 'home', postId: '', tagName: '' };
+    /* #/admin/feed —— 后台每个面板都有自己的地址。
+       这样刷新不会跳回第一个面板，前进/后退能当面板历史用，
+       也能把「后台 · 分享」这一页直接发给别人。（v142） */
+    var am = /^admin\/([a-z]+)$/.exec(h);
+    if (am) {
+      return { route: 'admin', postId: '', tagName: '', adminTab: am[1] };
+    }
+    return {
+      route: ALL_ROUTES.indexOf(h) > -1 ? h : 'home',
+      postId: '', tagName: '', adminTab: ''
+    };
   }
   function scrollTop(smooth) {
     /* 注意：html 上有 scroll-behavior:smooth，behavior:'auto' 会跟着 CSS 走变成动画滚动，
@@ -2864,6 +2875,7 @@
     state.route = route;
     state.postId = '';          // 回到列表页要清掉正在读的那篇
     state.tagName = '';         // 标签页的标签也一起清掉
+    state.adminTab = '';        // 后台面板也一样（#/admin 不带面板名）
     try { history.pushState(null, '', '#/' + route); }
     catch (e) { try { location.hash = '#/' + route; } catch (e2) {} }
     render(dir ? { dir: dir } : { animate: false });
@@ -2903,10 +2915,13 @@
   /* 浏览器前进/后退 */
   function syncFromHash() {
     var nh = parseHash();
-    if (nh.route !== state.route || nh.postId !== state.postId || (nh.tagName || '') !== (state.tagName || '')) {
+    if (nh.route !== state.route || nh.postId !== state.postId ||
+        (nh.tagName || '') !== (state.tagName || '') ||
+        (nh.adminTab || '') !== (state.adminTab || '')) {
       state.route = nh.route;
       state.postId = nh.postId;
       state.tagName = nh.tagName || '';
+      state.adminTab = nh.adminTab || '';
       render({ animate: false });
     }
   }
@@ -4686,6 +4701,11 @@
     var h0 = parseHash();
     state.route = h0.route;
     state.postId = h0.postId;
+    /* v142：初始 hash 里的「标签名 / 后台面板名」也得跟着恢复 ——
+       以前只回了 route + postId，刷新 #/tag/设计 会落到一个空标签页，
+       刷新 #/admin/feed 会退回第一个面板。 */
+    state.tagName = h0.tagName || '';
+    state.adminTab = h0.adminTab || '';
     var rawHash = '';
     try { rawHash = location.hash.replace(/^#\/?/, ''); } catch (e) {}
     if (rawHash === '') {
@@ -4750,6 +4770,15 @@
     fav: {
       get: function () { return state.fav; },
       set: function (v) { state.fav = Array.isArray(v) ? v : []; saveFav(); }
+    },
+    /* v142：后台每个面板都有自己的地址 —— 读当前面板 / 切面板时同步地址栏。
+       用 pushState 而不是 replaceState：这样浏览器后退键可以当「上一个面板」用。
+       只改 hash、不触发重渲染（面板内容后台自己已经换好了）。 */
+    adminTab: function () { return state.adminTab || ''; },
+    setAdminTab: function (t, replace) {
+      state.adminTab = t || '';
+      var url = '#/admin' + (t ? '/' + t : '');
+      try { history[replace ? 'replaceState' : 'pushState'](null, '', url); } catch (e) {}
     }
   };
 

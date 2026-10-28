@@ -10,17 +10,39 @@
   var MD = window.XYMarkdown || null;
   var MAX = Store.MAX_LINKS;
   var TABS = [
-    { id: 'sites',    label: '站点数据', icon: '🗂', badge: 'adminTabSitesN' },
-    { id: 'feed',     label: '分享',     icon: '📰', badge: 'adminTabFeedN' },
-    { id: 'posts',    label: '文章',     icon: '✍️', badge: 'adminTabPostsN' },
-    { id: 'home',     label: '首页内容', icon: '🏠' },
-    { id: 'look',     label: '主题',     icon: '🎨' },
-    { id: 'links',    label: '自定义链接', icon: '🔗', badge: 'adminTabLinksN' },
-    { id: 'site',     label: '站点信息', icon: '🌌' },
-    { id: 'backup',   label: '备份',     icon: '💾' },
-    { id: 'security', label: '口令',     icon: '🔐' },
-    { id: 'guide',    label: '手册 / 参数', icon: '📖' }
+    { id: 'sites',    label: '站点数据', icon: '🗂', badge: 'adminTabSitesN',
+      hint: '「导航」页和全站搜索的数据源，改完前台立刻变' },
+    { id: 'feed',     label: '分享',     icon: '📰', badge: 'adminTabFeedN',
+      hint: '按日期发一条，前台「分享」页按时间线排' },
+    { id: 'posts',    label: '文章',     icon: '✍️', badge: 'adminTabPostsN',
+      hint: 'Markdown 写作 + 实时预览，也能批量导入 .md' },
+    { id: 'home',     label: '首页内容', icon: '🏠',
+      hint: '标语、统计、入口卡、今日精选、关于页、赞助位' },
+    { id: 'look',     label: '主题',     icon: '🎨',
+      hint: '配色、极光强度、圆角、密度、正文字号行高' },
+    { id: 'links',    label: '自定义链接', icon: '🔗', badge: 'adminTabLinksN',
+      hint: '顶栏和页脚那种自己加的链接' },
+    { id: 'site',     label: '站点信息', icon: '🌌',
+      hint: '站名、标语、建站日期、Logo、分享卡片图' },
+    { id: 'backup',   label: '备份',       icon: '💾',
+      hint: '体检 → 导出上线用的 site-data.js，以及版本历史与本机备份' },
+    { id: 'security', label: '口令',       icon: '🔐',
+      hint: '纯前端门禁，只防误入，不是真安全' },
+    { id: 'guide',    label: '手册 / 参数', icon: '📖',
+      hint: '怎么用、快捷键、后台每个面板管什么、技术参数' }
   ];
+
+  /* v142：10 个面板一排到底太长，按「内容 / 外观 / 系统」分组 ——
+     分组按你找东西的思路分，不是按代码里的顺序。 */
+  var TAB_GROUPS = [
+    { name: '内容', ids: ['sites', 'feed', 'posts', 'links'] },
+    { name: '外观', ids: ['home', 'look', 'site'] },
+    { name: '系统', ids: ['backup', 'security', 'guide'] }
+  ];
+  function tabMeta(id) {
+    for (var i = 0; i < TABS.length; i++) if (TABS[i].id === id) return TABS[i];
+    return TABS[0];
+  }
 
   var tab = 'sites';
   var openCats = {};        // 展开的分类（按 id 记）
@@ -77,9 +99,100 @@
     return 'c' + Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36);
   }
 
+  /* ---------- 未保存改动（v142） ----------
+     「改过没有」不去维护一个 hasChanges 标志位，而是拿当前表单值和「打开时拍的快照」比。
+     标志位只要漏清一次就会永远卡在 true（保存完还弹提醒），漏设一次就永远不提醒；
+     直接比值永远等于真实状态。参考的是常见 settings/admin 面板的 dirty-compare 做法。 */
+  function formSnapshot(box) {
+    var arr = [];
+    box.querySelectorAll('input, textarea, select').forEach(function (el) {
+      if (el.type === 'checkbox' || el.type === 'radio') arr.push(el.checked ? '1' : '0');
+      else arr.push(String(el.value).replace(/\s+/g, ' ').trim());
+    });
+    return arr.join('\u0001');
+  }
+  function markFormClean(box) {
+    if (box) box.__clean = formSnapshot(box);
+  }
+  function formDirty(box) {
+    return !!(box && box.__clean !== undefined && box.__clean !== formSnapshot(box));
+  }
+  /* 当前正打开着的编辑器（分享就地展开那一格 / 文章编辑器）；没开着就返回 null */
+  function editingBox() {
+    var body = document.getElementById('adminBody');
+    if (!body) return null;
+    return body.querySelector('.post-admin-row.is-editing') || body.querySelector('.post-editor');
+  }
+  /* 有没保存的改动就先问一句，确认了才执行 after */
+  function guardUnsaved(after) {
+    var box = editingBox();
+    if (!box || !formDirty(box)) { after(); return; }
+    askConfirm({
+      title: '还有没保存的改动',
+      desc: '现在离开，刚填的内容就没了。<br>想留着就点「继续编辑」，回去按 <b>⌘S</b> 保存。',
+      icon: '✏️', ok: '丢弃改动', cancel: '继续编辑'
+    }, after);
+  }
+
+  /* 内联校验（v142）：错误就贴在字段下面，红框标出来并把光标放进去。
+     以前是弹一句 toast 就没了 —— 表单长的时候人根本不知道该改哪一格。 */
+  function fieldError(scope, sel, msg) {
+    var el = scope.querySelector(sel);
+    if (!el) return false;
+    var wrap = el.closest('.admin-field') || el.parentElement;
+    wrap.classList.add('is-invalid');
+    var tip = wrap.querySelector('.admin-field__err');
+    if (!tip) {
+      tip = document.createElement('span');
+      tip.className = 'admin-field__err';
+      wrap.appendChild(tip);
+    }
+    tip.textContent = msg;
+    try { wrap.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch (e) {}
+    try { el.focus({ preventScroll: true }); } catch (e2) { try { el.focus(); } catch (e3) {} }
+    return true;
+  }
+  function clearFieldError(scope) {
+    if (!scope) return;
+    scope.querySelectorAll('.admin-field.is-invalid').forEach(function (w) {
+      w.classList.remove('is-invalid');
+      var t = w.querySelector('.admin-field__err');
+      if (t) t.parentNode.removeChild(t);
+    });
+  }
+
+  /* ⌘S / Ctrl+S 保存当前表单：只认带 data-save-primary 的那颗保存按钮，
+     不去猜「面板里第一颗主按钮」，免得不小心点到「新增」之类的。 */
+  function bindShellKeys() {
+    if (bindShellKeys.done) return;
+    bindShellKeys.done = true;
+    document.addEventListener('keydown', function (e) {
+      if (!Store.isUnlocked()) return;
+      if (!/^#\/admin(\/|$)/.test(location.hash || '')) return;
+      if (e.metaKey || e.ctrlKey) {
+        if (e.key === 's' || e.key === 'S') {
+          var btn = document.querySelector('#adminBody [data-save-primary]');
+          if (btn) { e.preventDefault(); btn.click(); }
+        }
+        return;
+      }
+      if (e.key === 'Escape') {
+        if (document.getElementById('confirmMask')) return;   // 确认框自己处理
+        var box = editingBox();
+        if (!box) return;
+        var cancel = box.querySelector('#feedCancel, #postCancel');
+        if (cancel) { e.preventDefault(); cancel.click(); }
+      }
+    });
+  }
+
   /* ======================= 渲染 ======================= */
   function render() {
     if (!Store.isUnlocked()) return lockHtml();
+    /* v142：面板名进地址栏了（#/admin/feed），刷新/后退都停在同一面板。
+       地址里没带就沿用内存里的 tab（第一次进来是「站点数据」）。 */
+    var fromHash = app().adminTab ? app().adminTab() : '';
+    if (fromHash && tabMeta(fromHash).id === fromHash) tab = fromHash;
     if (firstRun) {
       firstRun = false;
       var list = cats();
@@ -89,31 +202,49 @@
       '<div class="admin-shell">' +
         sideHtml() +
         '<div class="admin-main">' +
-          '<div class="page-head">' +
-            '<span class="eyebrow">Admin · 后台</span>' +
-            '<h1>后台管理</h1>' +
-            '<p>这里的改动<b>实时生效</b>，保存在本机浏览器。想让所有访客都看到，请到「备份」页导出。</p>' +
-          '</div>' +
+          '<div class="page-head page-head--admin" id="adminHead">' + headHtml() + '</div>' +
           '<div class="admin-body" id="adminBody">' + panelHtml() + '</div>' +
         '</div>' +
       '</div>' +
       '</div>';
   }
 
-  /* 左侧导航栏 */
+  /* 面板标题跟着当前面板变 —— 切面板时只换这一块，不整页重绘 */
+  function headHtml() {
+    var meta = tabMeta(tab);
+    return '<span class="eyebrow">Admin · 后台</span>' +
+      '<h1>' + esc(meta.icon) + ' ' + esc(meta.label) + '</h1>' +
+      '<p>' + esc(meta.hint || '') + '</p>' +
+      /* 这一句始终在场 —— 标题可以跟着面板换，但「改的是本机、别人看不到」
+         是后台最容易忘的一件事，丢了会以为自己已经更新了线上。 */
+      '<p class="admin-head__note">这里的改动<b>实时生效</b>，但只存在这台设备的浏览器里；' +
+        '要所有访客都看到，到「备份」导出 <code>site-data.js</code>。</p>';
+  }
+
+  /* 左侧导航栏（v142：按「内容 / 外观 / 系统」分组，10 项一排到底太长了） */
   function sideHtml() {
+    var byId = {};
+    TABS.forEach(function (t) { byId[t.id] = t; });
     return '<aside class="admin-side">' +
       '<div class="admin-side__title"><b>管理台</b><em>Admin</em></div>' +
       '<nav class="admin-nav" role="tablist">' +
-        TABS.map(function (t) {
-          var badge = t.badge
-            ? '<span class="admin-tab__n" id="' + t.badge + '">' + badgeText(t.badge) + '</span>'
-            : '';
-          return '<button class="admin-tab' + (t.id === tab ? ' is-active' : '') + '" type="button" role="tab"' +
-            ' data-tab="' + t.id + '" title="' + esc(t.label) + '">' +
-            '<span class="admin-tab__ico" aria-hidden="true">' + t.icon + '</span>' +
-            '<span class="admin-tab__label">' + esc(t.label) + '</span>' + badge +
-            '</button>';
+        TAB_GROUPS.map(function (g) {
+          return '<div class="admin-nav__group">' +
+            '<span class="admin-nav__gtitle">' + esc(g.name) + '</span>' +
+            g.ids.map(function (id) {
+              var t = byId[id];
+              if (!t) return '';
+              var badge = t.badge
+                ? '<span class="admin-tab__n" id="' + t.badge + '">' + badgeText(t.badge) + '</span>'
+                : '';
+              return '<button class="admin-tab' + (t.id === tab ? ' is-active' : '') + '" type="button" role="tab"' +
+                ' aria-selected="' + (t.id === tab ? 'true' : 'false') + '"' +
+                ' data-tab="' + t.id + '" title="' + esc(t.label) + '">' +
+                '<span class="admin-tab__ico" aria-hidden="true">' + t.icon + '</span>' +
+                '<span class="admin-tab__label">' + esc(t.label) + '</span>' + badge +
+                '</button>';
+            }).join('') +
+            '</div>';
         }).join('') +
       '</nav>' +
       '<div class="admin-side__foot">' +
@@ -910,10 +1041,11 @@
             '</div>' +
           '</div>' +
           '<div class="post-editor__bar">' +
-            '<button class="btn btn--primary" type="button" id="postSave">💾 保存</button>' +
+            '<button class="btn btn--primary" type="button" id="postSave" data-save-primary>💾 保存</button>' +
             '<button class="btn btn--ghost" type="button" id="postPreview">👁 预览</button>' +
             '<button class="btn btn--ghost" type="button" id="postCancel">取消</button>' +
             '<span class="post-editor__count" id="postCount">' + esc(fmtChars(st.chars)) + ' · 约 ' + st.minutes + ' 分钟</span>' +
+            '<span class="edit-keyhint"><kbd>⌘S</kbd> 保存 · <kbd>Esc</kbd> 取消</span>' +
           '</div>' +
           '<div class="post-editor__preview" id="postPreviewBox" hidden></div>' +
         '</div>' +
@@ -977,7 +1109,15 @@
   function saveEditor(root, body) {
     if (!editing) return;
     var data = collectEditor(body);
-    if (!data.body.trim() && !data.title.trim()) { toast('标题和正文都还空着'); return; }
+    clearFieldError(body);
+    if (!data.title.trim()) {
+      fieldError(body, '[data-pf="title"]', '文章得有标题，列表和搜索结果都靠它认');
+      return;
+    }
+    if (!data.body.trim()) {
+      fieldError(body, '[data-pf="body"]', '正文还是空的 —— 真不想写就先「存为草稿」也行，但正文总得有点东西');
+      return;
+    }
     var list = Store.postsAll();
     var key;
     if (editing.isNew) {
@@ -1210,8 +1350,10 @@
 
     var cancelBtn = body.querySelector('#postCancel');
     if (cancelBtn) cancelBtn.addEventListener('click', function () {
-      editing = null;
-      refreshBody(root);
+      guardUnsaved(function () {
+        editing = null;
+        refreshBody(root);
+      });
     });
 
     if (pvBtn && pvBox) pvBtn.addEventListener('click', function () {
@@ -1332,9 +1474,10 @@
             '</div>' +
           '</div>' +
           '<div class="post-editor__bar">' +
-            '<button class="btn btn--primary" type="button" id="feedSave">💾 保存</button>' +
+            '<button class="btn btn--primary" type="button" id="feedSave" data-save-primary>💾 保存</button>' +
             '<button class="btn btn--ghost" type="button" id="feedCancel">取消</button>' +
             '<span class="post-editor__count">前台卡片效果 ↓</span>' +
+            '<span class="edit-keyhint"><kbd>⌘S</kbd> 保存 · <kbd>Esc</kbd> 取消</span>' +
           '</div>' +
           '<div class="post-editor__preview feed-preview" id="feedPreview">' + feedPreviewHtml(f) + '</div>' +
         '</div>' +
@@ -1389,7 +1532,11 @@
 
   function saveFeed(root, body) {
     var data = collectFeedForm(body);
-    if (!data.title) { toast('先写个标题吧'); return; }
+    clearFieldError(body);
+    if (!data.title) {
+      fieldError(body, '[data-ff="title"]', '标题得填一个 —— 列表里靠它认条目，搜索也靠它');
+      return;
+    }
     /* v141：链接不再是必填 —— 留空就是一条「只有文字、点了不跳」的分享（比如站点公告），
        前台会渲染成 .feed-card--nolink。以前这里硬拦着，连带那两条本来就没链接的老条目都改不动。 */
     var list = Store.feedAll();
@@ -1499,8 +1646,10 @@
 
     var cancelBtn = body.querySelector('#feedCancel');
     if (cancelBtn) cancelBtn.addEventListener('click', function () {
-      feedEditing = null;
-      refreshBody(root);
+      guardUnsaved(function () {
+        feedEditing = null;
+        refreshBody(root);
+      });
     });
   }
 
@@ -3426,9 +3575,18 @@
       ['<code>Esc</code>', '关掉任何打开的面板']
     ].map(function (r) { return gRow(r[0], r[1]); }).join('');
 
+    /* 后台自己的快捷键（v142） */
+    var adminKeysRows = [
+      ['<code>⌘S</code> / <code>Ctrl+S</code>', '保存正在编辑的这一条（分享 / 文章），不用去够那颗按钮'],
+      ['<code>Esc</code>', '取消编辑 / 关掉挑 emoji 的小面板（有改动会先问一句）'],
+      ['<code>⌘K</code>', '前台的搜索面板在后台也能用，找站点、找分享都行'],
+      ['地址栏', '每个面板都有自己的地址（<code>#/admin/feed</code>），刷新停在同一页，后退键当「上一个面板」用，也能把某一页直接发给别人']
+    ].map(function (r) { return gRow(r[0], r[1]); }).join('');
+
     var adminRows = [
       ['🗂 站点数据', '增删分类与站点、拖拽排序、改图标与描述。这是「导航」页和全站搜索的数据源'],
-      ['📰 分享', '发一条分享（日期 / 图标 / 标题 / 链接 / 标签 / 描述），列表里可搜索、可编辑'],
+      ['📰 分享', '发一条分享（日期 / 图标 / 标题 / 链接 / 标签 / 描述），列表里可搜索、可编辑、可就地展开。' +
+        '<b>链接可以留空</b> → 变成一条点了不跳的纯文字卡（发公告好用）；<b>描述里回车换行，前台照原样分段</b>'],
       ['✍️ 文章', '写文章、导入 <code>.md</code>、存草稿、预览正文'],
       ['🏠 首页内容', '改标语、统计数字、入口卡、今日精选（勾哪几条显示哪几条，最多 12 条）、关于页正文、赞助卡片（开关 + 文案 + 收款码图片）'],
       ['🎨 主题', '7 套配色 + 自己敲 <code>#ff1d55</code> 这类色值 + 「我的配色」存多套；还有极光强度、圆角、默认主题、卡片密度、正文字号行高'],
@@ -3441,34 +3599,39 @@
 
     var usageCard = '<div class="admin-card" id="guideUsage">' +
         '<div class="admin-card__head guide-head">' +
-          '<div><h2>使用手册</h2><p>五分钟摸清这个站怎么用、后台每个面板管什么。</p></div>' +
+          '<div><h2>使用手册</h2><p>五分钟摸清这个站怎么用、后台每个面板管什么。' +
+            '<b>手册跟着每版一起改</b>，右上角标着当前版本号，和 <code>sw.js</code> 的缓存版本一致。</p></div>' +
+          '<span class="guide-ver">手册更新于 <b>' + esc(ver) + '</b></span>' +
           '<button class="btn btn--ghost" type="button" data-guide-copy>⧉ 复制这份手册</button>' +
         '</div>' +
 
         '<div class="admin-sub"><b>前台九个页面</b><em>顶栏 tab / 快捷键 / 手机左右滑都能切（后五个不在 tab 里，走入口或链接进）</em></div>' +
         '<div class="guide-list">' + pagesRows + '</div>' +
 
-        '<div class="admin-sub"><b>快捷键</b><em>输入框里打字时不会误触发</em></div>' +
+        '<div class="admin-sub"><b>前台快捷键</b><em>输入框里打字时不会误触发</em></div>' +
         '<div class="guide-list">' + keysRows + '</div>' +
+
+        '<div class="admin-sub"><b>后台快捷键</b><em>改东西的时候手不用离开键盘</em></div>' +
+        '<div class="guide-list">' + adminKeysRows + '</div>' +
 
         '<div class="admin-sub"><b>手机上</b><em>窄屏自动换一套交互</em></div>' +
         '<div class="guide-list">' +
           gRow('左右滑', '切页面，隔壁页会跟着滑进来，松手按位移 / 速度决定去留') +
           gRow('双击顶栏空白', '一下到底，再双击回顶部（长页面很省事）') +
-          gRow('长按卡片', '弹出收藏 / 复制链接 / 打开') +
+          gRow('长按卡片', '弹出四项：收藏 / 稍后看 / 标记失效 / 复制链接') +
           gRow('底部 tab 栏', '导航胶囊移到屏幕底部，单手拇指够得着') +
           gRow('🏷 顶栏按钮', '窄屏时标签 / 分类收成按钮，点开是底部面板') +
           gRow('分类栏「只看」', '勾几个分类就只显示它们（面板里勾不会把面板关掉）') +
         '</div>' +
 
-        '<div class="admin-sub"><b>后台每个面板管什么</b><em>左侧那一列从上到下</em></div>' +
+        '<div class="admin-sub"><b>后台每个面板管什么</b><em>左侧那一列按「内容 / 外观 / 系统」分三组</em></div>' +
         '<div class="guide-list">' + adminRows + '</div>' +
 
         '<div class="admin-sub"><b>五个最常见的操作</b><em>照着点就行</em></div>' +
         '<ol class="guide-steps">' +
           '<li><b>加一个站点</b>：站点数据 → 展开分类 → 「＋ 添加站点」→ 填名字和网址 → 回车保存</li>' +
-          '<li><b>发一条分享</b>：分享 → 「＋ 新建」→ 日期默认今天，填标题和链接，标签用逗号隔开</li>' +
-          '<li><b>写一篇文章</b>：文章 → 「＋ 新建」→ 支持 Markdown，右边能实时预览 → 保存</li>' +
+          '<li><b>发一条分享</b>：分享 → 「＋ 新建」→ 日期默认今天，填标题和链接（<b>链接可以留空</b>），标签用逗号隔开，写完按 <b>⌘S</b></li>' +
+          '<li><b>写一篇文章</b>：文章 → 「＋ 新建」→ 支持 Markdown，右边能实时预览 → <b>⌘S</b> 保存</li>' +
           '<li><b>换个配色</b>：主题 → 点色板，或在 <code>HEX</code> 框里敲 <code>#ff1d55</code> → 回车，全站立刻变</li>' +
           '<li><b>给别人看</b>：这里改的都只在你本机。想让所有访客看到，去「备份 → 发布到虚拟主机」下载 <code>site-data.js</code>，' +
             '传到网站的 <code>assets/js/</code> 覆盖同名文件就行</li>' +
@@ -3620,22 +3783,38 @@
     });
     root.querySelectorAll('.admin-tab').forEach(function (b) {
       b.addEventListener('click', function () {
-        closeEmoji();
-        tab = b.getAttribute('data-tab');
-        siteQuery = '';
-        postQuery = '';
-        feedQuery = '';
-        editing = null;
-        feedEditing = null;
-        savedId = '';
-        armed = null;
-        root.querySelectorAll('.admin-tab').forEach(function (x) {
-          x.classList.toggle('is-active', x === b);
+        var next = b.getAttribute('data-tab');
+        /* 编辑器里还有没保存的东西，先问一句再切面板（v142） */
+        guardUnsaved(function () {
+          var prev = tab;
+          closeEmoji();
+          tab = next;
+          siteQuery = '';
+          postQuery = '';
+          feedQuery = '';
+          editing = null;
+          feedEditing = null;
+          savedId = '';
+          armed = null;
+          root.querySelectorAll('.admin-tab').forEach(function (x) {
+            x.classList.toggle('is-active', x === b);
+            x.setAttribute('aria-selected', x === b ? 'true' : 'false');
+          });
+          /* 面板名写进地址栏：刷新停在同一页，后退键当「上一个面板」用。
+             点的是当前那一格就别往历史里再塞一条一样的。 */
+          if (next !== prev && app().setAdminTab) app().setAdminTab(tab);
+          refreshBody(root);
         });
-        refreshBody(root);
       });
     });
     bindBody(root);
+    bindShellKeys();
+    /* 裸 #/admin 进历史的话，后退键会先落在一个「没面板」的空格上 ——
+       这里把它就地替换成当前面板的地址（replace 不进历史），
+       这样后退一次就是真正上一个面板。 */
+    if (app().setAdminTab && !(app().adminTab && app().adminTab())) {
+      app().setAdminTab(tab, true);
+    }
   }
 
   function bindLock(root) {
@@ -3667,8 +3846,13 @@
     var body = root.querySelector('#adminBody');
     if (!body) return;
     body.innerHTML = panelHtml();
+    /* 标题区跟着当前面板走（切面板时只换这一块，不整页重绘） */
+    var head = root.querySelector('#adminHead');
+    if (head) head.innerHTML = headHtml();
     bindBody(root);
     syncSide(root);
+    /* 新渲染出来的编辑器拍一张「干净快照」，之后靠它判断有没有改动 */
+    markFormClean(editingBox());
   }
 
   /* 只重绘分类列表（增删改/搜索/拖动时用，不动搜索框） */
@@ -3720,6 +3904,18 @@
     bindFeed(root, body);
     bindLook(root, body);
     bindGuide(body);
+
+    /* 一改就把那一格的红框和提示抹掉，别让人一边改一边被红着 */
+    if (!body.__errBound) {
+      body.__errBound = true;
+      body.addEventListener('input', function (e) {
+        var w = (e.target && e.target.closest) ? e.target.closest('.admin-field.is-invalid') : null;
+        if (!w) return;
+        w.classList.remove('is-invalid');
+        var t = w.querySelector('.admin-field__err');
+        if (t) t.parentNode.removeChild(t);
+      });
+    }
 
     /* ---------- 站点数据 ---------- */
     var catsWrap = body.querySelector('#adminCats');

@@ -3797,3 +3797,82 @@ html[data-theme="light"] .heat__c--3{ background:rgba(90,114,216,.72); }
 html[data-theme="light"] .heat__c--2{ background:rgba(90,114,216,.46); }
 html[data-theme="light"] .heat__c--1{ background:rgba(90,114,216,.26); }
 html[data-theme="light"] .card-menu__i.is-later{ color:var(--ink-a1); }
+
+/* =========================================================
+   v142 · 后台更好用：分组侧栏 / 内联校验 / 快捷键提示
+   ========================================================= */
+
+/* 侧栏分三组：内容 / 外观 / 系统。组之间用一条淡淡的线隔开，
+   比十项平铺下来好找 —— 分组按「你要改什么」分，不是按代码顺序。 */
+.admin-nav__group{ display:flex; flex-direction:column; gap:3px; }
+.admin-nav__group + .admin-nav__group{
+  margin-top:9px; padding-top:9px;
+  border-top:1px solid color-mix(in srgb, var(--text-mute) 16%, transparent);
+}
+.admin-nav__gtitle{
+  padding:0 12px 5px; font-size:10.5px; font-weight:600;
+  letter-spacing:.18em; text-transform:uppercase; color:var(--text-mute);
+}
+/* 选中项那枚计数徽标：原来是「白字压在 22% 暗底上再叠渐变」，11px 白字看不清，
+   改成浅底深字（和 .admin-tab.is-active 的深墨文字一个思路） */
+.admin-tab.is-active .admin-tab__n{ color:#080a12; background:rgba(255,255,255,.6); border-color:transparent; }
+
+/* 窄屏侧栏变成横向标签条：分组壳子退成 display:contents，
+   让十颗按钮直接参与那一行（否则每组自己会竖起来） */
+@media (max-width:960px){
+  .admin-nav__group{ display:contents; }
+  .admin-nav__gtitle{ display:none; }
+}
+
+/* 内联校验：红框标出来 + 提示贴在字段下面。
+   表单长的时候，弹一句 toast 就没了等于没提示。 */
+.admin-field.is-invalid input,
+.admin-field.is-invalid textarea,
+.admin-field.is-invalid select{
+  box-shadow:0 0 0 2px color-mix(in srgb, var(--danger) 60%, transparent);
+}
+.admin-field__err{
+  display:block; margin-top:6px; font-size:12px; line-height:1.5; color:var(--danger);
+}
+
+/* 「⌘S 保存 · Esc 取消」的小提示，贴在这一排按钮的右边 */
+.edit-keyhint{
+  margin-left:auto; font-size:11.5px; color:var(--text-mute);
+  white-space:nowrap; letter-spacing:.01em;
+}
+.edit-keyhint kbd{
+  font-family:inherit; font-size:10.5px; padding:1px 5px; border-radius:5px;
+  background:var(--glass-hi); color:var(--text-dim);
+}
+@media (max-width:640px){
+  .edit-keyhint{ display:none; }   /* 手机上没实体键盘，别占地方 */
+}
+
+/* 手册头的版本标：证明「手册跟着每版一起改」，不是嘴上说说。
+   margin-left:auto 把它和右边那颗复制按钮一起推到右侧 ——
+   .guide-head 是 flex + space-between，没这一行会跟标题挤在一起。 */
+.guide-ver{
+  margin-left:auto; flex:0 0 auto; align-self:center;
+  font-size:11.5px; color:var(--text-mute); white-space:nowrap;
+}
+.guide-ver b{ color:var(--text-dim); font-weight:600; font-variant-numeric:tabular-nums; }
+@media (max-width:640px){
+  .guide-ver{ margin-left:0; align-self:flex-start; }
+}
+
+/* 标题区的常驻提醒（v142）：面板名会换，这句不换 */
+.admin-head__note{
+  margin-top:6px !important; font-size:12.5px !important;
+  color:var(--text-mute) !important; line-height:1.7;
+}
+.admin-head__note b{ color:var(--text-dim); font-weight:600; }
+.admin-head__note code{ font-size:11.5px; }
+
+/* 手机上十颗面板按钮是一条横向滚动的胶囊条，最右边那颗会被切掉 ——
+   用一层渐隐告诉人「还能往右滑」。（只在真的放不下时才需要，所以放媒体查询里） */
+@media (max-width:960px){
+  .admin-nav{
+    -webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 26px),transparent);
+    mask-image:linear-gradient(90deg,#000 calc(100% - 26px),transparent);
+  }
+}
