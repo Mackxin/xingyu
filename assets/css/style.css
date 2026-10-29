@@ -2899,7 +2899,7 @@ html[data-readfont="serif"] .look-paper{
 .idea-rail__tip{ font-size:12px; color:var(--text-mute); }
 
 /* ---- 卡片墙：瀑布流，省高度也不留空格 ---- */
-.idea-grid{ columns:300px; column-gap:14px; }
+.idea-grid{ columns:380px; column-gap:14px; }
 .idea-card{
   display:inline-block; width:100%; margin:0 0 14px;
   /* v138：操作按钮挪到卡片右上角，顶部留出那一行的高度，正文不会从按钮底下穿过 */
@@ -3424,7 +3424,9 @@ a.sponsor__code:hover .sponsor__code-label{ color:var(--text); }
 @media (min-width:1000px){
   .idea-box{ display:flex; align-items:flex-start; gap:30px; }
   .idea-composer{
-    flex:0 0 460px;
+    /* v144：460 → 410。长灵感在窄列里一行挤不下几个字，
+       写作面板让 50px 出来，右栏每列能宽 25px。 */
+    flex:0 0 410px;
     position:sticky; top:calc(var(--header-h, 96px) + 16px);
     /* v137：高度交给 JS 量出来的 --idea-h。只按 100vh 算会忽略标题区占掉的那一段，
        面板底部会越过视口，「记下来」按钮就落到屏幕外看不见了。
@@ -3437,9 +3439,13 @@ a.sponsor__code:hover .sponsor__code-label{ color:var(--text); }
   .idea-side{ flex:1 1 auto; min-width:0; }
   .idea-bar{ margin:0; }
   .idea-rail{ margin:0; }
-  /* v138：250 → 300。250 时右栏能塞三列，每列才 270 出头，长句一行没几个字；
-     300 之后右栏落成两列（846 宽时每列 416），卡片读起来宽松多了。 */
-  .idea-grid{ columns:300px; }
+  /* v138：250 → 300 → v144 再到 380。250 时右栏能塞三列，每列才 270 出头；
+     300 之后两列，但 1000～1330 之间右栏只有 630~760px，劈成两列每列
+     300 出头，长文一行没几个字，而且只有一条灵感时整个右栏就孤零零
+     一条窄卡、右边大片留白（小宝截图吐槽的就是这个）。
+     380 让这段宽度落成单列全宽 —— 灵感本来就是长句居多；
+     1360 以上仍能排两列，每列 410~455。 */
+  .idea-grid{ columns:380px; }
   /* textarea 吃掉面板剩余高度；高度已由 flex 管，就不再让手动拖了。
      min-height:0 是关键：否则 flex 子项不肯小于内容高度，会把底栏挤出去。 */
   .idea-composer textarea{ flex:1 1 auto; min-height:0; resize:none; }
@@ -3453,10 +3459,11 @@ a.sponsor__code:hover .sponsor__code-label{ color:var(--text); }
   }
   .idea-tip{ flex:1 1 auto; min-width:0; line-height:1.5; font-size:11.5px; }
 }
-/* 1000～1320 之间左栏收一档，右栏还能稳住两到三列 */
+/* 1000～1320 之间左栏再收一档（v144：400 → 355，配合 columns:380，
+   这段宽度右栏能落成单列全宽，长灵感不再挤在 300px 的窄列里） */
 @media (min-width:1000px) and (max-width:1320px){
   .idea-box{ gap:24px; }
-  .idea-composer{ flex-basis:400px; }
+  .idea-composer{ flex-basis:355px; }
 }
 
 /* =========================================================
@@ -3499,17 +3506,9 @@ a.sponsor__code:hover .sponsor__code-label{ color:var(--text); }
   max-width:26em; font-size:13px; line-height:1.8; color:var(--text-mute);
 }
 
-/* =========================================================
-   v138 · 窄桌面（1000～1200）的列宽收一档
-   ---------------------------------------------------------
-   这档右栏只有 540 出头：300 的列宽塞不下两列（会退成一张大卡占满全宽），
-   收到 260 正好两列、每列约 266，比改版前的 250 略宽一点。
-   ========================================================= */
-@media (min-width:1000px) and (max-width:1200px){
-  .idea-grid{ columns:260px; }
-  /* 卡只有 266 宽，四个按钮排一行几乎顶满，字号和内距各收一点 */
-  .idea-card__ops .idea-mini{ padding:3px 5px; font-size:11.5px; }
-}
+/* v138 曾把 1000～1200 的列宽收到 260px 好塞两列；v144 方向反转 ——
+   长灵感要的是宽卡，这档跟全局一样 380px（右栏 540~760px 落成单列全宽）。
+   原来配的「.idea-card__ops 按钮缩小一号」也跟着删：卡片不再只有 266 宽。 */
 
 /* =========================================================
    v139 · 十个新功能的样式
