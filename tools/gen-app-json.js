@@ -5,8 +5,13 @@
    烘成一个 JSON 放在仓库里，App 每次启动就拉它 —— 拉到即最新。
 
    用法（本地 8321 服务要先起着）：
-     node tools/gen-app-json.js            # 写 api/app.json
+     node tools/gen-app-json.js            # 写 api/app.json（内容没变就不写）
      node tools/gen-app-json.js --check    # 只对比，不写（改了没 都靠它）
+     node tools/gen-app-json.js --force    # 内容没变也重写，只为刷 build 时间戳
+
+   为什么「内容没变就不写」：build/updatedAt 是分钟级时间戳，
+   每跑一次都会变，而 app.json 是 300KB —— 见样就写的话，每提交一次
+   都要带一个 300KB 的 diff，历史很快就胖得没法看。
 
    数据来源是浏览器里真实的 XYStore（和前台看到的一模一样），
    所以后台里改过、并「发布到虚拟主机」的内容也会被带进来 —— 前提是
@@ -22,6 +27,7 @@ const OUT = path.join(ROOT, 'api', 'app.json');
 const BASE = process.env.XY_BASE || 'http://127.0.0.1:8321/index.html';
 const SITE_URL = 'https://mackxin.github.io/xingyu/';
 const checkOnly = process.argv.indexOf('--check') > -1;
+const force = process.argv.indexOf('--force') > -1;
 
 /* 站内链接（#/nav、#/idea 这种）在 App 里要拼成完整网址，否则点不开 */
 function absUrl(u) {
@@ -116,6 +122,9 @@ function absUrl(u) {
   const json = JSON.stringify(payload);
   fs.mkdirSync(path.dirname(OUT), { recursive: true });
 
+  /* 指纹：把两个「每次都会变」的时间戳抹掉，剩下的才是真内容 */
+  const fingerprint = (o) => JSON.stringify(Object.assign({}, o, { build: '', updatedAt: '' }));
+
   if (checkOnly) {
     let old = '';
     try { old = fs.readFileSync(OUT, 'utf8'); } catch (e) {}
@@ -124,6 +133,15 @@ function absUrl(u) {
     console.log('本次生成  ：' + stamp + ' / ' + JSON.stringify(payload.stats));
     console.log(same ? '统计数一样 —— 大概率只是时间戳变，可以不提交' : '内容有变化 —— 需要重新生成');
     process.exit(0);
+  }
+
+  let old = null;
+  try { old = JSON.parse(fs.readFileSync(OUT, 'utf8')); } catch (e) {}
+
+  if (!force && old && fingerprint(old) === fingerprint(payload)) {
+    console.log('· 内容没变，跳过写入（要刷时间戳用 --force）');
+    console.log('   现有 build ' + old.build + ' · ' + JSON.stringify(old.stats));
+    return;
   }
 
   fs.writeFileSync(OUT, json);

@@ -1,0 +1,52 @@
+#!/bin/sh
+# pre-commit —— 提交前把 api/app.json 重新烘一遍
+#
+# 为什么要有它：App 只读 api/app.json，改了站点内容却忘了跑
+# `node tools/gen-app-json.js`，App 里就永远停在上一个版本 —— 这个坑踩过不止一次。
+#
+# 三条分寸：
+#   1. 只有「会进 app.json 的那几个文件」在暂存区里才跑，改 README 不惊动它；
+#   2. 生成脚本自己会判断内容有没有变，没变就不写盘，不会制造无谓的 300KB diff；
+#   3. 跑不起来（没 Chrome / 没 node 模块 / 起不了服务）只提醒，**不拦提交** ——
+#      为了一个还没烘的数据卡住你提交，比数据旧一版更烦人。
+#
+# 启用：git config core.hooksPath .githooks
+set -u
+
+ROOT=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
+cd "$ROOT" || exit 0
+
+# 只有这些变了才可能影响 app.json
+CHANGED=$(git diff --cached --name-only)
+if ! printf '%s\n' "$CHANGED" | grep -qE '^(assets/js/(data|site-data|config)\.js|index\.html|api/app\.json)$'; then
+  exit 0
+fi
+
+PORT=8321
+STARTED=0
+if ! curl -s -o /dev/null --max-time 1 "http://127.0.0.1:$PORT/index.html"; then
+  python3 -m http.server "$PORT" >/dev/null 2>&1 &
+  STARTED=1
+  sleep 1
+fi
+
+OUTPUT=$(node tools/gen-app-json.js 2>&1)
+RC=$?
+
+if [ "$STARTED" = "1" ]; then
+  pkill -f "http.server $PORT" >/dev/null 2>&1 || true
+fi
+
+if [ "$RC" != "0" ]; then
+  echo ""
+  echo "⚠️  api/app.json 没烘成（App 里会看到上一版内容）"
+  printf '%s\n' "$OUTPUT" | tail -5
+  echo "    手动补：起服务后 node tools/gen-app-json.js && git add api/app.json"
+  echo ""
+  exit 0
+fi
+
+# 生成成功：把结果一起带上，别让它留在工作区
+git add api/app.json 2>/dev/null || true
+printf '%s\n' "$OUTPUT" | grep -E '写入|内容没变' | sed 's/^/   /'
+exit 0
