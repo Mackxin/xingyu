@@ -53,6 +53,10 @@ function absUrl(u) {
       slogan: home.badge || cfg.slogan || '',
       desc: home.descAfter ? (home.descBefore || '') + home.descAfter : (cfg.desc || ''),
       since: cfg.since || '',
+      /* 顶栏那几颗自定义入口（后台「自定义链接」，最多 5 个）——
+         App 顶栏跟网页端显示同一组，加一条两边一起有 */
+      links: (cfg.customLinks || []).filter(function (l) { return l && l.name && l.url; })
+        .map(function (l) { return { icon: l.icon || '', name: l.name, url: l.url }; }),
       cats: S.dataCategories() || [],
       feed: S.feedAll() || [],
       posts: S.postsAll() || []
@@ -92,8 +96,7 @@ function absUrl(u) {
     body: String(x.body || '')
   }));
 
-  const now = new Date();
-  const stamp = now.getFullYear() +
+  const now = new Date();  const stamp = now.getFullYear() +
     String(now.getMonth() + 1).padStart(2, '0') + String(now.getDate()).padStart(2, '0') +
     String(now.getHours()).padStart(2, '0') + String(now.getMinutes()).padStart(2, '0');
 
@@ -114,6 +117,13 @@ function absUrl(u) {
       feed: feed.length,
       posts: posts.length
     },
+    /* 顶栏自定义入口：站内路由保留 `#/xxx` 原样（App 里要跳原生页），
+       站外链接补成完整网址 */
+    links: (raw.links || []).map(l => ({
+      icon: String(l.icon || ''),
+      name: String(l.name || ''),
+      url: /^#|^\//.test(String(l.url || '')) ? String(l.url) : absUrl(l.url)
+    })).filter(l => l.name && l.url),
     cats,
     feed,
     posts
