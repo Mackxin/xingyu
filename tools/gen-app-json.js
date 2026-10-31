@@ -57,6 +57,17 @@ function absUrl(u) {
          App 顶栏跟网页端显示同一组，加一条两边一起有 */
       links: (cfg.customLinks || []).filter(function (l) { return l && l.name && l.url; })
         .map(function (l) { return { icon: l.icon || '', name: l.name, url: l.url }; }),
+      /* 顶栏各块的显隐（后台「站点信息 → 顶栏显示」）——
+         App 顶栏照这几个 boolean 决定画不画那一块。老配置没有这些 key，
+         一律当 true（跟 DEFAULTS 一致），不能因为缺字段就全给藏了 */
+      top: {
+        brand: cfg.showTopBrand !== false,
+        links: cfg.showTopLinks !== false,
+        search: cfg.showSearch !== false,
+        filter: cfg.showTopFilter !== false,
+        saved: cfg.showTopSaved !== false,
+        theme: cfg.showTopTheme !== false
+      },
       cats: S.dataCategories() || [],
       feed: S.feedAll() || [],
       posts: S.postsAll() || []
@@ -124,6 +135,8 @@ function absUrl(u) {
       name: String(l.name || ''),
       url: /^#|^\//.test(String(l.url || '')) ? String(l.url) : absUrl(l.url)
     })).filter(l => l.name && l.url),
+    /* 顶栏各块显隐 */
+    top: raw.top || { brand: true, links: true, search: true, filter: true, saved: true, theme: true },
     cats,
     feed,
     posts

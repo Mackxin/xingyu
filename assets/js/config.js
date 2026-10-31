@@ -32,6 +32,13 @@
     tagline: '壹号为栈，随处可归',
     themeDefault: 'dark',      // dark | light
     showSearch: true,          // 顶栏是否显示搜索框
+    /* ---- 顶栏各块的显示开关（后台「站点信息 → 顶栏显示」）。
+       App 顶栏和网页顶栏读同一组开关，关掉两边一起消失。 ---- */
+    showTopBrand: true,        // 品牌（「栈」牌 + 站名，点一下回首页）
+    showTopLinks: true,        // 自定义入口（后台「自定义链接」那几条）
+    showTopSaved: true,        // 稍后读（时钟那颗）
+    showTopTheme: true,        // 白天 / 黑夜切换
+    showTopFilter: true,       // 筛选胶囊（导航=分类，分享/文章=标签）
     /* ---- 导航页的三个显示开关（后台「站点信息 → 显示项」）。
        默认全关：卡片只留名字，一行能看更多站点，最清爽。 ---- */
     showIcons: false,          // 卡片左侧那个彩色方块图标

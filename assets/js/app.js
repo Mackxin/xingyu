@@ -4019,7 +4019,10 @@
   function applyHeaderLinks() {
     var wrap = $('#headerLinks');
     if (!wrap || !window.XYStore) return;
+    var c = window.XYStore.get();
     var links = window.XYStore.activeLinks();
+    /* 后台「顶栏显示」里关掉自定义入口，这里整块不渲染 */
+    if (c.showTopLinks === false) { wrap.hidden = true; wrap.innerHTML = ''; return; }
     if (!links.length) { wrap.hidden = true; wrap.innerHTML = ''; return; }
     wrap.hidden = false;
     wrap.innerHTML = links.map(function (l) {
@@ -4047,6 +4050,17 @@
     applyHeaderLinks();
     var sw = $('#headerSearchWrap');
     if (sw) sw.hidden = !c.showSearch;
+    /* 顶栏各块显隐（后台「站点信息 → 顶栏显示」）：关掉就整块拿掉，
+       不留空档 —— App 顶栏读同一组 key，两边表现一致 */
+    var brandEl = document.querySelector('.header .brand');
+    if (brandEl) brandEl.hidden = c.showTopBrand === false;
+    var laterEl = $('#laterBtn');
+    if (laterEl) laterEl.hidden = c.showTopSaved === false;
+    var themeEl = $('#themeBtn');
+    if (themeEl) themeEl.hidden = c.showTopTheme === false;
+    var catEl = $('#headerCat'), tagEl = $('#headerTag');
+    if (catEl) catEl.hidden = c.showTopFilter === false;
+    if (tagEl) tagEl.hidden = c.showTopFilter === false;
     /* 导航页三个显示开关：卡片图标 / 卡片介绍 / 分类前面的 emoji。
        走 <html data-*> + CSS 控制，后台一点开关整页立刻变，不用重渲染两万张卡。 */
     var root = document.documentElement;

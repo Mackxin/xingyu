@@ -2116,10 +2116,19 @@
         '<p class="admin-tip">换了之后如果标签页没变，是浏览器在缓存，关掉标签页重新打开就好。</p>' +
       '</div>' +
       '<div class="admin-card">' +
+        '<h2>顶栏显示</h2>' +
+        '<p>顶栏那块玻璃卡里的几样东西，想留哪样就开哪样。<b>App 顶栏跟网页端读同一组开关</b>，' +
+        '这里关掉两边一起消失，不用装 App 也知道效果。</p>' +
+        switchRow('showTopBrand', c.showTopBrand, '品牌', '左边「栈」牌 + 站名，点一下回首页') +
+        switchRow('showTopLinks', c.showTopLinks, '自定义入口', '「自定义链接」里那几条，最多 5 个') +
+        switchRow('showSearch', c.showSearch, '搜索条', '点了打开全站搜索') +
+        switchRow('showTopFilter', c.showTopFilter, '筛选胶囊', '导航页=全部分类，分享/文章页=标签') +
+        switchRow('showTopSaved', c.showTopSaved, '稍后读', '时钟那颗，带未读角标') +
+        switchRow('showTopTheme', c.showTopTheme, '白天 / 黑夜', '日月那颗主题切换') +
+        '<p class="admin-tip">全关掉也不影响用：搜索、分类这些页面里还有别的入口。</p>' +
+      '</div>' +
+      '<div class="admin-card">' +
         '<h2>显示项</h2>' +
-        '<label class="admin-switch"><input type="checkbox" data-site="showSearch"' + (c.showSearch ? ' checked' : '') + ' />' +
-          '<span class="admin-switch__track"><span class="admin-switch__dot"></span></span>' +
-          '<span class="admin-switch__text">顶栏显示搜索框</span></label>' +
         '<p class="admin-sub">导航页的卡片长什么样（三项默认都关，只留名字最清爽）</p>' +
         '<label class="admin-switch"><input type="checkbox" data-site="showIcons"' + (c.showIcons ? ' checked' : '') + ' />' +
           '<span class="admin-switch__track"><span class="admin-switch__dot"></span></span>' +
@@ -2141,6 +2150,15 @@
     return '<label class="admin-field"><span class="admin-field__label">' + esc(label) +
       (hint ? '<em>' + esc(hint) + '</em>' : '') + '</span>' +
       '<input type="text" data-site="' + key + '" value="' + esc(val) + '" /></label>';
+  }
+
+  /* 一枚 data-site 开关键：默认 true（c.xxx 未定义时也算开） */
+  function switchRow(key, on, title, hint) {
+    return '<label class="admin-switch"><input type="checkbox" data-site="' + key + '"' +
+      (on === false ? '' : ' checked') + ' />' +
+      '<span class="admin-switch__track"><span class="admin-switch__dot"></span></span>' +
+      '<span class="admin-switch__text">' + esc(title) +
+      (hint ? '<em>' + esc(hint) + '</em>' : '') + '</span></label>';
   }
 
   /* ======================= 首页内容 ======================= */
