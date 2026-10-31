@@ -3421,6 +3421,50 @@
     if (close) close.addEventListener('click', function () { closeCatSheet(); });
     if (scrim) scrim.addEventListener('click', function () { closeCatSheet(); });
 
+    /* 全屏面板：点自身留白 / 列表间隙 / 顶部横杠或标题条下拉，都能关 */
+    var sheet = $('#catRailSheet');
+    if (sheet) {
+      sheet.addEventListener('click', function (e) {
+        if (e.target === sheet || e.target === list) closeCatSheet();
+      });
+      var dragShut = function () { return window.innerHeight * 0.35; }; // 下拉超 35% 屏高即关
+      var dragging = false, startY = 0, dy = 0;
+      sheet.addEventListener('pointerdown', function (e) {
+        if (!rail.classList.contains('is-sheet')) return;
+        if (e.target.closest('.cat-rail__x, #catFilter')) return;
+        var onHandle = e.target.closest('.cat-rail__bar, .cat-rail__sheethead') || e.target === sheet;
+        if (!onHandle) return;
+        dragging = true; startY = e.clientY; dy = 0;
+        sheet.style.transition = 'none';
+        try { if (sheet.setPointerCapture) sheet.setPointerCapture(e.pointerId); } catch (_) {}
+      });
+      sheet.addEventListener('pointermove', function (e) {
+        if (!dragging) return;
+        dy = Math.max(0, e.clientY - startY);
+        sheet.style.transform = 'translateY(' + dy + 'px)';
+        if (scrim) scrim.style.opacity = String(Math.max(0, 1 - dy / dragShut()));
+      });
+      var dragEnd = function () {
+        if (!dragging) return;
+        dragging = false;
+        sheet.style.transition = '';
+        if (dy > dragShut()) {
+          sheet.style.transform = '';
+          if (scrim) scrim.style.opacity = '';
+          closeCatSheet();
+        } else {
+          sheet.style.transform = 'translateY(0)';
+          if (scrim) scrim.style.opacity = '1';
+          setTimeout(function () {
+            sheet.style.transform = '';
+            if (scrim) scrim.style.opacity = '';
+          }, 360);
+        }
+      };
+      sheet.addEventListener('pointerup', dragEnd);
+      sheet.addEventListener('pointercancel', dragEnd);
+    }
+
     // 筛选：只筛分类胶囊，不动正文（正文搜索走顶栏搜索框）
     var input = $('#catFilter');
     if (!input) return;
