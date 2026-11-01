@@ -48,11 +48,72 @@ function absUrl(u) {
     const S = window.XYStore;
     const cfg = S.get() || {};
     const home = S.home() || {};
+    const about = S.about() || {};
+    /* 外观：**读真实的计算样式**，不是抄 DEFAULTS。
+       后台换色板 / 调圆角 / 换 glow 之后，CSS 变量才是最终事实，
+       App 照这份值还原就和网页一模一样；哪天真加了新色板也不用改这条管线。 */
+    function cssPal(theme) {
+      const root = document.documentElement;
+      const keep = root.getAttribute('data-theme');
+      if (theme) root.setAttribute('data-theme', theme);
+      else root.removeAttribute('data-theme');
+      const cs = getComputedStyle(root);
+      const v = (n) => String(cs.getPropertyValue(n) || '').trim();
+      const out = {
+        bg: v('--bg'), bgSoft: v('--bg-soft'),
+        glass: v('--glass'), glass2: v('--glass-2'), glassHi: v('--glass-hi'),
+        text: v('--text'), dim: v('--text-dim'), mute: v('--text-mute'),
+        a1: v('--a1'), a2: v('--a2'), a3: v('--a3'),
+        inkA1: v('--ink-a1'), inkA2: v('--ink-a2'), inkA3: v('--ink-a3'),
+        star: v('--star'),
+        rSm: v('--r-sm'), rMd: v('--r'), rLg: v('--r-lg'), rXl: v('--r-xl')
+      };
+      if (keep) root.setAttribute('data-theme', keep);
+      else root.removeAttribute('data-theme');
+      return out;
+    }
+    const th = S.theme() || {};
     return {
       siteName: cfg.siteName || '',
       slogan: home.badge || cfg.slogan || '',
       desc: home.descAfter ? (home.descBefore || '') + home.descAfter : (cfg.desc || ''),
       since: cfg.since || '',
+      /* 导航页三个显示开关（后台「站点信息 → 显示项」）：
+         卡片左侧彩色图标 / 名字下面那行介绍 / 分类名前的 emoji */
+      nav: {
+        icons: cfg.showIcons === true,
+        desc: cfg.showDesc === true,
+        catIcon: cfg.showCatIcon === true
+      },
+      /* 外观：色板 / 极光强度 / 圆角 + 深浅两套实色 */
+      theme: {
+        accent: String(th.accent || 'aurora'),
+        accentColor: String(th.accentColor || ''),
+        glow: String(th.glow || 'normal'),
+        radius: String(th.radius || 'normal'),
+        light: cssPal('light'),
+        dark: cssPal('dark')
+      },
+      /* 首页要用的几块：今日精选 / 赞助 / 建站日期 */
+      home: {
+        startDate: String(cfg.startDate || ''),
+        featuredTitle: String(home.featuredTitle || '今日精选'),
+        featuredDesc: String(home.featuredDesc || ''),
+        featuredCount: Math.max(1, Math.min(12, Number(home.featuredCount) || 6)),
+        featuredPicks: Array.isArray(home.featuredPicks) ? home.featuredPicks.map(String) : [],
+        sponsorOn: home.sponsorOn !== false,
+        sponsorTitle: String(home.sponsorTitle || ''),
+        sponsorDesc: String(home.sponsorDesc || ''),
+        sponsorNote: String(home.sponsorNote || ''),
+        sponsorLink: String(home.sponsorLink || '')
+      },
+      /* 关于这一页：正文是 Markdown，App 用自己那个渲染器画 */
+      about: {
+        title: String(about.title || ''),
+        lede: String(about.lede || ''),
+        updated: String(about.updated || ''),
+        md: Array.isArray(about.md) ? about.md.join('\n') : String(about.md || '')
+      },
       /* 顶栏那几颗自定义入口（后台「自定义链接」，最多 5 个）——
          App 顶栏跟网页端显示同一组，加一条两边一起有 */
       links: (cfg.customLinks || []).filter(function (l) { return l && l.name && l.url; })
@@ -98,14 +159,19 @@ function absUrl(u) {
     tags: Array.isArray(f.tags) ? f.tags.map(String) : []
   }));
 
-  const posts = raw.posts.map(x => ({
-    id: String(x.id || ''),
-    title: String(x.title || ''),
-    date: String(x.date || ''),
-    tags: Array.isArray(x.tags) ? x.tags.map(String) : [],
-    excerpt: String(x.excerpt || ''),
-    body: String(x.body || '')
-  }));
+  /* 草稿只在后台可见 —— 在这里就滤掉，App 拿到的就是「读者能看到的那些」。
+     pin 照抄站点（置顶优先排序在 App 里做，跟网页端 postList() 一个规则） */
+  const posts = (raw.posts || [])
+    .filter(x => x && !x.draft)
+    .map(x => ({
+      id: String(x.id || ''),
+      title: String(x.title || ''),
+      date: String(x.date || ''),
+      tags: Array.isArray(x.tags) ? x.tags.map(String) : [],
+      excerpt: String(x.excerpt || ''),
+      body: String(x.body || ''),
+      pin: x.pin === true
+    }));
 
   const now = new Date();  const stamp = now.getFullYear() +
     String(now.getMonth() + 1).padStart(2, '0') + String(now.getDate()).padStart(2, '0') +
@@ -137,6 +203,13 @@ function absUrl(u) {
     })).filter(l => l.name && l.url),
     /* 顶栏各块显隐 */
     top: raw.top || { brand: true, links: true, search: true, filter: true, saved: true, theme: true },
+    /* 导航页显示开关：默认全关（跟站点 DEFAULTS 一致，卡片只留名字） */
+    nav: raw.nav || { icons: false, desc: false, catIcon: false },
+    /* 外观：深浅两套色 + 极光强度 + 圆角 */
+    theme: raw.theme || null,
+    /* 首页 / 关于要用的文案块 */
+    home: raw.home || null,
+    about: raw.about || null,
     cats,
     feed,
     posts
