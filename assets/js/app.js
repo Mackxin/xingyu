@@ -4064,8 +4064,9 @@
     /* 顶栏各块显隐（后台「站点信息 → 顶栏显示」）：关掉就整块拿掉，
        不留空档 —— App 顶栏读同一组 key，两边表现一致 */
     var brandEl = document.querySelector('.header .brand');
-    /* 品牌（左上角「栈 壹号栈」）默认不显示：只有后台明确打开过才画 */
-    if (brandEl) brandEl.hidden = c.showTopBrand !== true;
+    /* 品牌（左上角那块）：默认显示，后台「顶栏显示 → 品牌」关掉才不画。
+       App 端同一套开关，那边只剩站名（点一下到底、再点回顶）。 */
+    if (brandEl) brandEl.hidden = c.showTopBrand === false;
     var laterEl = $('#laterBtn');
     if (laterEl) laterEl.hidden = c.showTopSaved === false;
     var themeEl = $('#themeBtn');

@@ -2119,7 +2119,7 @@
         '<h2>顶栏显示</h2>' +
         '<p>顶栏那块玻璃卡里的几样东西，想留哪样就开哪样。<b>App 顶栏跟网页端读同一组开关</b>，' +
         '这里关掉两边一起消失，不用装 App 也知道效果。</p>' +
-        switchRow('showTopBrand', c.showTopBrand, '品牌', '左边「栈」牌 + 站名，点一下回首页 · 默认关') +
+        switchRow('showTopBrand', c.showTopBrand, '品牌', '左上角那块（App 端只剩「壹号栈」三个字，点一下到底/再点回顶）') +
         switchRow('showTopLinks', c.showTopLinks, '自定义入口', '「自定义链接」里那几条，最多 5 个') +
         switchRow('showSearch', c.showSearch, '搜索条', '点了打开全站搜索') +
         switchRow('showTopFilter', c.showTopFilter, '筛选胶囊', '导航页=全部分类，分享/文章页=标签') +
