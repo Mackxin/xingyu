@@ -4020,7 +4020,18 @@
     var wrap = $('#headerLinks');
     if (!wrap || !window.XYStore) return;
     var c = window.XYStore.get();
-    var links = window.XYStore.activeLinks();
+    var links = (window.XYStore.activeLinks() || []).slice();
+    /* 「足迹」（#/insight）是内置页：默认紧跟「灵感随记」后面，不用去后台加自定义链接。
+       App 顶栏用同一套规则插同一条，两边顶栏长得一样。
+       自己已经配过一条指向 #/insight 的，就以手动那条为准。 */
+    if (!links.some(function (l) { return String(l.url || '').indexOf('#/insight') > -1; })) {
+      var foot = { icon: '👣', name: '足迹', url: '#/insight' };
+      var ideaAt = links.reduce(function (at, l, i) {
+        return at < 0 && String(l.url || '').indexOf('#/idea') > -1 ? i : at;
+      }, -1);
+      if (ideaAt > -1) links.splice(ideaAt + 1, 0, foot);
+      else links.push(foot);
+    }
     /* 后台「顶栏显示」里关掉自定义入口，这里整块不渲染 */
     if (c.showTopLinks === false) { wrap.hidden = true; wrap.innerHTML = ''; return; }
     if (!links.length) { wrap.hidden = true; wrap.innerHTML = ''; return; }
@@ -4053,7 +4064,8 @@
     /* 顶栏各块显隐（后台「站点信息 → 顶栏显示」）：关掉就整块拿掉，
        不留空档 —— App 顶栏读同一组 key，两边表现一致 */
     var brandEl = document.querySelector('.header .brand');
-    if (brandEl) brandEl.hidden = c.showTopBrand === false;
+    /* 品牌（左上角「栈 壹号栈」）默认不显示：只有后台明确打开过才画 */
+    if (brandEl) brandEl.hidden = c.showTopBrand !== true;
     var laterEl = $('#laterBtn');
     if (laterEl) laterEl.hidden = c.showTopSaved === false;
     var themeEl = $('#themeBtn');
@@ -4067,6 +4079,8 @@
     root.setAttribute('data-icons', c.showIcons ? 'on' : 'off');
     root.setAttribute('data-desc', c.showDesc ? 'on' : 'off');
     root.setAttribute('data-cat-icon', c.showCatIcon ? 'on' : 'off');
+    /* 分类名后面的站点数（👗 次元壁垒 96 那个 96）：App 端读同一组 key */
+    root.setAttribute('data-cat-count', c.showCatCount === false ? 'off' : 'on');
     // 卡片密度：compact | normal | comfy
     root.setAttribute('data-density', c.cardDensity || 'normal');
     // 主题配色 / 阅读排版（后台「主题」页）

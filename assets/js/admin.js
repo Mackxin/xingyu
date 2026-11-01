@@ -2119,7 +2119,7 @@
         '<h2>顶栏显示</h2>' +
         '<p>顶栏那块玻璃卡里的几样东西，想留哪样就开哪样。<b>App 顶栏跟网页端读同一组开关</b>，' +
         '这里关掉两边一起消失，不用装 App 也知道效果。</p>' +
-        switchRow('showTopBrand', c.showTopBrand, '品牌', '左边「栈」牌 + 站名，点一下回首页') +
+        switchRow('showTopBrand', c.showTopBrand, '品牌', '左边「栈」牌 + 站名，点一下回首页 · 默认关') +
         switchRow('showTopLinks', c.showTopLinks, '自定义入口', '「自定义链接」里那几条，最多 5 个') +
         switchRow('showSearch', c.showSearch, '搜索条', '点了打开全站搜索') +
         switchRow('showTopFilter', c.showTopFilter, '筛选胶囊', '导航页=全部分类，分享/文章页=标签') +
@@ -2129,7 +2129,7 @@
       '</div>' +
       '<div class="admin-card">' +
         '<h2>显示项</h2>' +
-        '<p class="admin-sub">导航页的卡片长什么样（三项默认都关，只留名字最清爽）</p>' +
+        '<p class="admin-sub">导航页的卡片长什么样（卡片三项默认都关，只留名字最清爽）</p>' +
         '<label class="admin-switch"><input type="checkbox" data-site="showIcons"' + (c.showIcons ? ' checked' : '') + ' />' +
           '<span class="admin-switch__track"><span class="admin-switch__dot"></span></span>' +
           '<span class="admin-switch__text">卡片显示图标<em>名字左边那个彩色方块</em></span></label>' +
@@ -2139,7 +2139,11 @@
         '<label class="admin-switch"><input type="checkbox" data-site="showCatIcon"' + (c.showCatIcon ? ' checked' : '') + ' />' +
           '<span class="admin-switch__track"><span class="admin-switch__dot"></span></span>' +
           '<span class="admin-switch__text">分类显示图标<em>🎨 设计天才 前面那个 emoji</em></span></label>' +
-        '<p class="admin-tip">这三项<b>默认全关</b>，导航页只有名字，一行能看更多站点。' +
+        '<label class="admin-switch"><input type="checkbox" data-site="showCatCount"' + (c.showCatCount ? ' checked' : '') + ' />' +
+          '<span class="admin-switch__track"><span class="admin-switch__dot"></span></span>' +
+          '<span class="admin-switch__text">分类显示站点数<em>👗 次元壁垒 后面那个 96</em></span></label>' +
+        '<p class="admin-tip">前三项<b>默认全关</b>，导航页只有名字，一行能看更多站点。' +
+        '「分类显示站点数」默认开着，关掉之后「全部分类」里每一行只剩分类名（App 端同一套）。' +
         '开了「图标」在电脑端会多出一个彩色方块（手机端卡片是上下结构，本来就只放名称和介绍）；' +
         '「介绍」是后台里每个站点填的简介，没填就显示域名；' +
         '<b>手机端也照这个开关走</b>，关掉之后窄屏上同样只有名字。</p>' +

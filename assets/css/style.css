@@ -898,6 +898,10 @@ html[data-theme="light"] .btn--primary{ color:#080a12; }
    不用 flex 包名字，是为了保住长分类名的省略号。 */
 .cat-ico{ line-height:1; margin-right:5px; }
 .cat-item__count{ font-size:11.5px; color:var(--text-mute); font-variant-numeric:tabular-nums; }
+/* 后台「站点信息 → 显示项 → 分类后面的站点数」可以整列关掉：
+   数字本身不占宽度（flex 里是 auto），关掉后分类名直接铺满整行。
+   App 端读同一个 nav.count，表现一致。 */
+html[data-cat-count="off"] .cat-item__count{ display:none; }
 
 .nav-body{ min-width:0; }
 /* 分类块：现在一次全铺出来（50 类 / 2078 张卡，两万多节点）。

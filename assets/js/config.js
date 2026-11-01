@@ -23,8 +23,9 @@
   var MAX_LINKS = 5;
 
   /* 配置版本号：只用来判断「这份本地配置是按哪一版默认值存的」，
-     升级默认值时做一次性迁移（见 Store.get）。改默认值才需要 +1。 */
-  var CFG_VER = 3;
+     升级默认值时做一次性迁移（见 Store.get）。改默认值才需要 +1。
+     v4：顶栏品牌（左上角那个「栈 壹号栈」）默认改成不显示。 */
+  var CFG_VER = 4;
 
   var DEFAULTS = {
     siteName: '壹号栈',
@@ -34,7 +35,7 @@
     showSearch: true,          // 顶栏是否显示搜索框
     /* ---- 顶栏各块的显示开关（后台「站点信息 → 顶栏显示」）。
        App 顶栏和网页顶栏读同一组开关，关掉两边一起消失。 ---- */
-    showTopBrand: true,        // 品牌（「栈」牌 + 站名，点一下回首页）
+    showTopBrand: false,       // 品牌（「栈」牌 + 站名，点一下回首页）—— 默认不显示，后台可开
     showTopLinks: true,        // 自定义入口（后台「自定义链接」那几条）
     showTopSaved: true,        // 稍后读（时钟那颗）
     showTopTheme: true,        // 白天 / 黑夜切换
@@ -44,6 +45,7 @@
     showIcons: false,          // 卡片左侧那个彩色方块图标
     showDesc: false,           // 卡片名称下面那行介绍 / 域名
     showCatIcon: false,        // 分类名前面的 emoji（🎨 设计天才 这种）
+    showCatCount: true,        // 分类名后面的站点数（👗 次元壁垒 96 那个 96）
     cardDensity: 'normal',     // compact | normal | comfy —— 导航页卡片密度
     logoImage: '',             // 顶栏 Logo 图片（data URL 或网址）；空 = 内置「栈」字 SVG
     favicon: '',               // 浏览器标签图标；空 = 内置 SVG
@@ -519,6 +521,11 @@
             ls.customLinks = [{ icon: '✨', name: '灵感随记', url: '#/idea' }].concat(cl);
           }
         }
+        /* v3 → v4：顶栏品牌（左上角「栈 壹号栈」）默认从「显示」改成「不显示」。
+           同 v1→v2 的道理：后台存过一次设置，showTopBrand:true 就被固化进 localStorage，
+           改默认值也进不来。所以老配置一律丢掉这个键，让新默认（关）生效；
+           升级后你在后台手动打开的那次会带 _ver 存着，不会被再重置。 */
+        if (!ls._ver || Number(ls._ver) < 4) delete ls.showTopBrand;
         out = pick(out, ls);
       }
       return out;

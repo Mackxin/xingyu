@@ -78,12 +78,13 @@ function absUrl(u) {
       slogan: home.badge || cfg.slogan || '',
       desc: home.descAfter ? (home.descBefore || '') + home.descAfter : (cfg.desc || ''),
       since: cfg.since || '',
-      /* 导航页三个显示开关（后台「站点信息 → 显示项」）：
-         卡片左侧彩色图标 / 名字下面那行介绍 / 分类名前的 emoji */
+      /* 导航页显示开关（后台「站点信息 → 显示项」）：
+         卡片左侧彩色图标 / 名字下面那行介绍 / 分类名前的 emoji / 分类名后的站点数 */
       nav: {
         icons: cfg.showIcons === true,
         desc: cfg.showDesc === true,
-        catIcon: cfg.showCatIcon === true
+        catIcon: cfg.showCatIcon === true,
+        count: cfg.showCatCount !== false
       },
       /* 外观：色板 / 极光强度 / 圆角 + 深浅两套实色 */
       theme: {
@@ -115,14 +116,26 @@ function absUrl(u) {
         md: Array.isArray(about.md) ? about.md.join('\n') : String(about.md || '')
       },
       /* 顶栏那几颗自定义入口（后台「自定义链接」，最多 5 个）——
-         App 顶栏跟网页端显示同一组，加一条两边一起有 */
-      links: (cfg.customLinks || []).filter(function (l) { return l && l.name && l.url; })
-        .map(function (l) { return { icon: l.icon || '', name: l.name, url: l.url }; }),
+         App 顶栏跟网页端显示同一组，加一条两边一起有。
+         「足迹」（#/insight）是内置页，跟网页端一样自动插在「灵感随记」后面，
+         不用去后台手动再加一条；自己配过就手动那条为准。 */
+      links: (function () {
+        var src = (cfg.customLinks || []).filter(function (l) { return l && l.name && l.url; });
+        var list = src.map(function (l) { return { icon: l.icon || '', name: l.name, url: l.url }; });
+        var hasFoot = list.some(function (l) { return String(l.url || '').indexOf('#/insight') > -1; });
+        if (!hasFoot) {
+          var at = -1;
+          list.forEach(function (l, i) { if (at < 0 && String(l.url || '').indexOf('#/idea') > -1) at = i; });
+          var foot = { icon: '👣', name: '足迹', url: '#/insight' };
+          if (at > -1) list.splice(at + 1, 0, foot); else list.push(foot);
+        }
+        return list;
+      })(),
       /* 顶栏各块的显隐（后台「站点信息 → 顶栏显示」）——
          App 顶栏照这几个 boolean 决定画不画那一块。老配置没有这些 key，
          一律当 true（跟 DEFAULTS 一致），不能因为缺字段就全给藏了 */
       top: {
-        brand: cfg.showTopBrand !== false,
+        brand: cfg.showTopBrand === true,
         links: cfg.showTopLinks !== false,
         search: cfg.showSearch !== false,
         filter: cfg.showTopFilter !== false,
@@ -201,10 +214,10 @@ function absUrl(u) {
       name: String(l.name || ''),
       url: /^#|^\//.test(String(l.url || '')) ? String(l.url) : absUrl(l.url)
     })).filter(l => l.name && l.url),
-    /* 顶栏各块显隐 */
-    top: raw.top || { brand: true, links: true, search: true, filter: true, saved: true, theme: true },
-    /* 导航页显示开关：默认全关（跟站点 DEFAULTS 一致，卡片只留名字） */
-    nav: raw.nav || { icons: false, desc: false, catIcon: false },
+    /* 顶栏各块显隐（品牌默认关，跟站点 DEFAULTS 一致） */
+    top: raw.top || { brand: false, links: true, search: true, filter: true, saved: true, theme: true },
+    /* 导航页显示开关：卡片三项默认全关（只留名字），分类站点数默认开 */
+    nav: raw.nav || { icons: false, desc: false, catIcon: false, count: true },
     /* 外观：深浅两套色 + 极光强度 + 圆角 */
     theme: raw.theme || null,
     /* 首页 / 关于要用的文案块 */
