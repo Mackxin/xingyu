@@ -37,6 +37,37 @@ function absUrl(u) {
   return s;
 }
 
+/* ---- 跟着 App 一起走的两份「说明书」，直接读仓库里的文件 ----
+   data/changelog.json —— 每个版本改了什么（App 设置 → 版本更新）
+   data/help.md        —— 使用手册（App 设置 → 使用手册）
+   这两份不进站点配置：它们不该被后台的一次保存覆盖掉，
+   改完文件重跑一遍本脚本就会同步到 App。 */
+const DATA_DIR = path.join(ROOT, 'data');
+function readChangelog() {
+  try {
+    const arr = JSON.parse(fs.readFileSync(path.join(DATA_DIR, 'changelog.json'), 'utf8'));
+    if (!Array.isArray(arr)) return [];
+    /* 新版本排前面；字段按 App 端要的样子裁一遍，别把写错的东西整包塞过去 */
+    return arr.map(x => ({
+      code: Number(x.code) || 0,
+      version: String(x.version || ''),
+      date: String(x.date || ''),
+      items: Array.isArray(x.items) ? x.items.map(String).filter(Boolean) : []
+    })).filter(x => x.version && x.items.length).sort((a, b) => b.code - a.code);
+  } catch (e) {
+    console.warn('· data/changelog.json 读不了，changelog 留空：' + e.message);
+    return [];
+  }
+}
+function readHelp() {
+  try {
+    return fs.readFileSync(path.join(DATA_DIR, 'help.md'), 'utf8');
+  } catch (e) {
+    console.warn('· data/help.md 读不了，help 留空：' + e.message);
+    return '';
+  }
+}
+
 (async () => {
   const b = await puppeteer.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox'] });
   const p = await b.newPage();
@@ -75,9 +106,14 @@ function absUrl(u) {
     const th = S.theme() || {};
     return {
       siteName: cfg.siteName || '',
-      slogan: home.badge || cfg.slogan || '',
+      /* 副标题用配置里的「标语 tagline」。以前这里读的是 home.badge
+         （那是首屏大图上的小徽章，语义完全不同），App 首页会显示成
+         「🛰️ 持续更新中」这种跟标语没关系的东西。 */
+      slogan: cfg.tagline || '',
       desc: home.descAfter ? (home.descBefore || '') + home.descAfter : (cfg.desc || ''),
-      since: cfg.since || '',
+      /* 建站日期在配置里叫 startDate，没有 cfg.since 这个 key ——
+         以前读 cfg.since 恒空，App 首页那行「建站于…」永远是空的。 */
+      since: cfg.startDate || '',
       /* 导航页显示开关（后台「站点信息 → 显示项」）：
          卡片左侧彩色图标 / 名字下面那行介绍 / 分类名前的 emoji / 分类名后的站点数 */
       nav: {
@@ -158,7 +194,11 @@ function absUrl(u) {
       name: String(l.n || l.name || ''),
       url: absUrl(l.u || l.url),
       icon: String(l.icon || ''),
-      desc: String(l.d || l.desc || '')
+      desc: String(l.d || l.desc || ''),
+      /* 后台可以给单个站点设置顶（网页端 sortPinned 用），App 也要能跟着置顶。
+         只在 true 时带上这个 key —— 两千多个站点每个写一遍 "pin":false
+         会让 app.json 白胖 27KB，App 那边缺字段就是 false，不用写出来。 */
+      ...(l.pin === true ? { pin: true } : {})
     })).filter(l => l.name && l.url)
   }));
 
@@ -214,8 +254,9 @@ function absUrl(u) {
       name: String(l.name || ''),
       url: /^#|^\//.test(String(l.url || '')) ? String(l.url) : absUrl(l.url)
     })).filter(l => l.name && l.url),
-    /* 顶栏各块显隐（品牌默认关，跟站点 DEFAULTS 一致） */
-    top: raw.top || { brand: false, links: true, search: true, filter: true, saved: true, theme: true },
+    /* 顶栏各块显隐（品牌默认开，跟站点 DEFAULTS 一致 —— 关掉的话 App 顶栏
+       连回顶入口都没有，所以兜底必须是 true） */
+    top: raw.top || { brand: true, links: true, search: true, filter: true, saved: true, theme: true },
     /* 导航页显示开关：卡片三项默认全关（只留名字），分类站点数默认开 */
     nav: raw.nav || { icons: false, desc: false, catIcon: false, count: true },
     /* 外观：深浅两套色 + 极光强度 + 圆角 */
@@ -223,6 +264,9 @@ function absUrl(u) {
     /* 首页 / 关于要用的文案块 */
     home: raw.home || null,
     about: raw.about || null,
+    /* 设置页里的两份说明书：版本更新说明 + 使用手册 */
+    changelog: readChangelog(),
+    help: readHelp(),
     cats,
     feed,
     posts
