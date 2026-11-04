@@ -3966,10 +3966,16 @@ button,
 .mu-player.is-playing .mu-cover::before{ animation:muBreath 3.4s var(--ease) infinite alternate; }
 @keyframes muBreath{ from{ transform:scale(1); } to{ transform:scale(1.08); } }
 .mu-cover span{
-  position:relative; z-index:1;
+  position:relative; z-index:2;
   font-size:38px; font-weight:800; letter-spacing:-.02em;
   color:#080a12;
 }
+/* 有内嵌封面就把图铺上去，底下那层渐变和首字让位 */
+.mu-cover img{
+  position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:1;
+}
+.mu-cover.has-img::before{ opacity:0; }
+.mu-cover.has-img span{ display:none; }
 
 .mu-main{ flex:1 1 auto; min-width:0; }
 .mu-title{
@@ -4029,6 +4035,10 @@ html[data-theme="light"] .mu-track b{ background:var(--ink-a1); }
   transition:background .25s var(--ease), color .25s var(--ease);
 }
 .mu-mode:hover{ background:var(--glass-2); color:var(--text); }
+/* 「词」开关打开时点亮，跟进度条一个色系 */
+.mu-mode.is-on{
+  background:var(--grad); color:#080a12; font-weight:600;
+}
 
 .mu-vol{ display:flex; align-items:center; gap:8px; margin-left:auto; }
 .mu-vol svg{ width:16px; height:16px; fill:var(--text-mute); }
@@ -4055,37 +4065,60 @@ html[data-theme="light"] .mu-track b{ background:var(--ink-a1); }
 .mu-hint{ font-size:12px; color:var(--text-mute); }
 
 /* ---------- 曲目表 ---------- */
-.mu-list{ display:flex; flex-direction:column; gap:2px; }
+/* 一行排多列：宽屏 auto-fill 自己算列数，手机退成单列（见最下面的 @media） */
+.mu-list{
+  display:grid;
+  grid-template-columns:repeat(auto-fill, minmax(300px, 1fr));
+  gap:2px 8px;
+}
 .mu-item{
   position:relative;
-  display:flex; align-items:center; gap:12px;
-  padding:10px 12px 10px 14px; border-radius:14px;
-  cursor:pointer;
+  display:flex; align-items:center; gap:10px;
+  padding:7px 10px 7px 10px; border-radius:14px;
+  cursor:pointer; min-width:0;
   transition:background .2s var(--ease);
 }
 .mu-item:hover{ background:var(--glass); }
 .mu-item.is-on{ background:var(--glass-2); }
 /* 正在播放那行：左边一道渐变竖条 */
 .mu-item.is-on::before{
-  content:''; position:absolute; left:0; top:10px; bottom:10px; width:3px;
+  content:''; position:absolute; left:0; top:9px; bottom:9px; width:3px;
   border-radius:2px; background:var(--grad);
 }
 .mu-item__idx{
-  flex:0 0 auto; width:22px; text-align:center;
-  font-size:12px; color:var(--text-mute); font-variant-numeric:tabular-nums;
+  flex:0 0 auto; width:18px; text-align:center;
+  font-size:11.5px; color:var(--text-mute); font-variant-numeric:tabular-nums;
 }
-.mu-item__idx svg{ width:11px; height:11px; fill:var(--ink-a1); }
-.mu-item__body{ flex:1 1 auto; min-width:0; display:flex; flex-direction:column; gap:2px; }
+.mu-item__idx svg{ width:10px; height:10px; fill:var(--ink-a1); }
+/* 封面缩略图：没标签的歌用首字 + 色相，跟播放器那块封面同一套算法 */
+.mu-item__thumb{
+  position:relative; flex:0 0 auto;
+  width:36px; height:36px; border-radius:9px; overflow:hidden;
+  display:grid; place-items:center;
+  background:var(--grad);
+  filter:hue-rotate(var(--mu-hue,0deg)) saturate(.72);
+  font-size:14px; font-weight:700; color:#080a12;
+}
+.mu-item__thumb img{
+  position:absolute; inset:0; width:100%; height:100%; object-fit:cover;
+  /* 图片本身不要再被上面的 hue-rotate 染色 */
+  filter:none;
+}
+.mu-item__thumb.has-img{ background:var(--glass-hi); filter:none; }
+.mu-item__body{ flex:1 1 auto; min-width:0; display:flex; flex-direction:column; gap:1px; }
 .mu-item__body b{
   font-size:13.5px; font-weight:600; color:var(--text);
   white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
 }
 .mu-item.is-on .mu-item__body b{ color:var(--ink-a1); }
-.mu-item__body span{ font-size:11.5px; color:var(--text-mute); }
+.mu-item__body span{
+  font-size:11.5px; color:var(--text-mute);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
 
 .mu-item__del{
   flex:0 0 auto; display:grid; place-items:center;
-  width:28px; height:28px; border-radius:9px; border:0; cursor:pointer;
+  width:26px; height:26px; border-radius:8px; border:0; cursor:pointer;
   font-size:12px; color:var(--text-mute); background:transparent;
   opacity:0; transition:opacity .2s var(--ease), background .2s var(--ease);
 }
@@ -4095,6 +4128,29 @@ html[data-theme="light"] .mu-track b{ background:var(--ink-a1); }
 @media (hover:none){
   .mu-item__del{ opacity:.55; }
 }
+
+/* ---------- 歌词 ---------- */
+.mu-lyrics{
+  margin-top:12px; padding:14px 18px;
+  border-radius:var(--r-lg);
+  background:var(--glass);
+  max-height:250px; overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+  font-size:13.5px; line-height:1.95; color:var(--text-dim);
+  scroll-behavior:smooth;
+}
+.mu-lyrics[hidden]{ display:none; }
+.mu-lyr-line{
+  padding:1px 0; border-radius:6px;
+  transition:color .2s var(--ease), opacity .2s var(--ease);
+  opacity:.72;
+}
+/* 当前这一句：亮起来 + 往右挪一点，眼睛好找 */
+.mu-lyr-line.is-cur{
+  color:var(--ink-a1); opacity:1; font-weight:600;
+  transform:translateX(3px);
+}
+.mu-lyr-empty{ font-size:12.5px; color:var(--text-mute); }
 
 /* ---------- 空态 ---------- */
 .mu-empty{
@@ -4123,6 +4179,9 @@ html[data-theme="light"] .mu-track b{ background:var(--ink-a1); }
   .mu-mode{ padding:0 10px; font-size:12px; height:30px; }
   .mu-vol{ margin-left:0; flex:1 1 100%; }
   .mu-vol input[type="range"]{ width:auto; flex:1 1 auto; }
+  /* 手机一行放不下多列，退回单列 */
+  .mu-list{ grid-template-columns:1fr; }
+  .mu-lyrics{ max-height:200px; padding:12px 14px; font-size:13px; }
   .mu-tools{ margin-top:14px; }
   .mu-tools .btn{ flex:1 1 auto; justify-content:center; }
   .mu-hint{ flex:1 1 100%; }
