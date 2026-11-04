@@ -457,9 +457,35 @@
     totalLinks = allLinks.length;
   }
   rebuildIndex();
+  /* 「本地音乐」是站点自带的内置页（#/music），不是后台数据。
+     问题是：老用户浏览器里存着一份旧导航（localStorage 覆盖了 bookmarks.js），
+     光在后台上/书签文件里加一条，他们那边永远看不到 —— 所以每次读数据都补一次。
+     幂等：已经有 #/music 就直接返回，不会越加越多。 */
+  function ensureMusicEntry(cats) {
+    if (!cats || !cats.length) return cats;
+    var target = null, i, j;
+    for (i = 0; i < cats.length; i++) {
+      if (cats[i] && cats[i].id === 'bk-mine') { target = cats[i]; break; }
+    }
+    if (!target) target = cats[0];
+    if (!target) return cats;
+    if (!Array.isArray(target.links)) target.links = [];
+    for (j = 0; j < target.links.length; j++) {
+      if (String((target.links[j] || {}).u || '') === '#/music') return cats;
+    }
+    var entry = { n: '本地音乐', u: '#/music', d: '放本机的歌，不上传、不联网' };
+    /* 挂在「灵感随记」后面（都是站点自己的页面，挨着好找）；找不到就放第二位 */
+    var at = -1;
+    for (j = 0; j < target.links.length; j++) {
+      if (String((target.links[j] || {}).u || '') === '#/idea') { at = j + 1; break; }
+    }
+    if (at < 0) at = target.links.length ? 1 : 0;
+    target.links.splice(at, 0, entry);
+    return cats;
+  }
   /* 后台改过站点数据后调用：重新取分类 → 重建索引 */
   function refreshData() {
-    CATS = (window.XYStore && window.XYStore.dataCategories()) || DATA.categories;
+    CATS = ensureMusicEntry((window.XYStore && window.XYStore.dataCategories()) || DATA.categories);
     rebuildIndex();
     PALETTE_INDEX = buildPaletteIndex();
   }
