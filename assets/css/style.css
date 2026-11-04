@@ -3911,3 +3911,220 @@ button,
   -webkit-user-select: none;
   user-select: none;
 }
+
+/* =========================================================
+   v148 · 本地音乐（#/music）
+   ---------------------------------------------------------
+   一块播放器 + 一张曲目表。风格照着「灵感随记 / 稍后读」那几页来：
+   玻璃底、圆角、渐变只用在「正在播放」和主按钮上，不当装饰铺满。
+   渐变底上一律用深墨字（#080a12）——白字压最浅那段只有 1.59:1。
+   ========================================================= */
+
+.page--music{ padding-bottom:26px; }
+
+/* 拖文件进来时整页淡淡地亮一下，告诉人「松手就行」 */
+.page--music.is-drop::after{
+  content:'松手就加进曲库';
+  position:fixed; inset:0; z-index:80;
+  display:flex; align-items:center; justify-content:center;
+  font-size:16px; font-weight:600; color:var(--text);
+  background:rgba(8,10,18,.55);
+  backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);
+  border:2px dashed var(--a1);
+  pointer-events:none;
+}
+
+/* ---------- 播放器 ---------- */
+.mu-player{
+  display:flex; align-items:center; gap:20px;
+  padding:18px;
+  border-radius:var(--r-lg);
+  background:var(--glass);
+  border:1px solid transparent;
+}
+.mu-player.is-empty{ opacity:.92; }
+
+.mu-cover{
+  position:relative; flex:0 0 auto;
+  width:108px; height:108px; border-radius:22px;
+  display:grid; place-items:center; overflow:hidden;
+}
+.mu-cover::before{
+  content:''; position:absolute; inset:0;
+  background:var(--grad);
+  /* saturate 压到 .72：不压的话 hue-rotate 一转就变成很艳的洋红，
+     跟这一页整体那股安静的调子打架 */
+  filter:hue-rotate(var(--mu-hue,0deg)) saturate(.72);
+}
+/* 内侧一道极淡的高光边，方块看着才像块玻璃、不是一块色纸 */
+.mu-cover::after{
+  content:''; position:absolute; inset:0; border-radius:inherit;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.14);
+  pointer-events:none;
+}
+/* 正在播的时候让封面慢慢「呼吸」，一眼能看出在响 */
+.mu-player.is-playing .mu-cover::before{ animation:muBreath 3.4s var(--ease) infinite alternate; }
+@keyframes muBreath{ from{ transform:scale(1); } to{ transform:scale(1.08); } }
+.mu-cover span{
+  position:relative; z-index:1;
+  font-size:38px; font-weight:800; letter-spacing:-.02em;
+  color:#080a12;
+}
+
+.mu-main{ flex:1 1 auto; min-width:0; }
+.mu-title{
+  font-size:17px; font-weight:700; letter-spacing:-.01em;
+  color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.mu-sub{ margin-top:3px; font-size:12.5px; color:var(--text-mute); }
+
+/* 进度条 */
+.mu-bar{ display:flex; align-items:center; gap:10px; margin-top:14px; }
+.mu-time{
+  flex:0 0 auto; font-size:11.5px; color:var(--text-mute);
+  font-variant-numeric:tabular-nums;
+}
+.mu-track{
+  position:relative; flex:1 1 auto; height:22px;   /* 高一点才好按，真正的轨道用 ::before */
+  cursor:pointer; touch-action:none;
+}
+.mu-track::before{
+  content:''; position:absolute; left:0; right:0; top:50%; height:4px; margin-top:-2px;
+  border-radius:99px; background:var(--glass-hi);
+}
+.mu-track i{
+  position:absolute; left:0; top:50%; height:4px; margin-top:-2px; width:0;
+  border-radius:99px; background:var(--grad);
+}
+.mu-track b{
+  position:absolute; left:0; top:50%; width:12px; height:12px; margin:-6px 0 0 -6px;
+  border-radius:50%; background:var(--text);
+  opacity:0; transition:opacity .2s var(--ease);
+}
+.mu-player:hover .mu-track b,
+.mu-player.is-playing .mu-track b{ opacity:1; }
+html[data-theme="light"] .mu-track b{ background:var(--ink-a1); }
+
+/* 控制行 */
+.mu-ctrl{ display:flex; align-items:center; gap:10px; margin-top:6px; flex-wrap:wrap; }
+.mu-btn{
+  display:grid; place-items:center; width:38px; height:38px; border-radius:50%;
+  background:var(--glass); border:0; cursor:pointer;
+  transition:transform .25s var(--ease), background .25s var(--ease);
+}
+.mu-btn svg{ width:17px; height:17px; fill:var(--text-dim); }
+.mu-btn:hover{ transform:translateY(-2px); background:var(--glass-2); }
+
+.mu-play{
+  display:grid; place-items:center; width:54px; height:54px; border-radius:50%;
+  background:var(--grad); border:0; cursor:pointer;
+  transition:transform .25s var(--ease);
+}
+.mu-play svg{ width:22px; height:22px; fill:#080a12; }
+.mu-play:hover{ transform:translateY(-2px) scale(1.03); }
+
+.mu-mode{
+  height:32px; padding:0 12px; border-radius:99px; border:0; cursor:pointer;
+  font-size:12.5px; color:var(--text-dim); background:var(--glass);
+  transition:background .25s var(--ease), color .25s var(--ease);
+}
+.mu-mode:hover{ background:var(--glass-2); color:var(--text); }
+
+.mu-vol{ display:flex; align-items:center; gap:8px; margin-left:auto; }
+.mu-vol svg{ width:16px; height:16px; fill:var(--text-mute); }
+/* 音量条：跟主进度分开写，免得共用一套选择器互相牵连 */
+.mu-vol input[type="range"]{
+  -webkit-appearance:none; appearance:none;
+  width:112px; height:4px; border-radius:99px; background:var(--glass-hi);
+  outline:none; cursor:pointer;
+}
+.mu-vol input[type="range"]::-webkit-slider-thumb{
+  -webkit-appearance:none; appearance:none;
+  width:12px; height:12px; border-radius:50%; background:var(--text-dim);
+}
+.mu-vol input[type="range"]::-moz-range-thumb{
+  width:12px; height:12px; border:0; border-radius:50%; background:var(--text-dim);
+}
+
+/* ---------- 工具条 ---------- */
+.mu-tools{
+  display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+  margin:18px 0 12px;
+}
+.mu-tools .btn{ height:42px; padding:0 18px; border-radius:12px; font-size:13.5px; }
+.mu-hint{ font-size:12px; color:var(--text-mute); }
+
+/* ---------- 曲目表 ---------- */
+.mu-list{ display:flex; flex-direction:column; gap:2px; }
+.mu-item{
+  position:relative;
+  display:flex; align-items:center; gap:12px;
+  padding:10px 12px 10px 14px; border-radius:14px;
+  cursor:pointer;
+  transition:background .2s var(--ease);
+}
+.mu-item:hover{ background:var(--glass); }
+.mu-item.is-on{ background:var(--glass-2); }
+/* 正在播放那行：左边一道渐变竖条 */
+.mu-item.is-on::before{
+  content:''; position:absolute; left:0; top:10px; bottom:10px; width:3px;
+  border-radius:2px; background:var(--grad);
+}
+.mu-item__idx{
+  flex:0 0 auto; width:22px; text-align:center;
+  font-size:12px; color:var(--text-mute); font-variant-numeric:tabular-nums;
+}
+.mu-item__idx svg{ width:11px; height:11px; fill:var(--ink-a1); }
+.mu-item__body{ flex:1 1 auto; min-width:0; display:flex; flex-direction:column; gap:2px; }
+.mu-item__body b{
+  font-size:13.5px; font-weight:600; color:var(--text);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.mu-item.is-on .mu-item__body b{ color:var(--ink-a1); }
+.mu-item__body span{ font-size:11.5px; color:var(--text-mute); }
+
+.mu-item__del{
+  flex:0 0 auto; display:grid; place-items:center;
+  width:28px; height:28px; border-radius:9px; border:0; cursor:pointer;
+  font-size:12px; color:var(--text-mute); background:transparent;
+  opacity:0; transition:opacity .2s var(--ease), background .2s var(--ease);
+}
+.mu-item:hover .mu-item__del{ opacity:1; }
+.mu-item__del:hover{ background:var(--glass-hi); color:var(--text); }
+/* 触屏没有 hover：移除键常驻但淡一点，免得想删找不到 */
+@media (hover:none){
+  .mu-item__del{ opacity:.55; }
+}
+
+/* ---------- 空态 ---------- */
+.mu-empty{
+  display:flex; flex-direction:column; align-items:center; gap:10px;
+  padding:54px 20px 60px; text-align:center;
+}
+.mu-empty__ico{ font-size:38px; line-height:1; }
+.mu-empty h3{ font-size:16px; font-weight:600; color:var(--text); }
+.mu-empty p{ max-width:42ch; font-size:13.5px; line-height:1.8; color:var(--text-dim); }
+
+/* ---------- 手机 ---------- */
+/* 窄屏不把封面单独占一行 —— 那样右边空一大块，还把「选歌」挤到屏幕底下
+   被底部 tab 栏压住。改成「封面 + 歌名并排，进度与按钮跟在下面」。 */
+@media (max-width:640px){
+  .mu-player{ gap:12px; padding:14px; align-items:flex-start; }
+  .mu-cover{ width:72px; height:72px; border-radius:16px; margin-top:2px; }
+  .mu-cover span{ font-size:26px; }
+  .mu-main{ flex:1 1 0; min-width:0; }
+  .mu-title{ font-size:15.5px; }
+  .mu-sub{ font-size:12px; }
+  .mu-bar{ margin-top:10px; gap:8px; }
+  .mu-ctrl{ gap:8px; }
+  .mu-play{ width:48px; height:48px; }
+  .mu-play svg{ width:20px; height:20px; }
+  .mu-btn{ width:34px; height:34px; }
+  .mu-mode{ padding:0 10px; font-size:12px; height:30px; }
+  .mu-vol{ margin-left:0; flex:1 1 100%; }
+  .mu-vol input[type="range"]{ width:auto; flex:1 1 auto; }
+  .mu-tools{ margin-top:14px; }
+  .mu-tools .btn{ flex:1 1 auto; justify-content:center; }
+  .mu-hint{ flex:1 1 100%; }
+  .page--music.is-drop::after{ font-size:14px; }
+}

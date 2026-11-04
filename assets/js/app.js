@@ -367,7 +367,7 @@
   /* ---------- 状态 ---------- */
   var ROUTES = ['home', 'nav', 'share', 'post'];         // 主导航 / 滑动切换顺序
   /* 全部可路由页面。idea / about / later / insight / tag 不占主导航（tag 是带参数的） */
-  var ALL_ROUTES = ['home', 'nav', 'share', 'post', 'idea', 'about', 'later', 'insight', 'tag', 'admin'];
+  var ALL_ROUTES = ['home', 'nav', 'share', 'post', 'idea', 'about', 'later', 'insight', 'tag', 'music', 'admin'];
 
   /* 这两个 key 必须在 state 之前赋值：state 的初始化里会调用 loadFav()，
      var 只提升声明不提升值 —— 放在下面的话那一刻 FAV_KEY 还是 undefined，
@@ -2948,6 +2948,7 @@
          : route === 'later' ? renderLater()
          : route === 'insight' ? renderInsight()
          : route === 'tag' ? renderTag()
+         : route === 'music' ? (window.XYMusic ? window.XYMusic.render() : renderHome())
          : route === 'about' ? renderAbout()
          : renderHome();
   }
@@ -2956,6 +2957,9 @@
     var animate = opts.animate !== false;      // 是否播放页面入场动画
     var resetScroll = opts.resetScroll !== false; // 是否回到顶部
     if (ALL_ROUTES.indexOf(state.route) < 0) state.route = 'home';
+    /* 离开音乐页要停播 + 记进度：必须赶在改写 data-route 之前，先看一眼上一页是谁 */
+    var prevRoute = document.documentElement.getAttribute('data-route');
+    if (prevRoute === 'music' && state.route !== 'music' && window.XYMusic) window.XYMusic.leave();
     // 供 CSS 用（比如只在导航页显示顶栏的分类按钮）
     document.documentElement.setAttribute('data-route', state.route);
     var app = $('#app');
@@ -2982,6 +2986,7 @@
     if (state.route === 'idea') { bindIdea(); }
     if (state.route === 'later') { bindLater(); }
     if (state.route === 'insight') { bindInsight(); }
+    if (state.route === 'music' && window.XYMusic) window.XYMusic.bind(app);
     if (state.route === 'admin' && window.XY_ADMIN) window.XY_ADMIN.bind(app);
     if (resetScroll) scrollTop(false);
   }

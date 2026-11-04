@@ -31,6 +31,11 @@ window.SITE_BOOKMARKS = (function () {
   "d": "想到什么记一句，#标签 自动归类"
   },
   {
+  "n": "本地音乐",
+  "u": "#/music",
+  "d": "放本机的歌，不上传、不联网"
+  },
+  {
   "n": "游猴脚本",
   "u": "http://yihaozhan.xyz/jiaoben.html"
   },
