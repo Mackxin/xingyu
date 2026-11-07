@@ -1,7 +1,7 @@
 {
-  "versionCode": 27,
-  "versionName": "2.7.0",
-  "size": 1571257,
-  "notes": "本地音乐补扫本机/歌单/睡眠定时/整屏歌词；阅读页语速与定时、导出 md；导航随机漫游；稍后读存正文快照",
+  "versionCode": 28,
+  "versionName": "2.7.1",
+  "size": 1575265,
+  "notes": "数据源改为多源兜底（自建镜像 → GitHub Pages → 原始文件 → jsDelivr），切回 App 自动对一次数据，设置里能填自己的域名并看到这次从哪拿的",
   "updated": "2026-11-07"
 }
