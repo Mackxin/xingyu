@@ -1,7 +1,7 @@
 {
-  "versionCode": 28,
-  "versionName": "2.7.1",
-  "size": 1575265,
-  "notes": "数据源改为多源兜底（自建镜像 → GitHub Pages → 原始文件 → jsDelivr），切回 App 自动对一次数据，设置里能填自己的域名并看到这次从哪拿的",
+  "versionCode": 29,
+  "versionName": "2.7.2",
+  "size": 1578677,
+  "notes": "数据源可在「GitHub / 我的镜像」之间选默认；导航页万物归一里新增摘录本、站点巡检两个入口",
   "updated": "2026-11-07"
 }
