@@ -1,7 +1,7 @@
 {
-  "versionCode": 29,
-  "versionName": "2.7.2",
-  "size": 1578677,
-  "notes": "数据源可在「GitHub / 我的镜像」之间选默认；导航页万物归一里新增摘录本、站点巡检两个入口",
+  "versionCode": 30,
+  "versionName": "2.7.3",
+  "size": 1579661,
+  "notes": "首页板块改成直接拖动排序，长按一行拖到位，不再点上下箭头",
   "updated": "2026-11-07"
 }
