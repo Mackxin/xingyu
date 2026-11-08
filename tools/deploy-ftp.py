@@ -37,7 +37,7 @@ CONF = os.path.expanduser('~/.xy-ftp')
 # 这些是开发期的东西，传上去只会占空间、还可能被人翻到
 SKIP_DIRS = {'.git', '.workbuddy', '.githooks', '.github', 'tools', 'docs',
              'node_modules', '__pycache__'}
-SKIP_FILES = {'README.md', '.gitignore', 'CNAME'}
+SKIP_FILES = {'README.md', '.gitignore', 'CNAME', 'web.config'}   # web.config 单独处理（见 main 末尾）
 SKIP_PREFIX = ('.',)          # 隐藏文件 + macOS 的 ._xxx 资源分叉
 
 # IIS 不认这几个后缀，不映射就是 404.3
@@ -154,9 +154,11 @@ def main():
     # IIS 少了这份 web.config，api/app.apk 就是 404.3
     if not only:
         try:
-            with open(os.path.join(REPO, 'web.config'), 'w', encoding='utf-8') as fh:
-                fh.write(WEB_CONFIG)
-            with open(os.path.join(REPO, 'web.config'), 'rb') as fh:
+            conf_file = os.path.join(REPO, 'web.config')
+            if not os.path.exists(conf_file):
+                with open(conf_file, 'w', encoding='utf-8') as fh:
+                    fh.write(WEB_CONFIG)
+            with open(conf_file, 'rb') as fh:
                 ftp.storbinary(f'STOR {root}/web.config', fh)
             print('✓ web.config（.apk / .json / .md 的 MIME 映射）')
         except Exception as e:
