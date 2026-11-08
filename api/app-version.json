@@ -1,7 +1,7 @@
 {
-  "versionCode": 30,
-  "versionName": "2.7.3",
-  "size": 1579661,
-  "notes": "首页板块改成直接拖动排序，长按一行拖到位，不再点上下箭头",
-  "updated": "2026-11-07"
+  "versionCode": 31,
+  "versionName": "2.7.4",
+  "size": 1579809,
+  "notes": "拖动排序更顺（拖动中不写盘）、下载新版支持断点续传",
+  "updated": "2026-11-08"
 }
