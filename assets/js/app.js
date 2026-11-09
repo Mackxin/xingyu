@@ -367,7 +367,7 @@
   /* ---------- 状态 ---------- */
   var ROUTES = ['home', 'nav', 'share', 'post'];         // 主导航 / 滑动切换顺序
   /* 全部可路由页面。idea / about / later / insight / tag 不占主导航（tag 是带参数的） */
-  var ALL_ROUTES = ['home', 'nav', 'share', 'post', 'idea', 'about', 'later', 'insight', 'tag', 'music', 'admin'];
+  var ALL_ROUTES = ['home', 'nav', 'share', 'post', 'idea', 'about', 'later', 'insight', 'tag', 'music', 'note', 'admin'];
 
   /* 这两个 key 必须在 state 之前赋值：state 的初始化里会调用 loadFav()，
      var 只提升声明不提升值 —— 放在下面的话那一刻 FAV_KEY 还是 undefined，
@@ -483,9 +483,65 @@
     target.links.splice(at, 0, entry);
     return cats;
   }
+  /**
+   * 「随手记」指向站内页。
+   *
+   * 老数据里这条是 `http://yihaozhan.xyz/suishouji/index.html` —— 一个独立站点，
+   * 点一下就跳出壹号栈，风格还是粉紫的。现在站点自己有 `#/note` 了
+   * （assets/note/index.html 换肤版，装在 iframe 里），要把入口改过来。
+   *
+   * 为什么在内存里改而不是只改 bookmarks.js：老访客的分类数据存在
+   * `localStorage['xingyu.data.v1']` 里，优先级高于 bookmarks.js，
+   * 只改文件对他们一点用没有（跟 2.7.2 加「本地音乐」入口那次是同一个坑）。
+   *
+   * 就地改而不是新增：名字、位置、顺序全都不动，用户看到的还是同一个
+   * 「随手记」，只是不再跳出去。幂等，跑多少次都只有一个。
+   */
+  function ensureNoteEntry(cats) {
+    if (!cats || !cats.length) return cats;
+    var target = null, i, j;
+    for (i = 0; i < cats.length; i++) {
+      if (cats[i] && cats[i].id === 'bk-mine') { target = cats[i]; break; }
+    }
+    if (!target) target = cats[0];
+    if (!target) return cats;
+    if (!Array.isArray(target.links)) target.links = [];
+    var links = target.links;
+
+    /* 已经指到 #/note 了就收工 */
+    for (j = 0; j < links.length; j++) {
+      if (String((links[j] || {}).u || '') === '#/note') return cats;
+    }
+
+    /* 找到那条指向旧外站的（认 URL 也认名字，后台可能把名字改成别的） */
+    for (j = 0; j < links.length; j++) {
+      var l = links[j] || {};
+      var u = String(l.u || '');
+      var isOld = /suishouji/i.test(u) ||
+        (String(l.n || '') === '随手记' && u.charAt(0) !== '#');
+      if (isOld) {
+        l.u = '#/note';
+        if (!l.d) l.d = 'Markdown 便签，记一条算一条';
+        return cats;
+      }
+    }
+
+    /* 一条都没有（比如被误删了）→ 补一条，挂在「灵感随记」后面 */
+    var at = -1;
+    for (j = 0; j < links.length; j++) {
+      if (String((links[j] || {}).u || '') === '#/idea') { at = j + 1; break; }
+    }
+    if (at < 0) at = links.length ? 1 : 0;
+    links.splice(at, 0, { n: '随手记', u: '#/note', d: 'Markdown 便签，记一条算一条' });
+    return cats;
+  }
+  /* 所有「站点自带页」的导航入口都在这儿过一遍，别的模块只认结果 */
+  function withBuiltinEntries(cats) {
+    return ensureNoteEntry(ensureMusicEntry(cats));
+  }
   /* 后台改过站点数据后调用：重新取分类 → 重建索引 */
   function refreshData() {
-    CATS = ensureMusicEntry((window.XYStore && window.XYStore.dataCategories()) || DATA.categories);
+    CATS = withBuiltinEntries((window.XYStore && window.XYStore.dataCategories()) || DATA.categories);
     rebuildIndex();
     PALETTE_INDEX = buildPaletteIndex();
   }
@@ -2975,6 +3031,7 @@
          : route === 'insight' ? renderInsight()
          : route === 'tag' ? renderTag()
          : route === 'music' ? (window.XYMusic ? window.XYMusic.render() : renderHome())
+         : route === 'note' ? (window.XYNote ? window.XYNote.render() : renderHome())
          : route === 'about' ? renderAbout()
          : renderHome();
   }
@@ -2986,6 +3043,7 @@
     /* 离开音乐页要停播 + 记进度：必须赶在改写 data-route 之前，先看一眼上一页是谁 */
     var prevRoute = document.documentElement.getAttribute('data-route');
     if (prevRoute === 'music' && state.route !== 'music' && window.XYMusic) window.XYMusic.leave();
+    if (prevRoute === 'note' && state.route !== 'note' && window.XYNote) window.XYNote.leave();
     // 供 CSS 用（比如只在导航页显示顶栏的分类按钮）
     document.documentElement.setAttribute('data-route', state.route);
     var app = $('#app');
@@ -3013,6 +3071,7 @@
     if (state.route === 'later') { bindLater(); }
     if (state.route === 'insight') { bindInsight(); }
     if (state.route === 'music' && window.XYMusic) window.XYMusic.bind(app);
+    if (state.route === 'note' && window.XYNote) window.XYNote.bind(app);
     if (state.route === 'admin' && window.XY_ADMIN) window.XY_ADMIN.bind(app);
     if (resetScroll) scrollTop(false);
   }
@@ -4544,7 +4603,11 @@
       }
     });
 
-    window.addEventListener('resize', debounce(function () { updateGlider(); syncHeaderVar(); }, 150));
+    window.addEventListener('resize', debounce(function () {
+      updateGlider(); syncHeaderVar();
+      /* #/note 的 iframe 是死高度，窗口一变就得重算（旋转屏幕尤其明显） */
+      if (window.XYNote) window.XYNote.fit();
+    }, 150));
     window.addEventListener('scroll', onScroll, { passive: true });
   }
   function isPaletteOpen() { var el = $('#palette'); return el && !el.hidden; }

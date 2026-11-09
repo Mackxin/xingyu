@@ -4187,3 +4187,19 @@ html[data-theme="light"] .mu-track b{ background:var(--ink-a1); }
   .mu-hint{ flex:1 1 100%; }
   .page--music.is-drop::after{ font-size:14px; }
 }
+
+/* ===== 随手记（#/note）=====
+   整页就是一个铺满的 iframe，本体在 assets/note/index.html（换肤版）。
+   高度由 note.js 量出顶栏占位后写成内联 style，这里的 100dvh 只是兜底
+   （JS 没跑到 / 宽度变化时的第一帧）。 */
+.note-page{
+  width:100%;
+  height:calc(100dvh - 120px);
+  min-height:320px;
+  border-radius:var(--r-lg);
+  overflow:hidden;            /* 圆角必须裁到 iframe 上，否则四角会露出方块 */
+}
+.note-page__frame{
+  display:block; width:100%; height:100%; border:0;
+  background:transparent;     /* 让下面的极光透上来，接缝不明显 */
+}
