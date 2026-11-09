@@ -479,7 +479,9 @@ function fromPlain() {
       /* 后台可以给单个站点设置顶（网页端 sortPinned 用），App 也要能跟着置顶。
          只在 true 时带上这个 key —— 两千多个站点每个写一遍 "pin":false
          会让 app.json 白胖 27KB，App 那边缺字段就是 false，不用写出来。 */
-      ...(l.pin === true ? { pin: true } : {})
+      ...(l.pin === true ? { pin: true } : {}),
+      /* 「App 里打开时是否显示底栏」默认开启，所以只写关掉的那些（省体积） */
+      ...(l.dock === false ? { dock: false } : {})
     })).filter(l => l.name && l.url)
   }));
 

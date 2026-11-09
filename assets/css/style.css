@@ -1847,8 +1847,10 @@ body.is-dragging-row, body.is-dragging-row *{ cursor:grabbing !important; }
 .admin-link__ops button:hover:not(:disabled){ color:var(--text); border-color:transparent; }
 .admin-link__ops button:disabled{ opacity:.3; cursor:not-allowed; }
 .admin-link__ops button.is-danger:hover{ color:#ff8b8b; border-color:transparent; }
-.admin-link__ops button.alink__pin{ filter:grayscale(1); opacity:.55; }
-.admin-link__ops button.alink__pin.is-on{ filter:none; opacity:1; border-color:transparent; background:var(--glass-2); }
+.admin-link__ops button.alink__pin,
+.admin-link__ops button.alink__dock{ filter:grayscale(1); opacity:.55; }
+.admin-link__ops button.alink__pin.is-on,
+.admin-link__ops button.alink__dock.is-on{ filter:none; opacity:1; border-color:transparent; background:var(--glass-2); }
 .admin-preview{
   display:flex; gap:6px; flex-wrap:wrap; margin-top:14px; padding:14px;
   border-radius:12px; border:1px dashed transparent;

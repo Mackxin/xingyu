@@ -325,7 +325,8 @@
           '<button class="btn btn--danger" type="button" id="adminResetData"' + (Store.dataIsCustom() ? '' : ' disabled') + '>恢复默认数据</button>' +
         '</div>' +
         '<input type="file" id="bmFile" accept=".html,.htm,text/html" hidden />' +
-        '<p class="admin-tip">数据来自 <code>assets/js/data.js</code>；在这里改动会覆盖它（只影响本机）。点「恢复默认数据」即可还原。展开分类后会<b>独占一整行</b>，站点很多时列表内部滚动，不会把页面撑长。</p>' +
+        '<p class="admin-tip">数据来自 <code>assets/js/data.js</code>；在这里改动会覆盖它（只影响本机）。点「恢复默认数据」即可还原。展开分类后会<b>独占一整行</b>，站点很多时列表内部滚动，不会把页面撑长。<br>' +
+          '每行右侧两颗小钮：<b>📌</b> 置顶（排到分类最前）、<b>📱</b> 在 App 里打开这条链接时是否留着底栏（默认开；点成灰的就是整屏看，不带底栏）。</p>' +
       '</div>' +
       '<div class="admin-cats" id="adminCats" data-drag-box="cat" data-drag-grid="1">' + catsListHtml() + '</div>';
   }
@@ -401,6 +402,9 @@
         '<input data-link-f="u" value="' + esc(l.u) + '" placeholder="https://…" spellcheck="false" aria-label="站点链接" />' +
         '<input data-link-f="d" value="' + esc(l.d) + '" placeholder="一句话描述" aria-label="站点描述" />' +
         '<span class="admin-link__ops">' +
+          '<button type="button" data-link-op="dock" data-li="' + li + '"' +
+            ' class="alink__dock' + (l.dock === false ? '' : ' is-on') + '"' +
+            ' aria-pressed="' + (l.dock !== false) + '" title="在 App 里打开这个链接时显示底栏（默认显示）" aria-label="App 底栏">📱</button>' +
           '<button type="button" data-link-op="pin" data-li="' + li + '"' +
             ' class="alink__pin' + (l.pin ? ' is-on' : '') + '"' +
             ' aria-pressed="' + (!!l.pin) + '" title="置顶（排在分类最前面）" aria-label="置顶">📌</button>' +
@@ -3996,6 +4000,17 @@
         var ci = +btn.closest('.acat').getAttribute('data-ci');
         var li = +btn.getAttribute('data-li');
         var op = btn.getAttribute('data-link-op');
+        if (op === 'dock') {
+          var dockOn = true;
+          mutate(function (list) {
+            var it = list[ci].links[li];
+            dockOn = it.dock === false;      /* 现在是关的 → 打开 */
+            if (dockOn) delete it.dock; else it.dock = false;
+          });
+          refreshCats(root);
+          toast(dockOn ? 'App 里打开会显示底栏' : 'App 里打开不显示底栏');
+          return;
+        }
         if (op === 'pin') {
           var nowOn = false;
           mutate(function (list) {

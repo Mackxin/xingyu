@@ -49,7 +49,7 @@ window.SITE_BOOKMARKS = (function () {
   },
   {
   "n": "随手记",
-  "u": "http://yihaozhan.xyz/suishouji/index.html"
+  "u": "#/note"
   }
   ]
   },
