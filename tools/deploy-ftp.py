@@ -26,6 +26,7 @@
 """
 
 import ftplib
+import gzip
 import json
 import os
 import sys
@@ -51,6 +52,8 @@ WEB_CONFIG = """<?xml version="1.0" encoding="UTF-8"?>
       <mimeMap fileExtension=".json" mimeType="application/json" />
       <remove fileExtension=".md" />
       <mimeMap fileExtension=".md" mimeType="text/markdown; charset=utf-8" />
+      <remove fileExtension=".gz" />
+      <mimeMap fileExtension=".gz" mimeType="application/gzip" />
     </staticContent>
   </system.webServer>
 </configuration>
@@ -77,6 +80,29 @@ def load_conf():
     return conf
 
 
+def bake_gzip():
+    """在 api/app.json 旁边再烤一份 api/app.json.gz。
+
+    为什么：这台虚拟主机（IIS 共享版）不让开 gzip 压缩，489 KB 原样传，
+    实测比 GitHub Pages（压到 163 KB）慢 3~5 倍。文件本身压不动，那就自己压一份放旁边 ——
+    App 端（Repo.bodyText）看到 gzip 魔数会自己解；老版本 APK 根本不会请求这个文件名，零影响。
+
+    mtime=0：同样内容每次压出来字节完全一样，git 不会天天报「已修改」。
+    """
+    src = os.path.join(REPO, 'api', 'app.json')
+    if not os.path.exists(src):
+        return
+    dst = src + '.gz'
+    if os.path.exists(dst) and os.path.getmtime(dst) >= os.path.getmtime(src):
+        return
+    raw = open(src, 'rb').read()
+    with open(dst, 'wb') as out:
+        with gzip.GzipFile(filename='app.json', mode='wb', fileobj=out,
+                           compresslevel=9, mtime=0) as gz:
+            gz.write(raw)
+    print(f'· app.json.gz 已生成：{len(raw) / 1024:.0f} KB → {os.path.getsize(dst) / 1024:.0f} KB')
+
+
 def collect(base):
     out = []
     for dirpath, dirnames, filenames in os.walk(base):
@@ -100,6 +126,7 @@ def main():
     root = conf['root'].rstrip('/')
     base = os.path.join(REPO, only) if only else REPO
 
+    bake_gzip()
     files = collect(base)
     total = sum(os.path.getsize(p) for p, _, _ in files)
     print(f'本地：{base}')
