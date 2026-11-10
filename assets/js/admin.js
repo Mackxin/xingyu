@@ -2104,6 +2104,11 @@
         field('标语', 'tagline', c.tagline, '页脚与页面描述') +
         '<label class="admin-field"><span class="admin-field__label">建站日期<em>首页「成长天数」从这天开始数</em></span>' +
           '<input type="date" data-site="startDate" value="' + esc(c.startDate) + '" /></label>' +
+        /* 2.8.0：App 首页标题上方那行小字。以前固定显示建站日期（一个 2024-01-01 的占位值），
+           小宝说「时间对不上」，所以默认改成「最后更新」那天，想写别的就在这里覆盖 */
+        '<label class="admin-field"><span class="admin-field__label">首页日期<em>标题上方那行小字；留空 = 自动显示最后更新那天</em></span>' +
+          '<input type="text" data-site="topDate" value="' + esc(c.topDate || '') +
+          '" placeholder="留空自动，也可以写「自 2024 年起」" maxlength="40" /></label>' +
       '</div>' +
       '<div class="admin-card">' +
         '<h2>顶栏 Logo</h2>' +

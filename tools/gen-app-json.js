@@ -117,9 +117,11 @@ function buildRaw(src) {
        「🛰️ 持续更新中」这种跟标语没关系的东西。 */
     slogan: cfg.tagline || '',
     desc: home.descAfter ? (home.descBefore || '') + home.descAfter : (cfg.desc || ''),
-    /* 建站日期在配置里叫 startDate，没有 cfg.since 这个 key ——
-       以前读 cfg.since 恒空，App 首页那行「建站于…」永远是空的。 */
-    since: cfg.startDate || '',
+    /* 首页标题上方那行日期。
+       2.8.0 起语义变了：不再是「建站于 X」（那只是个 2024-01-01 的占位值，
+       小宝说「时间对不上」），改成**最后更新那天**；后台「站点信息 → 首页日期」
+       填了就用自己的文案（cfg.topDate）。真正算日期在下面 payload 里补。 */
+    since: String(cfg.topDate || '').trim(),
     /* 导航页显示开关（后台「站点信息 → 显示项」）：
        卡片左侧彩色图标 / 名字下面那行介绍 / 分类名前的 emoji / 分类名后的站点数 */
     nav: {
@@ -521,7 +523,9 @@ function fromPlain() {
       name: raw.siteName || '壹号栈',
       slogan: raw.slogan || '',
       desc: raw.desc || '',
-      since: raw.since || '',
+      /* 后台没自定义就报「最后更新」那天（= build 的日期部分，每次内容更新都会变） */
+      since: raw.since || (now.getFullYear() + '-' +
+        String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0')),
       url: SITE_URL
     },
     stats: {

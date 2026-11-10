@@ -53,6 +53,8 @@
     logoImage: '',             // 顶栏 Logo 图片（data URL 或网址）；空 = 内置「栈」字 SVG
     favicon: '',               // 浏览器标签图标；空 = 内置 SVG
     startDate: '2024-01-01',   // 建站日期（YYYY-MM-DD）—— 首页「成长天数」从这里算
+    topDate: '',               // 首页标题上方那行日期 —— 留空 = 自动用「最后更新」那天
+                               // （app.json 的 build 时间）；填了就原样显示，也行写「自 2024 年起」
     /* { icon, name, url } —— 最多 MAX_LINKS 个。默认放一条「灵感随记」，
        它就在本站里（#/idea），顶栏点一下就到 */
     customLinks: [{ icon: '✨', name: '灵感随记', url: '#/idea' }],
@@ -364,6 +366,8 @@
       target.home = normHome(target.home);
     }
     target.startDate = normDate(target.startDate, DEFAULTS.startDate);
+    /* 首页日期文案：空 = 自动（用最后更新那天）。允许写自由文本，所以只做长度裁剪 */
+    target.topDate = String(target.topDate == null ? '' : target.topDate).trim().slice(0, 40);
     target.theme = normTheme(src && src.theme !== undefined ? src.theme : target.theme);
     target.read = normRead(src && src.read !== undefined ? src.read : target.read);
     target.about = normAbout(src && src.about !== undefined ? src.about : target.about);
