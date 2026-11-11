@@ -40,7 +40,7 @@
 
 > App 是原生写的（不是套壳 WebView）：底栏六项（首页 / 分享 / 文章 / 导航 / 设置 / 收藏）、全站下拉刷新、阅读页朗读与语速、
 > 灵感随记、本地音乐、摘录本、稍后读离线快照。内容跟网页端同源 —— 都读 `api/app.json`，
-> 后台改完手机打开就是新的。APK 走站点同域：[下载最新版](api/app.apk)（约 1.6 MB）。
+> 后台改完手机打开就是新的。APK 走站点同域，不用翻墙：[下载最新版](https://mackxin.github.io/xingyu/api/app.apk)（约 1.6 MB）。
 
 > 所有界面都能在后台实时改：**配色、圆角、字号、行高、字体、正文宽度**都是变量，改完立刻生效，不用构建也不用刷新。
 
@@ -474,7 +474,7 @@ python3 tools/check-links.py --proxy http://127.0.0.1:7897
 
 网页装进浏览器是 PWA，装到手机上还有一份**原生 App**（Kotlin + Compose，不是套壳 WebView）。
 
-- **下载**：[`api/app.apk`](api/app.apk)（约 1.6 MB；站点同域，不用翻墙也不用 GitHub 直链）。
+- **下载**：[`api/app.apk`](https://mackxin.github.io/xingyu/api/app.apk)（约 1.6 MB；站点同域，不用翻墙也不用 GitHub 直链）。
 - **内容同源**：App 读的就是本站 `api/app.json`（由 `tools/gen-app-json.js` 从后台数据烘出来）。
   站上改了导航、文章、分享、帮助、更新日志，手机打开就是新的，**不用发新版 App**。
 - **装了之后能干什么**：底栏六项（首页 / 分享 / 文章 / 导航 / 设置 / 收藏）、全站下拉刷新、
