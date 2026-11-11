@@ -9,17 +9,38 @@
 
 ## 界面预览
 
-| 首页 · 一屏装下所有入口 | 导航 · 50 个分类 / 2078 个站点 |
+### 电脑端
+
+| 首页 · 一屏装下所有入口 | 导航 · 50 个分类 / 2079 个站点 |
 | :---: | :---: |
 | ![首页](docs/screenshots/01-home.jpg) | ![导航](docs/screenshots/02-nav.jpg) |
 
-| 分享 · 按日期排的时间线 | 文章正文 · 明亮 + 衬线排版 |
+| 分享 · 按日期排的时间线 | 文章正文 · 目录 + 衬线排版 |
 | :---: | :---: |
 | ![分享](docs/screenshots/03-share.jpg) | ![文章](docs/screenshots/04-post.jpg) |
 
-| 后台 · 主题与配色（含「我的配色」） | 手机端 |
-| :---: | :---: |
-| ![后台主题](docs/screenshots/05-admin-theme.jpg) | <img src="docs/screenshots/06-mobile.jpg" width="248" alt="手机端首页"> |
+| 后台 · 主题与配色（换一套强调整站跟着变） |
+| :---: |
+| <img src="docs/screenshots/05-admin-theme.jpg" width="760" alt="后台主题与配色"> |
+
+### 手机端 · 浏览器
+
+| 首页 | 导航 | 文章正文 |
+| :---: | :---: | :---: |
+| <img src="docs/screenshots/06-mobile.jpg" width="226" alt="手机端首页"> | <img src="docs/screenshots/13-mobile-nav.jpg" width="226" alt="手机端导航"> | <img src="docs/screenshots/14-mobile-post.jpg" width="226" alt="手机端文章正文"> |
+
+> 同一套页面，手机上下窄了自动改版：主导航从顶栏挪到屏幕下方居中（悬浮药丸），
+> 链接卡片按名字长短自动排，不折行。
+
+### 安卓 App · Kotlin + Compose 原生
+
+| 首页 | 导航 | 文章 | 设置 |
+| :---: | :---: | :---: | :---: |
+| <img src="docs/screenshots/10-app-home.jpg" width="172" alt="App 首页"> | <img src="docs/screenshots/11-app-nav.jpg" width="172" alt="App 导航"> | <img src="docs/screenshots/12-app-post.jpg" width="172" alt="App 文章"> | <img src="docs/screenshots/15-app-settings.jpg" width="172" alt="App 设置"> |
+
+> App 是原生写的（不是套壳 WebView）：底栏六项（首页 / 分享 / 文章 / 导航 / 设置 / 收藏）、全站下拉刷新、阅读页朗读与语速、
+> 灵感随记、本地音乐、摘录本、稍后读离线快照。内容跟网页端同源 —— 都读 `api/app.json`，
+> 后台改完手机打开就是新的。APK 走站点同域：[下载最新版](api/app.apk)（约 1.6 MB）。
 
 > 所有界面都能在后台实时改：**配色、圆角、字号、行高、字体、正文宽度**都是变量，改完立刻生效，不用构建也不用刷新。
 
@@ -59,7 +80,7 @@ git checkout -- . # 放弃还没提交的改动
 ├── tools/import-naver.py   # 把「壹号导航」naver.html 里的书签抽成 bookmarks.js（见下文「搬老书签进来」）
 ├── tools/check-links.py    # 并发探测全部链接死活（直连 + 代理复验），输出死链清单
 ├── tools/dead-links.txt    # 死链清单（check-links.py 生成，import-naver.py 生成时会跳过）
-├── docs/screenshots/       # README 里那几张界面预览图（换了外观想更新配图就照着重拍）
+├── docs/screenshots/       # README 里的界面预览图（网页端用 tools/shot-readme.js 重拍，App 端用 adb screencap）
 └── assets
     ├── og-cover.png        # 分享卡片封面（1200×630，微信/微博/iMessage 抓这张）
     ├── icon-180.png        # iOS 添加到主屏的图标（180×180）
@@ -448,6 +469,21 @@ python3 tools/check-links.py --proxy http://127.0.0.1:7897
 
 > 改版后想让老用户立刻拿到新版：把 `sw.js` 里的 `VERSION` 和 `index.html` 里所有 `?v=` 一起 +1。
 > 页面本身是「网络优先」，所以刷新就能看到新内容，不会卡在旧版。
+
+## 安卓 App
+
+网页装进浏览器是 PWA，装到手机上还有一份**原生 App**（Kotlin + Compose，不是套壳 WebView）。
+
+- **下载**：[`api/app.apk`](api/app.apk)（约 1.6 MB；站点同域，不用翻墙也不用 GitHub 直链）。
+- **内容同源**：App 读的就是本站 `api/app.json`（由 `tools/gen-app-json.js` 从后台数据烘出来）。
+  站上改了导航、文章、分享、帮助、更新日志，手机打开就是新的，**不用发新版 App**。
+- **装了之后能干什么**：底栏六项（首页 / 分享 / 文章 / 导航 / 设置 / 收藏）、全站下拉刷新、
+  阅读页朗读 + 语速 + 定时停止、稍后读存正文快照（离线可看）、灵感随记（原生编辑 + 回收站）、
+  本地音乐（扫描本机 + 歌词 + 睡眠定时）、摘录本、站点巡检、足迹热力图、桌面小组件。
+- **自己更新自己**：设置 →「版本更新」能检查并下载新版，支持断点续传；
+  数据源可在 GitHub / 自建镜像之间切换（镜像还带 `app.json.gz` 压缩，国内快不少）。
+- **源码**：[`Mackxin/yihaozhan-app`](https://github.com/Mackxin/yihaozhan-app)，
+  发版记录见 [Releases](https://github.com/Mackxin/yihaozhan-app/releases) 与站内 `#/changelog`。
 
 ## 订阅（RSS）
 
