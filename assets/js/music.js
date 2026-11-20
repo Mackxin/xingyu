@@ -407,6 +407,9 @@ window.XYMusic = (function () {
   }
 
   function paintPlay(on) {
+    /* 先把播放键的两种图标给迷你条：音乐页里那套播放器可能已经不在了（切到别的页） */
+    paintMiniPlay(on);
+    if (mini && !onPage) paintMini();
     if (!els) return;
     els.play.innerHTML = on ? '<svg viewBox="0 0 24 24"><rect x="7" y="5" width="3.4" height="14" rx="1.2"/><rect x="13.6" y="5" width="3.4" height="14" rx="1.2"/></svg>'
                             : '<svg viewBox="0 0 24 24"><path d="M8 5.5v13c0 .8.9 1.3 1.6.9l10-6.5a1 1 0 0 0 0-1.7l-10-6.5A1 1 0 0 0 8 5.5z"/></svg>';
@@ -552,6 +555,7 @@ window.XYMusic = (function () {
     }
     setMediaSession();
     saveState();
+    paintMini();          /* 换歌了：迷你条上的曲名跟着换 */
   }
 
   function clampVol(v) {
@@ -729,12 +733,73 @@ window.XYMusic = (function () {
     if (cur === i) {
       if (audio) { audio.pause(); audio.removeAttribute('src'); audio.load(); }
       cur = tracks.length ? Math.min(i, tracks.length - 1) : -1;
-      if (cur >= 0) play(cur, false); else { paintCover(); paintProgress(0, 0); paintPlay(false); }
+      if (cur >= 0) play(cur, false); else { paintCover(); paintProgress(0, 0); paintPlay(false); hideMini(); }
     } else if (cur > i) {
       cur--;
     }
     paintStats(); paintList(); paintCover(); saveState();
   }
+
+  /* ---------- 跨页迷你条（v154） ----------
+     小宝要的是「只要网站打开着就一直播」：所以离开 #/music 不再暂停。
+     可页面里的播放器会随整页换掉，得留一个能暂停、能回去的小条，
+     否则切走之后就成了「关不掉的背景音」。 */
+  var mini = null, miniEls = null, onPage = false;
+
+  function ensureMini() {
+    if (mini) return miniEls;
+    mini = document.createElement('div');
+    mini.className = 'mu-mini';
+    mini.id = 'muMini';
+    mini.innerHTML =
+      '<button class="mu-mini__hit" type="button" data-mini-home aria-label="回到音乐页">' +
+        '<span class="mu-mini__cover"><span data-mini-ch>♪</span></span>' +
+        '<span class="mu-mini__txt"><b data-mini-name>本地音乐</b><em data-mini-sub>正在播放</em></span>' +
+      '</button>' +
+      '<button class="mu-mini__btn" type="button" data-mini-play aria-label="暂停"></button>' +
+      '<button class="mu-mini__x" type="button" data-mini-close aria-label="停止播放">×</button>';
+    document.body.appendChild(mini);
+    miniEls = {
+      ch: $('[data-mini-ch]', mini),
+      name: $('[data-mini-name]', mini),
+      sub: $('[data-mini-sub]', mini),
+      play: $('[data-mini-play]', mini),
+      cover: $('.mu-mini__cover', mini)
+    };
+    $('[data-mini-home]', mini).addEventListener('click', function () {
+      location.hash = '#/music';
+    });
+    miniEls.play.addEventListener('click', function () {
+      var a = ensureAudio();
+      if (a.paused) a.play().catch(function () {}); else a.pause();
+    });
+    $('[data-mini-close]', mini).addEventListener('click', function () {
+      if (audio) audio.pause();
+      hideMini();
+      saveState();
+    });
+    return miniEls;
+  }
+  function paintMini() {
+    /* 人在音乐页里：页面自带播放器，这条让位 */
+    if (onPage || !audio || !audio.getAttribute('src')) { hideMini(); return; }
+    var e = ensureMini();
+    var t = tracks[cur];
+    e.name.textContent = t ? t.name : '本地音乐';
+    e.sub.textContent = (t && t.artist) ? t.artist : (audio.paused ? '已暂停 · 点一下回去' : '正在播放');
+    e.ch.textContent = t ? (String(t.name).trim()[0] || '♪') : '♪';
+    e.cover.style.setProperty('--mu-hue', t ? hueOf(t) : '0deg');
+    mini.classList.add('is-on');
+    paintMiniPlay(!audio.paused);
+  }
+  function paintMiniPlay(on) {
+    if (!miniEls) return;
+    miniEls.play.innerHTML = on
+      ? '<svg viewBox="0 0 24 24"><rect x="7" y="5" width="3.4" height="14" rx="1.2"/><rect x="13.6" y="5" width="3.4" height="14" rx="1.2"/></svg>'
+      : '<svg viewBox="0 0 24 24"><path d="M8 5.5v13c0 .8.9 1.3 1.6.9l10-6.5a1 1 0 0 0 0-1.7l-10-6.5A1 1 0 0 0 8 5.5z"/></svg>';
+    miniEls.play.setAttribute('aria-label', on ? '暂停' : '播放');
+  }
+  function hideMini() { if (mini) mini.classList.remove('is-on'); }
 
   /* ---------- 提示（跟站点 .toast 一套，复用） ---------- */
   var toastTimer = 0;
@@ -762,7 +827,8 @@ window.XYMusic = (function () {
           '<span class="eyebrow">Music · 音栈</span>' +
           '<h1>本地音乐</h1>' +
           '<p>挑本机的歌来放，不联网、不上传。歌存在这个浏览器里（IndexedDB），下次打开还在 —— ' +
-            '换设备或清缓存就没了，重要的歌记得留一份在网盘。<span class="hint-desk">也可以把文件直接拖进这一页。</span></p>' +
+            '换设备或清缓存就没了，重要的歌记得留一份在网盘。<span class="hint-desk">也可以把文件直接拖进这一页。</span>' +
+            '切到别的页面也照样放：<b>右下角那条小条</b>能暂停，也能一键回来。</p>' +
         '</div>' +
         '<div class="page-head__side"><div class="head-stats">' +
           '<div class="head-stat"><b id="muCount">' + tracks.length + '</b><span>首</span></div>' +
@@ -826,6 +892,8 @@ window.XYMusic = (function () {
   /* ---------- 绑定 ---------- */
   function bind(root) {
     var app = root || document;
+    onPage = true;
+    hideMini();          /* 回到音乐页：页面里就有播放器，迷你条收起来 */
     els = {
       player: $('#muPlayer', app),
       cover: $('#muCover', app),
@@ -917,7 +985,7 @@ window.XYMusic = (function () {
       if (audio) { audio.pause(); audio.removeAttribute('src'); audio.load(); }
       if (!fallback) dbClear().catch(function () {});
       paintStats(); paintList(); paintCover(); paintProgress(0, 0); paintPlay(false);
-      paintLyrics(); saveState();
+      paintLyrics(); saveState(); hideMini();
       toastOnce('曲库已清空');
     }
 
@@ -1136,11 +1204,16 @@ window.XYMusic = (function () {
     }
   }
 
-  /* 离开这一页：停声（但进度留着）。由 app.js 每次 render 时调，内部幂等 */
+  /* 离开这一页：v154 起不停声（见下方注释）。由 app.js 每次 render 时调，内部幂等 */
   function leave() {
     /* 先摘监听：哪怕这一页从没播过（audio 还是 null），键盘监听也得收掉 */
     document.removeEventListener('keydown', onKey);
-    if (audio && !audio.paused) { saveState(); audio.pause(); }
+    /* v154：不再暂停。小宝要的是「只要网站开着就一直在放」——
+       切到别的页面声音继续，迷你条负责暂停 / 回到音乐页（见 paintMini）。
+       只把进度和当前这首记下来，下次进来接着放。 */
+    onPage = false;
+    if (audio) saveState();
+    paintMini();
     /* 下次再进来要重新 bind（DOM 被整页换掉了） */
     if (booted) els = null;
   }
@@ -1153,6 +1226,12 @@ window.XYMusic = (function () {
     routes: function () { return ['music']; },
     /* 只给 .workbuddy/tests 里的自动化测试用（解析器 / 内存状态），页面代码不碰它 */
     _debug: { readTags: readTags, parseID3: parseID3, parseFLAC: parseFLAC, parseMP4: parseMP4,
+      /* 跨页播放的自动化测试要看它：audio 不在 DOM 里，外面查不到 */
+      audioState: function () {
+        return audio ? { paused: audio.paused, time: Math.round(audio.currentTime),
+                         src: !!audio.getAttribute('src'), mini: !!(mini && mini.classList.contains('is-on')) }
+                     : { paused: true, time: 0, src: false, mini: false };
+      },
       state: function () {
         return tracks.map(function (t) {
           return { name: t.name, id: t.id, cov: !!covers[t.id], url: !!coverUrls[t.id],
