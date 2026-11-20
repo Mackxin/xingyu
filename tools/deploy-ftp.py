@@ -162,92 +162,89 @@ def main():
         print('\n（--dry 只看不传）')
         return
 
-    ftp = ftplib.FTP()
-    ftp.encoding = 'gbk'              # 这台服务器的欢迎语是 GBK，别用默认 utf-8
-    ftp.connect(conf['host'], int(conf.get('port', 21)), timeout=30)
-    ftp.login(conf['user'], conf['pass'])
-    ftp.set_pasv(True)
-    print('已登录\n')
+    # 这台共享主机连着传几个文件必挂：425 Cannot open data connection、
+    # Broken pipe、或者干脆超时 —— 是它在限流数据口。
+    # 实测「登录 → 传一个 → 退出」几乎每次都能成，所以宁可慢一点：一个文件一条连接，
+    # 失败就退避重试。27 个文件全量也就一分多钟。
+    RETRY = 6
+
+    def connect():
+        f = ftplib.FTP()
+        f.encoding = 'gbk'            # 这台服务器的欢迎语是 GBK，别用默认 utf-8
+        f.connect(conf['host'], int(conf.get('port', 21)), timeout=30)
+        f.login(conf['user'], conf['pass'])
+        f.set_pasv(True)
+        return f
 
     made = set()
 
-    def ensure(path):
+    def ensure_on(f, path):
         cur = ''
         for part in [p for p in path.split('/') if p]:
             cur += '/' + part
             if cur in made:
                 continue
             try:
-                ftp.mkd(cur)
+                f.mkd(cur)
             except ftplib.error_perm:
-                pass                   # 已存在
+                pass                  # 已存在
             made.add(cur)
 
-    ensure(root)
-    if only:
-        ensure(root + '/' + only)
+    def put(local, rdir, name):
+        """传一个文件：单开连接 + 退避重试。返回 None 表示成功，否则是最后一次的异常。"""
+        last = None
+        for attempt in range(1, RETRY + 1):
+            f = None
+            try:
+                f = connect()
+                made.clear()          # 新会话，目录得重新认一遍
+                ensure_on(f, rdir)
+                with open(local, 'rb') as fh:
+                    f.storbinary(f'STOR {rdir}/{name}', fh, blocksize=4096)
+                try:
+                    f.quit()
+                except Exception:
+                    pass
+                return None
+            except Exception as e:
+                last = e
+                try:
+                    f.close()
+                except Exception:
+                    pass
+                if attempt < RETRY:
+                    wait = 4 * attempt
+                    print(f'      … 第 {attempt} 次失败（{e}），{wait}s 后重试')
+                    time.sleep(wait)
+        return last
 
-    def reconnect():
-        """这台共享主机传几个文件就爱掉线（Broken pipe / 425）。
-        掉一次不算失败 —— 重连一次接着传，比整轮重跑省事。"""
-        nonlocal ftp
-        try:
-            ftp.close()
-        except Exception:
-            pass
-        f = ftplib.FTP()
-        f.encoding = 'gbk'
-        f.connect(conf['host'], int(conf.get('port', 21)), timeout=30)
-        f.login(conf['user'], conf['pass'])
-        f.set_pasv(True)
-        ftp = f
-        made.clear()
-        ensure(root)
-        if only:
-            ensure(root + '/' + only)
+    # 文件之间留口气：连着传它会直接 425。环境变量可调，默认 3 秒。
+    GAP = float(os.environ.get('XY_FTP_GAP', '3'))
 
     ok = fail = 0
     t0 = time.time()
     for i, (local, rel, name) in enumerate(files, 1):
         rdir = root + ('/' + only if only else '') + ('/' + rel if rel else '')
         label = ((rel + "/") if rel else "") + name
-        last = None
-        for attempt in (1, 2):
-            try:
-                ensure(rdir)
-                with open(local, 'rb') as fh:
-                    ftp.storbinary(f'STOR {rdir}/{name}', fh, blocksize=8192)
-                ok += 1
-                print(f'[{i:>2}/{len(files)}] ✓ {label}')
-                last = None
-                break
-            except Exception as e:
-                last = e
-                if attempt == 1:
-                    print(f'[{i:>2}/{len(files)}] … 掉线，重连后重试：{label}')
-                    try:
-                        reconnect()
-                    except Exception as e2:
-                        last = e2
-                        break
-        if last is not None:
+        err = put(local, rdir, name)
+        if err is None:
+            ok += 1
+            print(f'[{i:>2}/{len(files)}] ✓ {label}')
+        else:
             fail += 1
-            print(f'[{i:>2}/{len(files)}] ✗ {label}  {last}')
+            print(f'[{i:>2}/{len(files)}] ✗ {label}  {err}')
+        if i < len(files):
+            time.sleep(GAP)
 
     # IIS 少了这份 web.config，api/app.apk 就是 404.3
     if not only and not pick:
-        try:
-            conf_file = os.path.join(REPO, 'web.config')
-            if not os.path.exists(conf_file):
-                with open(conf_file, 'w', encoding='utf-8') as fh:
-                    fh.write(WEB_CONFIG)
-            with open(conf_file, 'rb') as fh:
-                ftp.storbinary(f'STOR {root}/web.config', fh)
-            print('✓ web.config（.apk / .json / .md 的 MIME 映射）')
-        except Exception as e:
-            print(f'✗ web.config  {e}')
+        conf_file = os.path.join(REPO, 'web.config')
+        if not os.path.exists(conf_file):
+            with open(conf_file, 'w', encoding='utf-8') as fh:
+                fh.write(WEB_CONFIG)
+        err = put(conf_file, root, 'web.config')
+        print('✓ web.config（.apk / .json / .md 的 MIME 映射）' if err is None else f'✗ web.config  {err}')
 
-    ftp.quit()
     print(f'\n完成：成功 {ok} / 失败 {fail}，用时 {time.time() - t0:.1f}s')
     print(f'访问：{conf.get("url", root)}')
 
