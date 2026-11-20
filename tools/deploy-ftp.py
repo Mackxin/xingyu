@@ -122,12 +122,34 @@ def main():
     if '--only' in sys.argv:
         only = sys.argv[sys.argv.index('--only') + 1].strip('/')
 
+    # --files a/b.js,c/d.json —— 只传点名的几个（相对仓库根）。
+    # sync.py 用它做增量：内容改动只涉及 site-data.js + api 那几个，
+    # 没必要每次把 1.58 MB 的 app.apk 也推一遍。
+    pick = None
+    if '--files' in sys.argv:
+        raw = sys.argv[sys.argv.index('--files') + 1]
+        pick = [x.strip().replace('\\', '/').lstrip('/') for x in raw.split(',') if x.strip()]
+        if only:
+            sys.exit('--files 和 --only 别一起用')
+
     conf = load_conf()
     root = conf['root'].rstrip('/')
     base = os.path.join(REPO, only) if only else REPO
 
     bake_gzip()
-    files = collect(base)
+    if pick:
+        files = []
+        for rel in pick:
+            p = os.path.join(REPO, rel)
+            if not os.path.isfile(p):
+                print(f'! 本地没有，跳过：{rel}')
+                continue
+            d, n = os.path.split(rel)
+            files.append((p, d, n))
+        if not files:
+            sys.exit('--files 里没有一个能传的文件')
+    else:
+        files = collect(base)
     total = sum(os.path.getsize(p) for p, _, _ in files)
     print(f'本地：{base}')
     print(f'远端：{root}{"/" + only if only else ""}')
@@ -164,19 +186,52 @@ def main():
     if only:
         ensure(root + '/' + only)
 
+    def reconnect():
+        """这台共享主机传几个文件就爱掉线（Broken pipe / 425）。
+        掉一次不算失败 —— 重连一次接着传，比整轮重跑省事。"""
+        nonlocal ftp
+        try:
+            ftp.close()
+        except Exception:
+            pass
+        f = ftplib.FTP()
+        f.encoding = 'gbk'
+        f.connect(conf['host'], int(conf.get('port', 21)), timeout=30)
+        f.login(conf['user'], conf['pass'])
+        f.set_pasv(True)
+        ftp = f
+        made.clear()
+        ensure(root)
+        if only:
+            ensure(root + '/' + only)
+
     ok = fail = 0
     t0 = time.time()
     for i, (local, rel, name) in enumerate(files, 1):
         rdir = root + ('/' + only if only else '') + ('/' + rel if rel else '')
-        ensure(rdir)
-        try:
-            with open(local, 'rb') as fh:
-                ftp.storbinary(f'STOR {rdir}/{name}', fh, blocksize=65536)
-            ok += 1
-            print(f'[{i:>2}/{len(files)}] ✓ {((rel + "/") if rel else "") + name}')
-        except Exception as e:
+        label = ((rel + "/") if rel else "") + name
+        last = None
+        for attempt in (1, 2):
+            try:
+                ensure(rdir)
+                with open(local, 'rb') as fh:
+                    ftp.storbinary(f'STOR {rdir}/{name}', fh, blocksize=8192)
+                ok += 1
+                print(f'[{i:>2}/{len(files)}] ✓ {label}')
+                last = None
+                break
+            except Exception as e:
+                last = e
+                if attempt == 1:
+                    print(f'[{i:>2}/{len(files)}] … 掉线，重连后重试：{label}')
+                    try:
+                        reconnect()
+                    except Exception as e2:
+                        last = e2
+                        break
+        if last is not None:
             fail += 1
-            print(f'[{i:>2}/{len(files)}] ✗ {((rel + "/") if rel else "") + name}  {e}')
+            print(f'[{i:>2}/{len(files)}] ✗ {label}  {last}')
 
     # IIS 少了这份 web.config，api/app.apk 就是 404.3
     if not only:
