@@ -110,7 +110,8 @@ def collect(base):
         rel = os.path.relpath(dirpath, base)
         rel = '' if rel == '.' else rel
         for f in sorted(filenames):
-            if f in SKIP_FILES or f.startswith(SKIP_PREFIX) or f.endswith('.pyc'):
+            # .command 是本机双击用的入口，传上去只会占地方
+            if f in SKIP_FILES or f.startswith(SKIP_PREFIX) or f.endswith(('.pyc', '.command')):
                 continue
             out.append((os.path.join(dirpath, f), rel, f))
     return out
@@ -234,7 +235,7 @@ def main():
             print(f'[{i:>2}/{len(files)}] ✗ {label}  {last}')
 
     # IIS 少了这份 web.config，api/app.apk 就是 404.3
-    if not only:
+    if not only and not pick:
         try:
             conf_file = os.path.join(REPO, 'web.config')
             if not os.path.exists(conf_file):

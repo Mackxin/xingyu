@@ -25,6 +25,7 @@
 
 import glob
 import gzip
+import io
 import json
 import os
 import re
@@ -107,7 +108,7 @@ def shippable(rel):
     """这个文件要不要传镜像（跟 deploy-ftp.py 的 SKIP_* 保持一致）"""
     if not rel or rel.startswith('.'):
         return False
-    if rel in SKIP_REL or rel.endswith('.pyc'):
+    if rel in SKIP_REL or rel.endswith(('.pyc', '.command')):
         return False
     if any(rel.startswith(d) for d in SKIP_DIRS):
         return False
@@ -119,18 +120,24 @@ def shippable(rel):
 def bake_gzip():
     """把 api/app.json 压成 api/app.json.gz（镜像主机不让开压缩，自己压一份给它）。
 
+    写法必须跟 deploy-ftp.py 里那份一模一样（含 filename 头字段），否则两边
+    交替跑会互相「改」一次，白白多出几百 KB 的 diff。
     mtime=0：同样内容每次压出来字节完全一样，git 不会天天报「已修改」。
     """
     if not os.path.exists(APP_JSON):
         return False
     raw = open(APP_JSON, 'rb').read()
     old = open(APP_GZ, 'rb').read() if os.path.exists(APP_GZ) else b''
-    buf = gzip.compress(raw, compresslevel=9, mtime=0)
-    if buf == old:
+    buf = io.BytesIO()
+    with gzip.GzipFile(filename='app.json', mode='wb', fileobj=buf,
+                       compresslevel=9, mtime=0) as gz:
+        gz.write(raw)
+    data = buf.getvalue()
+    if data == old:
         return False
     with open(APP_GZ, 'wb') as fh:
-        fh.write(buf)
-    info(f'app.json.gz：{len(raw) / 1024:.0f} KB → {len(buf) / 1024:.0f} KB')
+        fh.write(data)
+    info(f'app.json.gz：{len(raw) / 1024:.0f} KB → {len(data) / 1024:.0f} KB')
     return True
 
 
@@ -234,11 +241,17 @@ def rebake(dry):
     if not dry and os.path.exists(APP_JSON):
         try:
             d = json.load(open(APP_JSON, encoding='utf-8'))
-            parts = []
-            for key, label in (('cats', '分类'), ('links', '站点'),
-                               ('shares', '分享'), ('posts', '文章')):
-                if isinstance(d.get(key), list):
-                    parts.append(f'{len(d[key])} {label}')
+            st = d.get('stats') if isinstance(d.get('stats'), dict) else {}
+
+            def count(key):
+                v = st.get(key)
+                if isinstance(v, int):
+                    return v
+                v = d.get(key)
+                return len(v) if isinstance(v, list) else 0
+
+            parts = [f'{count(k)} {label}' for k, label in
+                     (('cats', '分类'), ('links', '站点'), ('feed', '分享'), ('posts', '文章'))]
             ok(f'build {d.get("build", "?")}　' + ' · '.join(parts))
         except Exception as e:
             bad(f'app.json 读不出来：{e}')
