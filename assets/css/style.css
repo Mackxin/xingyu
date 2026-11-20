@@ -1794,6 +1794,16 @@ html[data-theme="light"] .tl-date{ box-shadow:none; }
 .admin-count.is-dirty{ color:#ffb27a; }
 .admin-count.is-ok{ color:#7ee0a8; }
 .admin-tip{ font-size:12.5px; color:var(--text-mute); margin-top:12px !important; }
+/* 后台「⚡ 直接推到 GitHub」小块：嵌在「发布到虚拟主机」卡里，淡蓝底跟卡片区分开 */
+.sn-gh{
+  margin-top:18px; padding:14px 16px; border-radius:16px;
+  background:color-mix(in srgb, #7c9cff 7%, transparent);
+  border:1px solid color-mix(in srgb, #7c9cff 20%, transparent);
+}
+.sn-gh__head{ display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.sn-gh__head b{ font-size:14px; letter-spacing:.01em; }
+.sn-gh .admin-field{ margin-top:12px; }
+.sn-gh .admin-tip{ margin-top:9px !important; }
 .admin-empty{ font-size:13.5px; color:var(--text-mute); padding:16px 0; }
 
 /* --- 拖拽排序握把 --- */

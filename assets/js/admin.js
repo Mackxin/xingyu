@@ -2888,6 +2888,84 @@
     } catch (e) { return false; }
   }
 
+  /* ---------- 一键推送到 GitHub ----------
+     本来「导出 → 下载文件 → 拷进仓库 → git push」是一条手工链。GitHub 的
+     Contents API 支持浏览器直连（带 CORS），所以这一步可以就在这一页里做完。
+
+     推上去之后：Pages 自动重建 → 仓库里的 rebake workflow 自动重烘 api/app.json
+     → App 也跟着新（站点和 App 都从仓库读）。只剩国内镜像得回本机敲 xysync ——
+     FTP 只能在本地连，浏览器没有这条路。
+     令牌只存本机 localStorage，只发往 api.github.com，绝不进 site-data.js。 */
+  var GHPUSH_KEY = 'xingyu.ghpush.v1';
+  var GH_TARGET = {
+    owner: 'Mackxin', repo: 'xingyu',
+    path: 'assets/js/site-data.js', branch: 'main'
+  };
+
+  function ghStateLoad() {
+    try { return JSON.parse(localStorage.getItem(GHPUSH_KEY)) || {}; } catch (e) { return {}; }
+  }
+  function ghStateSave(o) {
+    try { localStorage.setItem(GHPUSH_KEY, JSON.stringify(o || {})); } catch (e) {}
+  }
+
+  /* UTF-8 安全的 base64：site-data.js 里全是中文，直接 btoa 会炸。
+     分块喂 —— 500 KB 一次 apply 会把调用栈撑爆。 */
+  function b64utf8(str) {
+    var bytes = new TextEncoder().encode(str);
+    var bin = '', CH = 0x8000;
+    for (var i = 0; i < bytes.length; i += CH) {
+      bin += String.fromCharCode.apply(null, bytes.subarray(i, i + CH));
+    }
+    return btoa(bin);
+  }
+
+  function ghApi(path, token, opts) {
+    opts = opts || {};
+    return fetch('https://api.github.com' + path, {
+      method: opts.method || 'GET',
+      cache: 'no-store',
+      headers: {
+        'Authorization': 'Bearer ' + token,
+        'Accept': 'application/vnd.github+json',
+        'Content-Type': 'application/json'
+      },
+      body: opts.body ? JSON.stringify(opts.body) : undefined
+    }).then(function (r) {
+      return r.text().then(function (txt) {
+        var j = null;
+        try { j = JSON.parse(txt); } catch (e) {}
+        if (!r.ok) {
+          var msg = (j && j.message) || ('HTTP ' + r.status);
+          if (r.status === 401) msg = '令牌不对或已过期';
+          else if (r.status === 403) msg = '令牌没有这个仓库的写入权限（Contents 要设成 Read and write）';
+          else if (r.status === 404) msg = '读不到这个仓库 —— 大概率是令牌没勾上它';
+          else if (r.status === 409) msg = '远端刚被别处改过（sha 对不上），再点一次就好';
+          throw new Error(msg);
+        }
+        return j;
+      });
+    });
+  }
+
+  function ghPushFile(token, text, cb) {
+    var api = '/repos/' + GH_TARGET.owner + '/' + GH_TARGET.repo +
+              '/contents/' + GH_TARGET.path;
+    ghApi(api + '?ref=' + GH_TARGET.branch, token).then(function (cur) {
+      var body = {
+        message: '内容同步：后台一键推送，导出于 ' + nowText(),
+        content: b64utf8(text),
+        branch: GH_TARGET.branch
+      };
+      if (cur && cur.sha) body.sha = cur.sha;   /* 更新已有文件必须带 sha */
+      return ghApi(api, token, { method: 'PUT', body: body });
+    }).then(function (r) {
+      cb(null, (r && r.commit) || {});
+    }).catch(function (e) {
+      cb((e && e.message) || '网络错误');
+    });
+  }
+
   function liveCheck(cb) {
     if (typeof fetch !== 'function') { cb('这个浏览器不支持 fetch'); return; }
     if (location.protocol === 'file:') { cb('文件是本机双击打开的，没有线上地址'); return; }
@@ -2960,6 +3038,25 @@
           : '<p class="admin-tip">你还没设过自己的访问口令，所以线上仍然用默认口令 ' +
             '<code>xingyu</code>。想换成自己的：先去「口令」页设一个，再回来导一次。</p>') +
         (s.at ? '<p class="admin-tip">上次导出：' + esc(s.at) + '</p>' : '') +
+        '<div class="sn-gh">' +
+          '<div class="sn-gh__head"><b>⚡ 更省事：直接推到 GitHub</b>' +
+            '<span class="admin-count" id="ghBadge"></span></div>' +
+          '<p class="admin-tip">不用下载文件、不用开终端。点一下就把这份内容提交进仓库，' +
+            'Pages 几分钟内重建；仓库里的 Action 会顺手把 <code>api/app.json</code> 一起重烘，App 也就新了。' +
+            '<br>只剩<b>国内镜像</b>还得回电脑敲一次 <code>xysync</code> —— FTP 只能本地连，浏览器没有这条路。</p>' +
+          '<label class="admin-field"><span class="admin-field__label">GitHub Token' +
+            '<em>fine-grained token，只勾这个仓库的 Contents: Read and write</em></span>' +
+            '<input type="password" id="ghTok" placeholder="github_pat_… 或 ghp_…" autocomplete="off" spellcheck="false" />' +
+          '</label>' +
+          '<div class="admin-actions">' +
+            '<button class="btn btn--primary' + (errN ? ' is-blocked' : '') + '" type="button" id="ghPush"' +
+              (errN ? ' data-errs="' + errN + '"' : '') + '>⬆ 一键推送到线上</button>' +
+            '<button class="btn btn--ghost" type="button" id="ghForget">清除令牌</button>' +
+          '</div>' +
+          '<p class="admin-tip" id="ghOut" hidden></p>' +
+          '<p class="admin-tip">令牌只存在你这台浏览器的 <code>localStorage</code> 里，只发往 ' +
+            '<code>api.github.com</code> —— 不会进 site-data.js，也不经过任何第三方。</p>' +
+        '</div>' +
       '</div>';
   }
 
@@ -4538,6 +4635,70 @@
           msg = '线上是 <b>' + esc(info.at) + '</b>，你本机还没导出过，所以这份是别处传的。';
         }
         snLiveOut.innerHTML = (head ? head + '<br>' : '') + msg;
+      });
+    });
+
+    /* 一键推送到 GitHub：把「下载 → 拷进仓库 → push」三步合成一个按钮 */
+    var ghTok = body.querySelector('#ghTok');
+    var ghBtn = body.querySelector('#ghPush');
+    var ghOut = body.querySelector('#ghOut');
+    var ghBadge = body.querySelector('#ghBadge');
+    var ghForget = body.querySelector('#ghForget');
+
+    function ghPaint() {
+      var st = ghStateLoad();
+      if (ghTok && !ghTok.value && st.token) ghTok.value = st.token;
+      if (ghBadge) {
+        ghBadge.textContent = st.at ? '上次 ' + st.at : (st.token ? '令牌已存' : '还没设令牌');
+        ghBadge.classList.toggle('is-ok', !!st.at);
+      }
+      if (ghOut && !ghOut.dataset.keep) {
+        if (st.url) {
+          ghOut.hidden = false;
+          ghOut.innerHTML = '上次推送：' + esc(st.at || '') +
+            ' · <a href="' + esc(st.url) + '" target="_blank" rel="noopener">在 GitHub 看那次提交</a>';
+        } else {
+          ghOut.hidden = true;
+        }
+      }
+    }
+    ghPaint();
+
+    if (ghForget) ghForget.addEventListener('click', function () {
+      ghStateSave({});
+      if (ghTok) ghTok.value = '';
+      if (ghOut) { ghOut.hidden = true; ghOut.dataset.keep = ''; }
+      ghPaint();
+      toast('已清除 GitHub 令牌');
+    });
+
+    if (ghBtn) ghBtn.addEventListener('click', function () {
+      var tk = ghTok ? String(ghTok.value || '').trim() : '';
+      if (!tk) { toast('先填一个 GitHub Token'); return; }
+      snapGate(function () {
+        var text = staticJs(splitImgs);
+        if (ghOut) {
+          ghOut.hidden = false;
+          ghOut.dataset.keep = '1';
+          ghOut.textContent = '正在提交到 GitHub…';
+        }
+        ghBtn.disabled = true;
+        ghPushFile(tk, text, function (err, commit) {
+          ghBtn.disabled = false;
+          if (err) {
+            if (ghOut) {
+              ghOut.innerHTML = '<b>没成功：</b>' + esc(err) +
+                '<br>令牌在 GitHub → Settings → Developer settings → Fine-grained tokens 里生成：' +
+                'Repository access 选 <code>' + GH_TARGET.owner + '/' + GH_TARGET.repo + '</code>，' +
+                'Permissions → Contents 设成 <b>Read and write</b>。';
+            }
+            return;
+          }
+          ghStateSave({ token: tk, at: nowText(), url: (commit && commit.html_url) || '' });
+          snapSave({ at: nowText(), sig: snapSig(text) });
+          refreshBody(root);
+          toast('已推送，Pages 正在重建（1~4 分钟）');
+        });
       });
     });
 

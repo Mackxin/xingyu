@@ -26,8 +26,10 @@ function loadData() {
   var sandbox = { window: {} };
   sandbox.window.window = sandbox.window;
   vm.createContext(sandbox);
-  /* feed-import.js 要在 data.js 之前：data.js 会读 window.XY_FEED_IMPORT 拼进 feed */
-  ['assets/js/feed-import.js', 'assets/js/data.js', 'assets/js/config.js'].forEach(function (rel) {
+  /* site-data.js 排最前：后台「发布到虚拟主机」导出后，整站数据以它为准，
+     data.js 看到 SITE_DATA 已经有值就只做兜底 —— 跟 index.html 的顺序一致。
+     漏了它，后台改的分享进不了 RSS。 */
+  ['assets/js/site-data.js', 'assets/js/feed-import.js', 'assets/js/data.js', 'assets/js/config.js'].forEach(function (rel) {
     var abs = path.join(ROOT, rel);
     if (!fs.existsSync(abs)) return;      // 没导入过就没有这个文件，跳过
     var code = fs.readFileSync(abs, 'utf8');
@@ -143,9 +145,16 @@ var out = [
 ].filter(Boolean).join('\n');
 
 var dest = path.join(ROOT, 'feed.xml');
-fs.writeFileSync(dest, out, 'utf8');
+/* 只有 lastBuildDate 不同就别重写 —— 否则每次跑（包括 CI 自动重烘）
+   都会因为一个时间戳多出一条提交，历史很快就脏了。 */
+var stripStamp = function (s) {
+  return String(s).replace(/[ \t]*<lastBuildDate>[^<]*<\/lastBuildDate>\r?\n/, '');
+};
+var prev = fs.existsSync(dest) ? fs.readFileSync(dest, 'utf8') : '';
+var changed = stripStamp(prev) !== stripStamp(out);
+if (changed) fs.writeFileSync(dest, out, 'utf8');
 
-console.log('✓ feed.xml 已生成');
+console.log(changed ? '✓ feed.xml 已生成' : '· feed.xml 内容没变，保持原样（不重写时间戳）');
 console.log('  站点：' + BASE);
 console.log("  条目：" + merged.length + ' 条（按日期倒序，最多 ' + LIMIT + ' 条）');
 console.log('  体积：' + (Buffer.byteLength(out, 'utf8') / 1024).toFixed(1) + ' KB');
