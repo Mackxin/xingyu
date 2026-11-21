@@ -1,0 +1,72 @@
+name: 重烘 App 数据
+
+# 为什么需要它：后台「一键推送到 GitHub」只提交了 assets/js/site-data.js，
+# 而 App 要的是 api/app.json —— 这份东西得跑 node 烘出来。
+# 在仓库里烘，就不用再回本机跑一遍脚本了。
+#
+# 只在「内容 / 数据 / 样式」变的时候跑；提交的是 api/app.json 与 feed.xml，
+# 不在触发路径里，所以不会自己触自己。
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'assets/js/site-data.js'
+      - 'assets/js/bookmarks.js'
+      - 'assets/js/data.js'
+      - 'assets/js/feed-import.js'
+      - 'assets/js/config.js'
+      - 'assets/css/style.css'
+      - 'data/help.md'
+      - 'data/changelog.json'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: rebake
+  cancel-in-progress: true
+
+jobs:
+  rebake:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 重烘 app.json 与 feed.xml
+        run: |
+          node tools/gen-app-json.js --plain
+          node tools/gen-feed.js
+
+      - name: 烘焙 app.json.gz
+        run: |
+          python3 - <<'PY'
+          import gzip, io, json
+          raw = open('api/app.json', 'rb').read()
+          buf = io.BytesIO()
+          with gzip.GzipFile(filename='app.json', mode='wb', fileobj=buf,
+                             compresslevel=9, mtime=0) as gz:
+              gz.write(raw)
+          open('api/app.json.gz', 'wb').write(buf.getvalue())
+          print('build', json.loads(raw.decode('utf-8')).get('build'),
+                '| gz', round(len(buf.getvalue()) / 1024), 'KB')
+          PY
+
+      - name: 有变化就提交
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add api/app.json api/app.json.gz feed.xml
+          if git diff --cached --quiet; then
+            echo "内容没变，不需要提交"
+            exit 0
+          fi
+          BUILD=$(python3 -c 'import json;print(json.load(open("api/app.json"))["build"])')
+          git commit -m "自动重烘：api/app.json（build $BUILD）与 feed.xml 跟上内容改动"
+          git push
