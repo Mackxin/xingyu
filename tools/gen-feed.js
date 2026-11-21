@@ -58,7 +58,10 @@ function abs(u) {
 function rfc822(dateStr) {
   var p = String(dateStr || '').split('-');
   if (p.length !== 3) return '';
-  var d = new Date(+p[0], +p[1] - 1, +p[2], 9, 0, 0);
+  /* 必须用 Date.UTC：用 new Date(y,m,d,9) 会按本机时区算，
+     本机（UTC+8）出 01:00 GMT、CI（UTC）出 09:00 GMT，
+     同一条目在两个环境算出不同 pubDate，feed.xml 就会天天「有变化」。 */
+  var d = new Date(Date.UTC(+p[0], +p[1] - 1, +p[2], 9, 0, 0));
   if (isNaN(d.getTime())) return '';
   return d.toUTCString();
 }
@@ -126,7 +129,9 @@ var items = merged.map(function (f) {
   ].filter(Boolean).join('\n');
 }).join('\n');
 
-var now = new Date().toUTCString();
+/* lastBuildDate 不用「此刻」：那会让每次跑都产生一条提交（本机跑一次、CI 再跑一次）。
+   取最新一条的日期，内容不变它就永远不变 —— 两个环境算出来的结果也完全一致。 */
+var now = merged.length ? rfc822(merged[0].date) : new Date(Date.UTC(2020, 0, 1)).toUTCString();
 var out = [
   '<?xml version="1.0" encoding="UTF-8"?>',
   '<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">',

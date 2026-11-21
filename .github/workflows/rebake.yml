@@ -33,9 +33,9 @@ jobs:
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: '20'
 
@@ -45,17 +45,21 @@ jobs:
           node tools/gen-feed.js
 
       - name: 烘焙 app.json.gz
+        # 必须和 tools/sync.py 的 bake_gzip 逐字节一致（gzip.compress + mtime=0）。
+        # 用 GzipFile(filename=...) 会多写一个 FNAME 头字段，同一份内容压出来字节不同，
+        # 于是每次 CI 都会以为「有变化」并多提交一次。
         run: |
           python3 - <<'PY'
-          import gzip, io, json
+          import gzip, json
           raw = open('api/app.json', 'rb').read()
-          buf = io.BytesIO()
-          with gzip.GzipFile(filename='app.json', mode='wb', fileobj=buf,
-                             compresslevel=9, mtime=0) as gz:
-              gz.write(raw)
-          open('api/app.json.gz', 'wb').write(buf.getvalue())
-          print('build', json.loads(raw.decode('utf-8')).get('build'),
-                '| gz', round(len(buf.getvalue()) / 1024), 'KB')
+          buf = gzip.compress(raw, compresslevel=9, mtime=0)
+          old = open('api/app.json.gz', 'rb').read()
+          if buf == old:
+              print('gz 没变，保持原样')
+          else:
+              open('api/app.json.gz', 'wb').write(buf)
+              print('gz 已更新：', round(len(old) / 1024), 'KB →', round(len(buf) / 1024), 'KB')
+          print('build', json.loads(raw.decode('utf-8')).get('build'))
           PY
 
       - name: 有变化就提交
