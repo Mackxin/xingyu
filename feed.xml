@@ -5,14 +5,14 @@
     <link>https://mackxin.github.io/xingyu/</link>
     <description>壹号为栈，随处可归 —— 每天一小条，记录遇见的工具、灵感与小发现，也写点长一点的文章。</description>
     <language>zh-cn</language>
-    <lastBuildDate>Fri, 20 Nov 2026 15:28:57 GMT</lastBuildDate>
+    <lastBuildDate>Sat, 21 Nov 2026 00:43:42 GMT</lastBuildDate>
     <generator>YIHAOZHAN gen-feed</generator>
     <atom:link href="https://mackxin.github.io/xingyu/feed.xml" rel="self" type="application/rss+xml" />
   <item>
     <title>ComfyUI 无限画布</title>
     <link>https://canvas.imihoo.com/</link>
     <guid isPermaLink="true">https://canvas.imihoo.com/</guid>
-    <pubDate>Thu, 22 Oct 2026 01:00:00 GMT</pubDate>
+    <pubDate>Thu, 22 Oct 2026 09:00:00 GMT</pubDate>
     <description>一个无限画布创作工具 · 在无限画布中生成、连接和重组图片、文字与图形，让创作从单次生成变成连续推演</description>
     <category>AI</category>
     <category>设计</category>
@@ -21,7 +21,7 @@
     <title>pdoomvideo</title>
     <link>https://pdoomvideo.com/zh/</link>
     <guid isPermaLink="true">https://pdoomvideo.com/zh/</guid>
-    <pubDate>Thu, 22 Oct 2026 01:00:00 GMT</pubDate>
+    <pubDate>Thu, 22 Oct 2026 09:00:00 GMT</pubDate>
     <description>10步用Claude Code做出自己的Opus 5.5视频，附可复制提示词、精选二创和歌词解读</description>
     <category>AI</category>
     <category>视频</category>
@@ -30,7 +30,7 @@
     <title>玄印写作</title>
     <link>https://shake.ink/</link>
     <guid isPermaLink="true">https://shake.ink/</guid>
-    <pubDate>Thu, 22 Oct 2026 01:00:00 GMT</pubDate>
+    <pubDate>Thu, 22 Oct 2026 09:00:00 GMT</pubDate>
     <description>让灵感成章，让故事生长 · 把人物、世界、灵感与 AI，放进同一间书房 · 一款陪你从第一句，写到最后一章的本地创作工作台</description>
     <category>AI</category>
     <category>写作</category>
@@ -39,7 +39,7 @@
     <title>OpenFilm</title>
     <link>https://github.com/openfilm/openfilm/blob/main/README.zh-CN.md</link>
     <guid isPermaLink="true">https://github.com/openfilm/openfilm/blob/main/README.zh-CN.md</guid>
-    <pubDate>Wed, 21 Oct 2026 01:00:00 GMT</pubDate>
+    <pubDate>Wed, 21 Oct 2026 09:00:00 GMT</pubDate>
     <description>开源的AI视频智能体 · 一个HTML文件，一个函数，一个真正的剪辑器 · 让你的编程智能体来做视频，也让你亲手修改</description>
     <category>AI</category>
     <category>开发</category>
@@ -48,7 +48,7 @@
     <title>bilibili-douyin-notes</title>
     <link>https://github.com/lucky-Luor/bilibili-douyin-notes</link>
     <guid isPermaLink="true">https://github.com/lucky-Luor/bilibili-douyin-notes</guid>
-    <pubDate>Wed, 21 Oct 2026 01:00:00 GMT</pubDate>
+    <pubDate>Wed, 21 Oct 2026 09:00:00 GMT</pubDate>
     <description>把B站/抖音/YouTube/小红书视频一键整理成Markdown课堂笔记的AI Agent Skill · 四平台视频 · 字幕抓取 · 本地语音识别 · 重点截图 · 笔记模板 · 免登录可用，不调任何付费API</description>
     <category>AI</category>
     <category>开发</category>
@@ -57,14 +57,14 @@
     <title>ChineseBQB</title>
     <link>https://zhaoolee.com/ChineseBQB/</link>
     <guid isPermaLink="true">https://zhaoolee.com/ChineseBQB/</guid>
-    <pubDate>Wed, 21 Oct 2026 01:00:00 GMT</pubDate>
+    <pubDate>Wed, 21 Oct 2026 09:00:00 GMT</pubDate>
     <description>中国人的表情包 · 按分类找图，搜索、预览、保存，随时接住每一种情绪</description>
   </item>
   <item>
     <title>晨笙阅读</title>
     <link>https://read.cearl.cc/</link>
     <guid isPermaLink="true">https://read.cearl.cc/</guid>
-    <pubDate>Tue, 20 Oct 2026 01:00:00 GMT</pubDate>
+    <pubDate>Tue, 20 Oct 2026 09:00:00 GMT</pubDate>
     <description>通过单本书籍解读与跨书主题阅读，帮助你在阅读前判断是否值得精读，在阅读后复盘核心框架 · 并围绕真实问题建立阅读路径。内容由AI辅助整理，并经过人工校审</description>
     <category>AI</category>
     <category>开发</category>
@@ -73,14 +73,14 @@
     <title>LinkSwift</title>
     <link>https://github.com/hmjz100/LinkSwift</link>
     <guid isPermaLink="true">https://github.com/hmjz100/LinkSwift</guid>
-    <pubDate>Tue, 20 Oct 2026 01:00:00 GMT</pubDate>
+    <pubDate>Tue, 20 Oct 2026 09:00:00 GMT</pubDate>
     <description>一个基于JavaScript的网盘文件下载地址获取工具 · 基于【网盘直链下载助手】修改，支持百度网盘/阿里云盘/中国移动云盘/天翼云盘/迅雷云盘/夸克网盘/UC网盘/123云盘八大网盘</description>
   </item>
   <item>
     <title>📝 从这里开始写第一篇</title>
     <link>https://mackxin.github.io/xingyu/#/post/hello-xingyu</link>
     <guid isPermaLink="true">https://mackxin.github.io/xingyu/#/post/hello-xingyu</guid>
-    <pubDate>Tue, 20 Oct 2026 01:00:00 GMT</pubDate>
+    <pubDate>Tue, 20 Oct 2026 09:00:00 GMT</pubDate>
     <description>文章页怎么用、Markdown 支持哪些写法，都写在这一篇里。</description>
     <category>随笔</category>
     <category>建站</category>
@@ -89,7 +89,7 @@
     <title>Thaw</title>
     <link>https://www.getthaw.app/</link>
     <guid isPermaLink="true">https://www.getthaw.app/</guid>
-    <pubDate>Mon, 19 Oct 2026 01:00:00 GMT</pubDate>
+    <pubDate>Mon, 19 Oct 2026 09:00:00 GMT</pubDate>
     <description>让Mac菜单栏告别杂乱，打造清爽高效的桌面体验 · 能帮你隐藏不常用的菜单栏图标、自由调整排列方式，并在需要时快速调出，让桌面更整洁，日常操作更高效</description>
     <category>设计</category>
   </item>
@@ -97,21 +97,21 @@
     <title>KulmanLab</title>
     <link>https://kulmanlab.com/zh/</link>
     <guid isPermaLink="true">https://kulmanlab.com/zh/</guid>
-    <pubDate>Mon, 19 Oct 2026 01:00:00 GMT</pubDate>
+    <pubDate>Mon, 19 Oct 2026 09:00:00 GMT</pubDate>
     <description>免费在线DXF2D编辑器在您的浏览器中运行，可以打开DXF文件、绘制几何图形、添加标注并导出PDF · 无需安装任何软件。桌面CAD的免费替代品，在任何现代浏览器中均可运行</description>
   </item>
   <item>
     <title>Tendedero</title>
     <link>https://tendedero.app/</link>
     <guid isPermaLink="true">https://tendedero.app/</guid>
-    <pubDate>Mon, 19 Oct 2026 01:00:00 GMT</pubDate>
+    <pubDate>Mon, 19 Oct 2026 09:00:00 GMT</pubDate>
     <description>你每截一张图，它都会挂到屏幕顶上的一根绳上。 把指针停在菜单栏，绳子就滑下来；移开，它就收起</description>
   </item>
   <item>
     <title>携程酒店对比助手</title>
     <link>https://github.com/greenzorro/hotel-comparer</link>
     <guid isPermaLink="true">https://github.com/greenzorro/hotel-comparer</guid>
-    <pubDate>Sun, 18 Oct 2026 01:00:00 GMT</pubDate>
+    <pubDate>Sun, 18 Oct 2026 09:00:00 GMT</pubDate>
     <description>携程多酒店房型参数横向对比工具，可从酒店详情页提取酒店名称、评分、评论数、差评率，以及房间名称、面积、窗户、床型、吸烟信息等数据 · 支持同时对比多家酒店，并一键导出 Excel 表格，适合经常出差和旅行的用户，免费开源，提供油猴脚本和浏览器插件两种方式使用</description>
     <category>开发</category>
   </item>
@@ -119,14 +119,14 @@
     <title>红果短剧电脑版</title>
     <link>https://channel-ai-practice-wj.waligoraamodio288.chatgpt.site/</link>
     <guid isPermaLink="true">https://channel-ai-practice-wj.waligoraamodio288.chatgpt.site/</guid>
-    <pubDate>Sun, 18 Oct 2026 01:00:00 GMT</pubDate>
+    <pubDate>Sun, 18 Oct 2026 09:00:00 GMT</pubDate>
     <description>第三方红果短剧Windows客户端，无需安卓模拟器，打开后可直接浏览分类或搜索剧名进行播放 · 支持搜索、收藏、本机观看进度、选集、倍速、自动连播以及老板键等功能，界面简约美观，上班摸鱼看短剧非常方便，免费使用，适用于Windows10/11系统</description>
   </item>
   <item>
     <title>OpenTheRank</title>
     <link>https://opentherank.com/zh/</link>
     <guid isPermaLink="true">https://opentherank.com/zh/</guid>
-    <pubDate>Sun, 18 Oct 2026 01:00:00 GMT</pubDate>
+    <pubDate>Sun, 18 Oct 2026 09:00:00 GMT</pubDate>
     <description>监测AI、流媒体、游戏与Apple硬件的全球定价，提供实时的区域价格排名 · 同一个产品，换一个国家，价格天差地别</description>
     <category>AI</category>
   </item>
@@ -134,7 +134,7 @@
     <title>壹号栈导航 · 新版上线</title>
     <link>https://mackxin.github.io/xingyu/#/nav</link>
     <guid isPermaLink="true">https://mackxin.github.io/xingyu/#/nav</guid>
-    <pubDate>Sat, 17 Oct 2026 01:00:00 GMT</pubDate>
+    <pubDate>Sat, 17 Oct 2026 09:00:00 GMT</pubDate>
     <description>把散落在浏览器书签栏里的网址重新收拢成 50 个主题分类，支持拼音与关键词即时搜索、收藏置顶，以及 ⌘K 一键盘点所有站点。</description>
     <category>本站</category>
     <category>导航</category>
@@ -143,7 +143,7 @@
     <title>暗色玻璃拟态设计规范</title>
     <link>https://glassmorphism.com</link>
     <guid isPermaLink="true">https://glassmorphism.com</guid>
-    <pubDate>Sat, 17 Oct 2026 01:00:00 GMT</pubDate>
+    <pubDate>Sat, 17 Oct 2026 09:00:00 GMT</pubDate>
     <description>一层柔和的极光渐变，叠上半透明玻璃卡片与 1px 高光描边，就是这套界面的全部秘密。核心只有三件事：模糊、透明度、克制的发光。</description>
     <category>设计</category>
     <category>CSS</category>
@@ -152,14 +152,14 @@
     <title>高速实时路况查询</title>
     <link>https://guoqiangai.com/</link>
     <guid isPermaLink="true">https://guoqiangai.com/</guid>
-    <pubDate>Sat, 17 Oct 2026 01:00:00 GMT</pubDate>
+    <pubDate>Sat, 17 Oct 2026 09:00:00 GMT</pubDate>
     <description>全国高速交通信息查询工具，支持按高速编号（如G4）、道路名称（如京昆高速）以及收费站和服务区名称精准检索 · 还可分别查看各省高速和国家高速，路况汇总呈现近期的道路事故、施工、拥堵及交通管制信息，经常开车出行的小伙伴可以收藏一下，免费使用，无需注册</description>
   </item>
   <item>
     <title>ShiftBar</title>
     <link>https://shiftbar.0x01.build/</link>
     <guid isPermaLink="true">https://shiftbar.0x01.build/</guid>
-    <pubDate>Sat, 17 Oct 2026 01:00:00 GMT</pubDate>
+    <pubDate>Sat, 17 Oct 2026 09:00:00 GMT</pubDate>
     <description>macOS27菜单栏图标折叠与隐藏工具，补充系统原生折叠仅在空间挤满时触发的局限，支持用户主动设置隐藏范围并一键展开或收起 · 图标隐藏后后台应用仍正常运行，无Dock占用与账号限制，支持外接显示器配置防护，免费开源</description>
     <category>设计</category>
     <category>开发</category>
@@ -168,7 +168,7 @@
     <title>WinTray</title>
     <link>https://github.com/OUBIGFA/WinTray</link>
     <guid isPermaLink="true">https://github.com/OUBIGFA/WinTray</guid>
-    <pubDate>Sat, 17 Oct 2026 01:00:00 GMT</pubDate>
+    <pubDate>Sat, 17 Oct 2026 09:00:00 GMT</pubDate>
     <description>Windows应用静默启动工具，可将任意Windows程序自启动后自动最小化到系统托盘 · 也支持让.bat、.cmd、.ps1、.py 和 .pyw等脚本在后台无窗口启动，还支持即时后台启动和任务完成后自动退出，不在托盘残留，免费开源，便携版无需安装</description>
     <category>开发</category>
   </item>
