@@ -4282,3 +4282,253 @@ body.no-scroll .mu-mini{ opacity:0; visibility:hidden; }
   display:block; width:100%; height:100%; border:0;
   background:transparent;     /* 让下面的极光透上来，接缝不明显 */
 }
+
+/* =========================================================
+   待办清单（#/todo）
+   ---------------------------------------------------------
+   跟「灵感随记 / 本地音乐」同一套语言：玻璃底、圆角、只给主操作上渐变。
+   自己的一点脾气：每条待办都串在一根渐变竖线上，圆点即勾选框 ——
+   完成时圆点填满、文字退成灰并划一道线，像把这件事从"栈"上取走。
+   ========================================================= */
+
+.page--todo{ padding-bottom:44px; }
+
+.page-head--todo{
+  display:flex; align-items:flex-start; justify-content:space-between;
+  gap:20px 40px; flex-wrap:wrap;
+}
+.page-head--todo .page-head__main{ min-width:0; flex:1 1 420px; }
+.page-head--todo h1{ margin-top:12px; }
+.page-head--todo p{ max-width:52ch; }
+
+.td-tools{ display:flex; gap:8px; flex-wrap:wrap; margin-top:16px; }
+.td-tools .btn{ height:32px; padding:0 13px; font-size:12.5px; }
+
+/* ---------- 头部右侧：今日环 + 两个数 ---------- */
+.td-head__side{ display:flex; align-items:center; gap:18px; flex-wrap:wrap; padding-bottom:6px; }
+.td-ring{ position:relative; width:96px; height:96px; flex:0 0 auto; }
+.td-ring svg{ width:100%; height:100%; transform:rotate(-90deg); }
+.td-ring__track{ fill:none; stroke:var(--glass-2); stroke-width:5; }
+.td-ring__bar{
+  fill:none; stroke:url(#tdRingGrad); stroke-width:5; stroke-linecap:round;
+  transition:stroke-dashoffset .65s var(--ease);
+}
+.td-ring__mid{
+  position:absolute; inset:0; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; gap:2px;
+}
+.td-ring__mid b{
+  font-size:21px; font-weight:800; line-height:1; letter-spacing:-.02em;
+  font-variant-numeric:tabular-nums;
+  background:var(--grad);
+  -webkit-background-clip:text; background-clip:text;
+  -webkit-text-fill-color:transparent; color:transparent;
+}
+.td-ring__mid b i{ font-style:normal; font-size:11px; font-weight:600; }
+.td-ring__mid span{
+  display:inline-flex; align-items:baseline; gap:3px;
+  font-size:10.5px; color:var(--text-mute); letter-spacing:.02em;
+  white-space:nowrap;
+}
+.td-ring__mid span i{ font-style:normal; font-variant-numeric:tabular-nums; }
+.td-ring__mid span em{ font-style:normal; }
+.td-ring.is-empty .td-ring__mid b{ font-size:17px; }
+
+/* ---------- 加一条 ---------- */
+.td-add{
+  margin-top:6px; padding:12px 16px 14px; border-radius:var(--r-lg);
+  background:var(--glass); border:1px solid transparent;
+  transition:background .3s var(--ease);
+}
+.td-add:focus-within{ background:var(--glass-2); }
+.td-add__row{ display:flex; align-items:center; gap:10px; }
+.td-input{
+  flex:1 1 auto; min-width:0; padding:9px 2px;
+  border:0; outline:none; background:none;
+  color:var(--text); font:inherit; font-size:15.5px;
+}
+.td-input::placeholder{ color:var(--text-mute); }
+.td-add__btn{ flex:0 0 auto; height:38px; padding:0 20px; }
+
+.td-add__opts{
+  display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+  margin-top:10px; padding-top:10px;
+  border-top:1px solid color-mix(in srgb, var(--text) 7%, transparent);
+}
+.td-opts{ display:inline-flex; gap:2px; padding:3px; border-radius:999px; background:var(--glass); }
+.td-opt{
+  height:26px; padding:0 11px; border-radius:999px;
+  display:inline-flex; align-items:center; gap:5px;
+  font-size:12px; color:var(--text-mute); white-space:nowrap;
+  transition:color .2s var(--ease), background .2s var(--ease);
+}
+.td-opt:hover{ color:var(--text-dim); }
+.td-opt.is-on{ background:var(--glass-hi); color:var(--text); }
+.td-opt--pri::before{
+  content:''; width:6px; height:6px; border-radius:50%;
+  background:var(--pri, transparent); flex:0 0 auto;
+  opacity:.45; transition:opacity .2s var(--ease), transform .2s var(--ease);
+}
+.td-opt--pri.is-on::before{ opacity:1; transform:scale(1.15); }
+
+/* ---------- 筛选条 ---------- */
+.td-bar{ display:flex; align-items:center; gap:7px; flex-wrap:wrap; margin:22px 0 2px; }
+.td-pill{
+  height:30px; padding:0 14px; border-radius:999px;
+  display:inline-flex; align-items:center;
+  font-size:12.5px; color:var(--text-mute);
+  background:var(--glass); border:1px solid transparent;
+  transition:color .22s var(--ease), background .22s var(--ease);
+}
+.td-pill:hover{ color:var(--text-dim); background:var(--glass-2); }
+.td-pill.is-on{ background:var(--grad-soft); color:var(--text); font-weight:600; }
+.td-pill i{
+  font-style:normal; margin-left:6px; font-size:11px; font-weight:400;
+  color:var(--text-mute); font-variant-numeric:tabular-nums;
+}
+.td-pill.is-on i{ color:var(--text-dim); }
+
+/* ---------- 分组 + 那根线 ---------- */
+.td-group{ margin-top:22px; }
+.td-group__h{
+  display:flex; align-items:baseline; gap:8px; margin:0 0 2px;
+  font-size:12px; font-weight:600; letter-spacing:.1em;
+  color:var(--text-dim);
+}
+.td-group__h i{
+  font-style:normal; font-size:11px; font-weight:400; letter-spacing:0;
+  color:var(--text-mute); font-variant-numeric:tabular-nums;
+}
+.td-group__h em{
+  margin-left:auto; font-style:normal; font-size:11.5px; font-weight:400;
+  letter-spacing:0; color:var(--text-mute);
+}
+
+.td-items{ position:relative; margin:0; padding:0; list-style:none; }
+/* 竖线：从第一颗圆点到底部，往下渐隐 —— 像一串还没走完的路 */
+.td-items::before{
+  content:''; position:absolute; left:15px; top:12px; bottom:16px; width:1px;
+  background:linear-gradient(180deg,
+    color-mix(in srgb, var(--a1) 58%, transparent),
+    color-mix(in srgb, var(--a2) 34%, transparent) 55%,
+    transparent);
+}
+/* 浅色底上同一档透明度会彻底看不见，单独加重 */
+html[data-theme="light"] .td-items::before{
+  background:linear-gradient(180deg,
+    color-mix(in srgb, var(--a1) 78%, transparent),
+    color-mix(in srgb, var(--a2) 52%, transparent) 55%,
+    transparent);
+}
+
+/* ---------- 一条 ---------- */
+.td-item{
+  display:grid; grid-template-columns:30px minmax(0,1fr) 26px;
+  align-items:start; gap:12px;
+  padding:10px 10px 10px 0; border-radius:14px;
+  transition:background .25s var(--ease);
+}
+.td-item:hover{ background:var(--glass); }
+
+.td-dot{
+  position:relative; z-index:1;
+  width:22px; height:22px; margin:1px 0 0 4px; padding:0;
+  border-radius:50%; border:1.5px solid color-mix(in srgb, var(--a1) 55%, transparent);
+  background:var(--bg);
+  display:grid; place-items:center;
+  transition:background .22s var(--ease), border-color .22s var(--ease), transform .18s var(--ease);
+}
+.td-dot:hover{ border-color:var(--a1); transform:scale(1.08); }
+.td-dot:active{ transform:scale(.94); }
+.td-dot svg{
+  width:12px; height:12px; fill:none; stroke:#080a12; stroke-width:2.8;
+  stroke-linecap:round; stroke-linejoin:round;
+  opacity:0; transform:scale(.55);
+  transition:opacity .2s var(--ease), transform .22s var(--ease);
+}
+.td-item.is-done .td-dot{ background:var(--grad); border-color:transparent; }
+.td-item.is-done .td-dot svg{ opacity:1; transform:none; }
+/* 逾期：只给圆点描一圈星色，不整行标红 —— 这页已经够花了 */
+.td-item.is-over .td-dot{ border-color:var(--star); border-style:dashed; }
+
+.td-main{ min-width:0; }
+.td-title{
+  margin:0; font-size:14.5px; line-height:1.65; color:var(--text);
+  word-break:break-word; cursor:text;
+}
+.td-item.is-done .td-title{
+  color:var(--text-mute);
+  text-decoration:line-through;
+  text-decoration-color:color-mix(in srgb, var(--text-mute) 60%, transparent);
+}
+.td-meta{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-top:4px; }
+.td-due{ font-size:11.5px; color:var(--text-mute); font-variant-numeric:tabular-nums; }
+.td-due.is-over{ color:var(--star); }
+.td-pri{
+  display:inline-flex; align-items:center; gap:5px;
+  font-size:11.5px; color:var(--text-dim);
+}
+.td-pri::before{
+  content:''; width:5px; height:5px; border-radius:50%; background:var(--pri, transparent);
+}
+.td-ago{ font-size:11.5px; color:var(--text-mute); }
+
+.td-del{
+  width:26px; height:26px; padding:0; border-radius:8px;
+  display:grid; place-items:center; opacity:0;
+  transition:opacity .2s var(--ease), background .2s var(--ease), color .2s var(--ease);
+  color:var(--text-mute);
+}
+.td-del svg{ width:12px; height:12px; fill:none; stroke:currentColor; stroke-width:2.2; stroke-linecap:round; }
+.td-item:hover .td-del{ opacity:.7; }
+.td-del:hover{ opacity:1 !important; color:var(--text); background:var(--glass-hi); }
+/* 触屏没有 hover：删除键常驻，但压暗一点，别抢戏 */
+@media (hover:none){ .td-del{ opacity:.4; } }
+
+/* 行内改名 */
+.td-edit{
+  display:block; width:100%; padding:2px 8px; margin:-2px 0;
+  border:0; outline:none; border-radius:8px;
+  background:var(--glass-hi); color:var(--text);
+  font:inherit; font-size:14.5px; line-height:1.65;
+}
+
+.td-more{ margin:6px 0 0 42px; font-size:11.5px; color:var(--text-mute); }
+
+/* ---------- 空状态 ---------- */
+.td-empty{ padding:44px 16px 40px; text-align:center; }
+.td-empty svg{
+  width:112px; height:auto; margin:0 auto 14px; display:block;
+  fill:none; stroke:color-mix(in srgb, var(--a1) 46%, transparent);
+  stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round;
+}
+.td-empty b{ display:block; font-size:15px; font-weight:600; color:var(--text-dim); }
+.td-empty p{ margin:6px 0 0; font-size:12.5px; color:var(--text-mute); }
+
+/* ---------- 窄屏 ---------- */
+@media (max-width:720px){
+  .page-head--todo{ gap:14px; }
+  .page-head--todo .page-head__main{ flex:1 1 100%; }
+  /* 环和两个数字挤一行：手机上标题区已经够高了，别再各占一行 */
+  .td-head__side{ width:100%; gap:12px; padding-bottom:0; flex-wrap:nowrap; }
+  .td-ring{ width:62px; height:62px; }
+  .td-ring__track, .td-ring__bar{ stroke-width:6; }
+  .td-ring__mid b{ font-size:15px; }
+  .td-ring__mid b i{ font-size:9px; }
+  .td-ring__mid span{ font-size:9px; letter-spacing:0; gap:0; }
+  /* 62px 的环塞不下「2 / 3 今日」，只留数字 */
+  .td-ring__mid span em{ display:none; }
+  .td-head__stats{ flex:1 1 0; min-width:0; gap:8px; flex-wrap:nowrap; }
+  .td-head__stats .head-stat{ min-width:0; flex:1 1 0; padding:8px 12px; border-radius:13px; }
+  .td-head__stats .head-stat b{ font-size:18px; }
+  .td-head__stats .head-stat span{ font-size:11px; }
+  .td-tools{ justify-content:center; margin-top:14px; }
+  .td-add{ padding:10px 12px 12px; }
+  .td-input{ font-size:15px; }
+  .td-add__btn{ height:34px; padding:0 15px; font-size:13px; }
+  .td-add__opts{ gap:8px; justify-content:center; }
+  .td-item{ grid-template-columns:30px minmax(0,1fr) 26px; gap:10px; }
+  .td-del{ opacity:.4; }
+  /* 手机上标题区居中（跟全站一致），但列表保持左对齐才好读 */
+  .td-bar{ justify-content:center; }
+}

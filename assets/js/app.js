@@ -367,7 +367,7 @@
   /* ---------- 状态 ---------- */
   var ROUTES = ['home', 'nav', 'share', 'post'];         // 主导航 / 滑动切换顺序
   /* 全部可路由页面。idea / about / later / insight / tag 不占主导航（tag 是带参数的） */
-  var ALL_ROUTES = ['home', 'nav', 'share', 'post', 'idea', 'about', 'later', 'insight', 'tag', 'music', 'note', 'admin'];
+  var ALL_ROUTES = ['home', 'nav', 'share', 'post', 'idea', 'about', 'later', 'insight', 'tag', 'music', 'note', 'todo', 'admin'];
 
   /* 这两个 key 必须在 state 之前赋值：state 的初始化里会调用 loadFav()，
      var 只提升声明不提升值 —— 放在下面的话那一刻 FAV_KEY 还是 undefined，
@@ -484,6 +484,33 @@
     return cats;
   }
   /**
+   * 「待办清单」入口（v156）。
+   *
+   * 跟「本地音乐」同一个理由：老访客的分类数据在 `localStorage['xingyu.data.v1']`，
+   * 优先级高于 bookmarks.js，只改文件对他们无效。所以在内存里补一次，幂等。
+   * 位置：紧挨「灵感随记」后面（都是"自己写点什么"的页，放一起好找）。
+   */
+  function ensureTodoEntry(cats) {
+    if (!cats || !cats.length) return cats;
+    var target = null, i, j;
+    for (i = 0; i < cats.length; i++) {
+      if (cats[i] && cats[i].id === 'bk-mine') { target = cats[i]; break; }
+    }
+    if (!target) target = cats[0];
+    if (!target) return cats;
+    if (!Array.isArray(target.links)) target.links = [];
+    for (j = 0; j < target.links.length; j++) {
+      if (String((target.links[j] || {}).u || '') === '#/todo') return cats;
+    }
+    var at = -1;
+    for (j = 0; j < target.links.length; j++) {
+      if (String((target.links[j] || {}).u || '') === '#/idea') { at = j + 1; break; }
+    }
+    if (at < 0) at = target.links.length ? 1 : 0;
+    target.links.splice(at, 0, { n: '待办清单', u: '#/todo', d: '今天做什么，一件件归位' });
+    return cats;
+  }
+  /**
    * 「随手记」指向站内页。
    *
    * 老数据里这条是 `http://yihaozhan.xyz/suishouji/index.html` —— 一个独立站点，
@@ -535,9 +562,11 @@
     links.splice(at, 0, { n: '随手记', u: '#/note', d: 'Markdown 便签，记一条算一条' });
     return cats;
   }
-  /* 所有「站点自带页」的导航入口都在这儿过一遍，别的模块只认结果 */
+  /* 所有「站点自带页」的导航入口都在这儿过一遍，别的模块只认结果。
+     顺序有讲究：music 先插到 #/idea 后面，todo 再插到 #/idea 后面 →
+     最终是「灵感随记 / 待办清单 / 本地音乐 / 随手记」。 */
   function withBuiltinEntries(cats) {
-    return ensureNoteEntry(ensureMusicEntry(cats));
+    return ensureNoteEntry(ensureTodoEntry(ensureMusicEntry(cats)));
   }
   /* 后台改过站点数据后调用：重新取分类 → 重建索引 */
   function refreshData() {
@@ -3032,6 +3061,7 @@
          : route === 'tag' ? renderTag()
          : route === 'music' ? (window.XYMusic ? window.XYMusic.render() : renderHome())
          : route === 'note' ? (window.XYNote ? window.XYNote.render() : renderHome())
+         : route === 'todo' ? (window.XYTodo ? window.XYTodo.render() : renderHome())
          : route === 'about' ? renderAbout()
          : renderHome();
   }
@@ -3044,6 +3074,7 @@
     var prevRoute = document.documentElement.getAttribute('data-route');
     if (prevRoute === 'music' && state.route !== 'music' && window.XYMusic) window.XYMusic.leave();
     if (prevRoute === 'note' && state.route !== 'note' && window.XYNote) window.XYNote.leave();
+    if (prevRoute === 'todo' && state.route !== 'todo' && window.XYTodo) window.XYTodo.leave();
     // 供 CSS 用（比如只在导航页显示顶栏的分类按钮）
     document.documentElement.setAttribute('data-route', state.route);
     var app = $('#app');
@@ -3072,6 +3103,7 @@
     if (state.route === 'insight') { bindInsight(); }
     if (state.route === 'music' && window.XYMusic) window.XYMusic.bind(app);
     if (state.route === 'note' && window.XYNote) window.XYNote.bind(app);
+    if (state.route === 'todo' && window.XYTodo) window.XYTodo.bind(app);
     if (state.route === 'admin' && window.XY_ADMIN) window.XY_ADMIN.bind(app);
     if (resetScroll) scrollTop(false);
   }
