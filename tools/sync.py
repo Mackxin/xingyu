@@ -346,8 +346,9 @@ def commit_push(content_changed, dry, custom_msg=''):
     ok('已推送，GitHub Pages 开始重建（一般 20 秒 ~ 4 分钟）')
 
     changed = []
-    if before:
-        good, out = git('diff', '--name-only', before, 'HEAD', quiet=True)
+    base = mirror_base() or before
+    if base:
+        good, out = git('diff', '--name-only', base, 'HEAD', quiet=True)
         if good:
             changed = [l.strip() for l in out.splitlines() if l.strip()]
     return before, changed
@@ -357,6 +358,33 @@ def push_once(env):
     p = subprocess.run(['git', 'push'], cwd=REPO, env=env, stdout=subprocess.PIPE,
                        stderr=subprocess.STDOUT, text=True, errors='replace')
     return p.returncode == 0, (p.stdout or '').strip()
+
+
+# 上次「镜像传成功后」的 HEAD。没有它就只能拿「这次运行前」的 HEAD 当基准 ——
+# 那样一旦你事先自己 commit 过（很正常：想先存个锚点），那些文件在 git diff
+# 里就看不见了，结果 GitHub 新了、镜像还是旧的（2026-11-24 撞过）。
+MIRROR_BASE = os.path.join(REPO, '.git', 'xy-mirror-base')
+
+
+def mirror_base():
+    if not os.path.exists(MIRROR_BASE):
+        return ''
+    sha = read(MIRROR_BASE).strip()
+    if not sha:
+        return ''
+    good, _ = git('cat-file', '-e', sha + '^{commit}', quiet=True)
+    return sha if good else ''
+
+
+def mark_mirror_base():
+    good, out = git('rev-parse', 'HEAD', quiet=True)
+    if not good:
+        return
+    try:
+        with open(MIRROR_BASE, 'w', encoding='utf-8') as fh:
+            fh.write(out.strip() + '\n')
+    except OSError:
+        pass
 
 
 # ---------------------------------------------------------------- 4 镜像
@@ -392,6 +420,7 @@ def push_mirror(changed, force_all, dry):
         bad('传镜像失败。GitHub 那边已经是新的了，镜像还是旧的 —— 网络好了重跑一次即可。')
         return
     ok('镜像已更新')
+    mark_mirror_base()
 
 
 # ---------------------------------------------------------------- 5 收尾

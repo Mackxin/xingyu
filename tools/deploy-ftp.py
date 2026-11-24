@@ -228,20 +228,34 @@ def main():
     # 文件之间留口气：连着传它会直接 425。环境变量可调，默认 3 秒。
     GAP = float(os.environ.get('XY_FTP_GAP', '3'))
 
-    ok = fail = 0
+    ok = 0
     t0 = time.time()
-    for i, (local, rel, name) in enumerate(files, 1):
-        rdir = root + ('/' + only if only else '') + ('/' + rel if rel else '')
-        label = ((rel + "/") if rel else "") + name
-        err = put(local, rdir, name)
-        if err is None:
-            ok += 1
-            print(f'[{i:>2}/{len(files)}] ✓ {label}')
-        else:
-            fail += 1
-            print(f'[{i:>2}/{len(files)}] ✗ {label}  {err}')
-        if i < len(files):
+    pending = list(files)
+
+    # 传失败会被服务器直接删掉（不是「保持原样」），所以失败的那几个必须补上 ——
+    # 2026-11-24 一批 3 个连续 425，config.js / site-data.js 当场变 404。
+    # 这里自动补一轮：歇 6 秒再试，还不行才真的报失败。
+    for rnd in range(2):
+        if not pending:
+            break
+        if rnd:
+            print(f'\n补一轮：还有 {len(pending)} 个没上去，歇 6s 再来')
+            time.sleep(6)
+        still = []
+        for local, rel, name in pending:
+            rdir = root + ('/' + only if only else '') + ('/' + rel if rel else '')
+            label = ((rel + "/") if rel else "") + name
+            err = put(local, rdir, name)
+            if err is None:
+                ok += 1
+                print(f'[{ok:>2}/{len(files)}] ✓ {label}')
+            else:
+                still.append((local, rel, name))
+                print(f'[--/{len(files)}] ✗ {label}  {err}')
             time.sleep(GAP)
+        pending = still
+
+    fail = len(pending)
 
     # IIS 少了这份 web.config，api/app.apk 就是 404.3
     if not only and not pick:
@@ -253,6 +267,8 @@ def main():
         print('✓ web.config（.apk / .json / .md 的 MIME 映射）' if err is None else f'✗ web.config  {err}')
 
     print(f'\n完成：成功 {ok} / 失败 {fail}，用时 {time.time() - t0:.1f}s')
+    if fail:
+        print('没上去的：' + ', '.join((rel + '/' if rel else '') + n for _, rel, n in pending))
     print(f'访问：{conf.get("url", root)}')
 
 
