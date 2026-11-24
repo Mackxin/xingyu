@@ -101,7 +101,8 @@ def sh(cmd, cwd=REPO, env=None, quiet=False):
 
 
 def git(*args, **kw):
-    return sh(['git', *args], quiet=kw.get('quiet', False))
+    # core.quotepath=false：中文文件名原样输出，不然隐私守卫会报到一串八进制码
+    return sh(['git', '-c', 'core.quotepath=false', *args], quiet=kw.get('quiet', False))
 
 
 def stamp_of(path):
@@ -281,6 +282,47 @@ def rebake(dry):
 
 # ---------------------------------------------------------------- 3 提交推送
 
+# ---------------------------------------------------------------- 隐私守卫
+# 这个仓库是公开的（GitHub 免费账号的 Pages 只能发布公开仓库），而
+# `git add -A` 会把仓库目录里**任何**新东西一起推上去。所以提交前拦一道：
+# 根目录冒出清单外的文件，或者任何地方出现文档 / 压缩包 / 证书这类
+# 「多半是私人物品」的扩展名，默认停下来问一句，而不是默默公开。
+
+ROOT_OK = {
+    'index.html', 'sw.js', 'feed.xml', 'manifest.webmanifest', 'web.config',
+    'README.md', '.gitignore', '同步到线上.command',
+}
+PRIVATE_EXT = (
+    '.pdf', '.zip', '.rar', '.7z', '.tar',
+    '.xls', '.xlsx', '.numbers', '.csv',
+    '.doc', '.docx', '.pages', '.key',
+    '.psd', '.ai', '.sketch', '.fig', '.indd',
+    '.mov', '.mp4', '.m4a',
+    '.db', '.sqlite', '.sqlite3', '.pem', '.p12', '.mobileprovision',
+)
+
+
+def guard_private(files):
+    """这批要提交的文件里，有没有「看着像私人物品、不该公开」的。"""
+    if os.environ.get('XY_ALLOW_EXTRA') == '1':
+        return
+    risky = []
+    for f in files:
+        low = f.lower()
+        if low.endswith(PRIVATE_EXT):
+            risky.append((f, '这种文件多半是私人物品'))
+        elif '/' not in f and f not in ROOT_OK and not low.endswith('.command'):
+            risky.append((f, '根目录多了一个清单外的文件'))
+    if not risky:
+        return
+    bad('这个仓库是【公开】的 —— 下面这些推进去，谁都能看到：')
+    for f, why in risky:
+        print(f'      · {f}      （{why}）')
+    print('      真要传：重跑时加 XY_ALLOW_EXTRA=1 放行一次。')
+    print('      不该传：挪出仓库目录，或写进 .gitignore；已暂存的用 git reset 取消。')
+    sys.exit(1)
+
+
 def commit_push(content_changed, dry, custom_msg=''):
     step(3, '提交并推送到 GitHub')
     stamp = stamp_of(SITE_DATA)
@@ -307,6 +349,7 @@ def commit_push(content_changed, dry, custom_msg=''):
 
     if changed_status:
         files = [l[3:].strip() for l in changed_status if len(l) > 3]
+        guard_private(files)
         # 这几个是脚本自己烘出来的，不算「人工改动」
         baked = ('api/app.json', 'api/app.json.gz', 'feed.xml', 'assets/js/site-data.js')
         hand = [f for f in files if f not in baked]
