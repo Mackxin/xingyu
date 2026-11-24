@@ -9,6 +9,7 @@
     python3 tools/deploy-ftp.py            # 全量同步
     python3 tools/deploy-ftp.py --only api # 只传 api/（改完内容发 app.json 时用）
     python3 tools/deploy-ftp.py --dry      # 只列清单，不连服务器
+    python3 tools/deploy-ftp.py --root /wwwroot   # 换落点：整站推到域名根目录
 
 凭据放在 ~/.xy-ftp（**绝不进仓库**，这个仓是公开的）：
     host=103.115.56.106
@@ -134,7 +135,12 @@ def main():
             sys.exit('--files 和 --only 别一起用')
 
     conf = load_conf()
-    root = conf['root'].rstrip('/')
+    # --root /wwwroot —— 临时换个落点，不改 ~/.xy-ftp 里的默认值。
+    # 2026-11-24 起整站也从域名根目录提供（http://yihaozhan.xyz/），用它推那一份。
+    if '--root' in sys.argv:
+        root = sys.argv[sys.argv.index('--root') + 1].rstrip('/')
+    else:
+        root = conf['root'].rstrip('/')
     base = os.path.join(REPO, only) if only else REPO
 
     bake_gzip()

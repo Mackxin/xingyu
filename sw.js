@@ -11,7 +11,7 @@
 
    ⚠️ 发布新版本时，把 VERSION 和 index.html 里的 ?v= 一起改。
    ========================================================================= */
-var VERSION = 'v157';
+var VERSION = 'v158';
 /* 缓存前缀跟着站名走（v134 起叫壹号栈）。CACHE_PREFIXES 里留着旧的 xingyu-，
    activate 时一起清 —— 不然改过名的老用户机器上会一直搁着几份旧站名的缓存。 */
 var CACHE_PREFIX = 'yihaozhan-';
@@ -26,6 +26,27 @@ var CORE = [
   './assets/icon-192.png',
   './assets/icon-512.png'
 ];
+
+/* 站点根：部署在域名根目录时是 '/'，部署在子目录（老的 /xingyu/）时是 '/xingyu/'。
+   v158 起站点搬到了域名根，老的子目录还留着给已装旧版 App 兜底 —— 两种位置都得认，
+   否则 Base 写死成 '/' 会让子目录里的注册全部失效。 */
+var BASE = new URL('./', self.location.href).pathname;
+
+/* 只管自己的路径。
+   域名根下面还躺着别的站（daohang.html、qiantai.html、dianchipaodan.html、img/、baoju/ …），
+   SW 的 scope 一旦是 '/' 就会把它们的请求也一起接走：静态资源走的是「缓存优先」，
+   那些站的 JS/CSS 改了就永远看到旧版；断网时页面导航还会被兜底成星屿的首页。
+   所以这里按白名单放行 —— 不认识的一律不拦截。 */
+var OWN_DIRS = ['assets/', 'api/', 'data/'];
+
+function own(path) {
+  if (path === BASE || path === BASE + 'index.html') return true;
+  if (path === BASE + 'feed.xml' || path === BASE + 'manifest.webmanifest') return true;
+  for (var i = 0; i < OWN_DIRS.length; i++) {
+    if (path.indexOf(BASE + OWN_DIRS[i]) === 0) return true;
+  }
+  return false;
+}
 
 self.addEventListener('install', function (e) {
   e.waitUntil(
@@ -59,6 +80,9 @@ self.addEventListener('fetch', function (e) {
   try { url = new URL(req.url); } catch (err) { return; }
   // 只管自己站内的资源；GitHub API 之类的外部请求一律放行
   if (url.origin !== self.location.origin) return;
+
+  // 同域、但不是这个站的路径（daohang.html、img/ …）→ 完全不接管，原样交给网络
+  if (!own(url.pathname)) return;
 
   // 页面：网络优先，断网回落到缓存的 index.html
   if (req.mode === 'navigate') {
