@@ -7,7 +7,7 @@
            body Markdown 正文, pin 置顶, draft 草稿 }
    ========================================================= */
 
-/* assets/js/site-data.js 是后台「发布到虚拟主机」导出的快照。
+/* assets/js/site-data.js 是后台「发布上线」导出的快照。
    它一旦有内容，就等于「这些数据我说了算」—— 下面是源码里的默认内容，
    只用来做兜底，不再覆盖它。 */
 window.SITE_DATA = window.SITE_DATA || (function () {

@@ -868,7 +868,7 @@
     /* ---------- 口令 ---------- */
     /* 优先级：本机设的 > site-data.js 里带来的（后台导出时打包）> 默认口令。
        在后台改 passwords 只影响本机；想让线上也用同一个口令，
-       靠「备份 → 发布到虚拟主机」把 window.XY_PASS 一起带出去。 */
+       靠「备份 → 发布上线」把 window.XY_PASS 一起带出去。 */
     passHash: function () {
       var h = null;
       try { h = localStorage.getItem(PASS_KEY); } catch (e) {}

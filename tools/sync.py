@@ -195,7 +195,7 @@ def take_content(explicit, dry):
     snap = find_export(explicit)
     if not snap:
         info('没找到新的 site-data.js —— 跳过，本次只同步代码/产物')
-        info('（想更新内容：后台「备份 → 下载 site-data.js」，然后重跑这条命令）')
+        info('（想更新内容：后台「备份 → 发布上线」点「⬇ 导出 site-data.js」，然后重跑这条命令）')
         return False
 
     _, path, txt = snap

@@ -155,47 +155,64 @@ git checkout -- . # 放弃还没提交的改动
 > 换电脑或想还原时点「📂 选择备份文件」选中它，确认一下就恢复了。
 > 所有破坏性操作（恢复备份 / 恢复默认设置 / 恢复默认数据）都会先弹确认框。
 
-### 让改动对所有访客生效（一条命令同步全端）
+### 发一次内容（两步，管到全部端）
 
-后台里的改动只存在**你自己的浏览器**（`localStorage`）。要让所有访客看到，
-用「备份」页最上面那张 **「发布到虚拟主机」** 卡导出，然后**跑一条命令**：
+后台里的改动只存在**你自己的浏览器**（`localStorage`）。想让别人也看到，就两步：
 
 ```
-后台「备份」→ 发布到虚拟主机 → ⬇ 下载 site-data.js
-        ↓
-xysync
-        ↓
-它自动收下这份文件 → 重烘 api/app.json（App 拉的那份）+ feed.xml（RSS）
-      → git 提交推送（GitHub Pages）→ 传国内镜像 → 清 jsDelivr 缓存
-      → 最后核对镜像和 Pages 的 build 号，告诉你到底同步上没有
+① 后台「备份 → 发布上线」→ ⬇ 导出 site-data.js      文件落进「下载」，不用改名
+② 双击桌面「壹号栈 · 一键同步」                      窗口里逐条打 ✓，跑完告诉你成没成
 ```
+
+第 ② 步调的就是 `xysync`（`tools/sync.py`），一条命令依次做完：
+
+| # | 做什么 | 哪一端变新 |
+| --- | --- | --- |
+| 1 | 收「下载」里最新的 `site-data.js` | 仓库里的内容源 |
+| 2 | 重烘 `api/app.json` + `feed.xml` | App 的数据源、RSS 订阅 |
+| 3 | git 提交并推送 | 仓库、GitHub Pages 网页 |
+| 4 | 增量传国内虚拟主机 | `http://yihaozhan.xyz/` |
+| 5 | 清 jsDelivr 缓存 | App 的兜底源 |
+| 6 | 核对镜像 / Pages 的版本号 | 直接告诉你同步上没有 |
+
+所以**一次同步 = 网页 + App 数据 + 国内镜像 + 仓库，四处一起新**。
 
 ```bash
 xysync                  # 常规：自动找「下载」里最新的 site-data.js
-xysync --all            # 这次动了代码：整站重传镜像（默认只传变了的文件）
-xysync --no-ftp         # 只推 GitHub，不动镜像（在外面用）
+xysync --all            # 这次改了代码：整站重传镜像（默认只传变了的文件）
+xysync --no-ftp         # 只推 GitHub，不动镜像（在外面、连不上 FTP 时）
 xysync --dry            # 只说要做什么，什么都不动
 xysync --msg "改了什么"  # 自定义提交说明
 ```
 
-`xysync` 是 `tools/sync.py` 的别名（`~/.local/bin/xysync`）。仓库根目录还有
-`同步到线上.command`，在 Finder 里双击也一样 —— 但这台机器仓库在外置 exFAT 盘上，
-文件可执行位不保险，双击没反应就用命令。
+桌面上那个图标不在、或者换电脑了，直接在终端里跑也一样：
+
+```bash
+cd "/Volumes/1T宝盘/workbuddy/星屿" && python3 tools/sync.py
+```
+
+（`xysync` 是 `tools/sync.py` 的别名，在 `~/.local/bin/xysync`。仓库根目录还有个
+`同步到线上.command`，作用相同 —— 但这台机器仓库在外置 exFAT 盘上，文件可执行位不保险，
+双击没反应就用命令。桌面那个是普通 APFS 上的独立脚本，不受这个影响。）
 
 **为什么必须一次走完**：App 的数据源是「配了镜像就只问镜像」。镜像上那份
 `api/app.json` 旧了，App 就一直读旧的，**不会自动退回 GitHub**。所以
 「只 push 没传镜像」= 手机端还是旧内容。这条链子以前是五步手工，漏第 5 步
 就是这种最难查的症状。
 
+> **出门在外、开不了终端？** 后台「发布上线」里折起来的那块可以只推 GitHub
+> （填一个 GitHub Token 即可），网页和 App 数据几分钟后自己变新。但国内镜像不会动 ——
+> 手机端配过镜像的话还是旧内容，回家补双击一次就齐了。
+
 <details>
-<summary>不想用脚本时，手动传（还是这几步）</summary>
+<summary>不用脚本，纯手工传（出故障时的排查路径）</summary>
 
 ```
 FTP / 主机商文件管理器 → 传到 assets/js/ → 覆盖同名文件
         ↓
 浏览器硬刷一次（Ctrl / ⌘ + Shift + R）
         ↓
-回到后台点「🔍 核对线上版本」—— 它会去读线上那个文件的导出时间，告诉你传没传上去
+回到后台点「🔍 核对线上」—— 它会去读线上那个文件的导出时间，告诉你传没传上去
 ```
 
 另外 `api/app.json` 和它的 `.gz`、`api/app-version.json`、根目录 `feed.xml`
@@ -576,13 +593,16 @@ node tools/gen-feed.js https://your-domain.com/
 
 纯静态站点，任何静态托管都能放（不需要 Node、不需要构建）。
 
-**当前状态：已部署在 GitHub Pages** —— 仓库 <https://github.com/Mackxin/xingyu>，
-Pages 源是 `main` 分支根目录，推上去等几十秒自动更新。
+**当前状态：同时挂在两个地方** —— GitHub Pages（`mackxin.github.io/xingyu/`）
+和香港虚拟主机 `http://yihaozhan.xyz/`，App 优先读镜像。
+
+所以日常更新**不要**只 `git push` —— 那样镜像和 App 还是旧的。走
+[「发一次内容」](#发一次内容两步管到全部端) 那两步就行，它会一起摆平。
 
 ```bash
-# 日常更新只做这两步
+# 想纯手工也行（等价于同步脚本的第 3 步，其余各端不会跟着变）
 git add -A && git commit -m "说明这次改了什么"
-git push          # 推完约 30 秒线上就变了
+git push
 ```
 
 从零再建一个同样的站（换号 / 换项目时参考）：
@@ -656,23 +676,28 @@ python3 tools/deploy-ftp.py --files index.html
 - **App 里的镜像地址**是用户自己在「设置」里填的，换域名后得让他手动改；
   更新包的地址是「镜像地址 + `api/app.apk`」，会跟着自动走。
 
-### 发版清单（每次改完照着走）
+### 发版清单（照这个顺序，别漏）
+
+**只改内容**（发分享、加站点、改配色、写文章）—— 两步，见上面那节：
+
+```
+① 后台「备份 → 发布上线」→ ⬇ 导出 site-data.js
+② 双击桌面「壹号栈 · 一键同步」
+```
+
+版本号**不用动**：`site-data.js` 不带 `?v=`，`sw.js` 给它单独开了网络优先。
+
+**改了代码**（css / js / html）—— 多一步提版本号，其余一样：
 
 ```bash
-# 1. 改了「分享」条目或文章，就重新生成订阅源（xysync 会自动做）
-node tools/gen-feed.js
+# 1. 提版本号：index.html 里 11 处 ?v=NN 和 sw.js 的 VERSION 一起 +1
+#    （不改的话，老访客的离线缓存还拿着旧文件，看不到你的改动）
 
-# 2. 改了 css / js：把 index.html 里的 ?v= 和 sw.js 里的 VERSION 一起 +1
-#    （否则老访客的离线缓存可能还拿着旧文件）
-
-# 3. 一条命令：重烘 app.json → 提交推送 → 传国内镜像 → 清 CDN → 核对三端
+# 2. 一条命令：重烘 app.json/feed.xml → 提交推送 → 整站重传镜像 → 清 CDN → 核对三端
 xysync --all --msg "这次改了什么"
 ```
 
-> **只改了内容（发分享、加站点、改配色）？更省事。**
-> 后台「备份 → 发布到虚拟主机」下载 `site-data.js`，然后 `xysync` ——
-> 版本号不用动（`site-data.js` 不带 `?v=`，`sw.js` 给它开了网络优先），
-> `feed.xml`、`api/app.json`、镜像、CDN 全部由脚本一起处理。
+`--all` 是必须的 —— 默认只传 `git diff` 里变了的文件，改代码时用默认值容易漏。
 
 ## 页面一览
 

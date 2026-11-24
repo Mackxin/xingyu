@@ -26,7 +26,7 @@ function loadData() {
   var sandbox = { window: {} };
   sandbox.window.window = sandbox.window;
   vm.createContext(sandbox);
-  /* site-data.js 排最前：后台「发布到虚拟主机」导出后，整站数据以它为准，
+  /* site-data.js 排最前：后台「发布上线」导出后，整站数据以它为准，
      data.js 看到 SITE_DATA 已经有值就只做兜底 —— 跟 index.html 的顺序一致。
      漏了它，后台改的分享进不了 RSS。 */
   ['assets/js/site-data.js', 'assets/js/feed-import.js', 'assets/js/data.js', 'assets/js/config.js'].forEach(function (rel) {

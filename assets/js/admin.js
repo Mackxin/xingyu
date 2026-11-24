@@ -25,7 +25,7 @@
     { id: 'site',     label: '站点信息', icon: '🌌',
       hint: '站名、标语、建站日期、Logo、分享卡片图' },
     { id: 'backup',   label: '备份',       icon: '💾',
-      hint: '体检 → 导出上线用的 site-data.js，以及版本历史与本机备份' },
+      hint: '发布上线（导出 → 双击同步，两步搞定）、版本历史、本机备份' },
     { id: 'security', label: '口令',       icon: '🔐',
       hint: '纯前端门禁，只防误入，不是真安全' },
     { id: 'guide',    label: '手册 / 参数', icon: '📖',
@@ -218,7 +218,8 @@
       /* 这一句始终在场 —— 标题可以跟着面板换，但「改的是本机、别人看不到」
          是后台最容易忘的一件事，丢了会以为自己已经更新了线上。 */
       '<p class="admin-head__note">这里的改动<b>实时生效</b>，但只存在这台设备的浏览器里；' +
-        '要所有访客都看到，到「备份」导出 <code>site-data.js</code>。</p>';
+        '要让所有人看到，去「备份 → 发布上线」：① 导出 <code>site-data.js</code>　' +
+        '② 双击桌面「壹号栈 · 一键同步」。</p>';
   }
 
   /* 左侧导航栏（v142：按「内容 / 外观 / 系统」分组，10 项一排到底太长了） */
@@ -2466,8 +2467,8 @@
           '<a class="btn btn--ghost" href="#/about" target="_blank" rel="noopener">↗ 打开这一页看看</a>' +
           '<button class="btn btn--ghost" type="button" id="adminAboutReset">↺ 恢复默认正文</button>' +
         '</div>' +
-        '<p class="admin-tip">改完直接生效（本机）。要让所有访客看到，记得回「备份 → 发布到虚拟主机」重新导一次 ' +
-          '<code>site-data.js</code>。</p>' +
+        '<p class="admin-tip">改完直接生效（本机）。要让所有访客看到，回「备份 → 发布上线」点两下：' +
+          '导出 <code>site-data.js</code>，再双击桌面的一键同步图标。</p>' +
       '</div>' +
 
       '<div class="admin-card">' +
@@ -2509,7 +2510,7 @@
   }
 
   /* ======================= 备份 ======================= */
-  /* ======================= 发布到虚拟主机 ======================= */
+  /* ======================= 发布上线 ======================= */
   /* 后台改的东西只躺在你这台浏览器的 localStorage 里。要让**所有访客**看到，
      就得把它「烤」成一个静态文件。这里烤的就是这一个：
 
@@ -2632,7 +2633,7 @@
 
     var out = [];
     out.push('/* 壹号栈 · 站点数据快照');
-    out.push('   由后台「备份 → 发布到虚拟主机」导出，导出于 ' + nowText());
+    out.push('   由后台「备份 → 发布上线」导出，导出于 ' + nowText());
     out.push('   上传位置：assets/js/site-data.js（覆盖同名文件即可，index.html 已经引入它）');
     out.push('   想回到源码里的默认内容：把这个文件清空，只留注释。 */');
     if (pass) out.push('window.XY_PASS = ' + jsLit(pass) + ';');
@@ -2984,6 +2985,9 @@
     });
   }
 
+  /* 本机仓库位置：「复制同步命令」按钮用。换电脑、换目录就改这一行。 */
+  var LOCAL_REPO = '/Volumes/1T宝盘/workbuddy/星屿';
+
   function staticCard() {
     var s = staticStat();
     var errN = s.issues.filter(function (i) { return i.lv === 'err'; }).length;
@@ -3001,62 +3005,86 @@
           '不勾也能用，只是 <code>site-data.js</code> 会大一大截。</p>';
     }
 
-    return '<div class="admin-card">' +
+    return '<div class="admin-card" id="pubCard">' +
         '<div class="admin-card__head">' +
-          '<div><h2>发布到虚拟主机</h2>' +
-            '<p>把后台现在的内容打包成一个 <code>site-data.js</code>，' +
-            '传到你虚拟主机的 <code>assets/js/</code> 里，访客看到的就是这个版本。</p></div>' +
+          '<div><h2>发布上线</h2>' +
+            '<p>后台改的东西只存在<b>你这台浏览器</b>里。想让别人也看到（网页 + 手机 App + 国内镜像），' +
+            '走下面两步，点两下就完。</p></div>' +
           '<span class="admin-count ' + (s.never ? '' : s.dirty ? 'is-dirty' : 'is-ok') + '">' +
             (s.never ? '还没导出过' : s.dirty ? '有改动没导出' : '已是最新') + '</span>' +
         '</div>' +
+
+        '<div class="pub-flow">' +
+          '<div class="pub-step">' +
+            '<span class="pub-step__n">1</span>' +
+            '<div class="pub-step__body">' +
+              '<b>把现在的内容导出成文件</b>' +
+              '<div class="admin-actions">' +
+                '<button class="btn btn--primary' + (errN ? ' is-blocked' : '') + '" type="button" id="snDownload"' +
+                  (errN ? ' data-errs="' + errN + '"' : '') + '>⬇ 导出 site-data.js</button>' +
+                '<button class="btn btn--ghost" type="button" id="snLive">🔍 核对线上</button>' +
+              '</div>' +
+              '<p class="admin-tip">文件直接落进「下载」文件夹，<b>不用改名、不用打开</b>。</p>' +
+              '<p class="admin-tip" id="snLiveOut" hidden></p>' +
+            '</div>' +
+          '</div>' +
+          '<div class="pub-step">' +
+            '<span class="pub-step__n">2</span>' +
+            '<div class="pub-step__body">' +
+              '<b>双击桌面的「壹号栈 · 一键同步」</b>' +
+              '<div class="admin-actions">' +
+                '<button class="btn btn--ghost" type="button" id="snCopyCmd">📋 复制同步命令</button>' +
+              '</div>' +
+              '<p class="admin-tip">它一次做完这些：收下刚导出的文件 → 重烘 App 数据 → 提交推仓库 ' +
+                '→ 网页和 App 变新 → 传国内镜像 → 核对三端。窗口里会逐条打 ✓，最后一句话告诉你成了没有。</p>' +
+              '<p class="admin-tip">桌面上找不到那个图标？点「复制同步命令」，粘进「终端」回车，效果一样。</p>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+
+        '<p class="admin-tip pub-note">只做第 1 步 = 内容还在你电脑里，线上没变。' +
+          '<b>两步都走完</b>，网页 / App / 镜像才会一起新。</p>' +
+
         '<p class="admin-tip">' + esc(s.summary) + '</p>' +
         healthHtml(s.issues) +
-        imgRow +
-        '<div class="admin-actions">' +
-          '<button class="btn btn--primary' + (errN ? ' is-blocked' : '') + '" type="button" id="snDownload"' +
-            (errN ? ' data-errs="' + errN + '"' : '') + '>⬇ 下载 site-data.js</button>' +
-          '<button class="btn btn--ghost" type="button" id="snFeed">⬇ 下载 feed.xml</button>' +
-          '<button class="btn btn--ghost' + (errN ? ' is-blocked' : '') + '" type="button" id="snCopy">复制内容</button>' +
-          '<button class="btn btn--ghost" type="button" id="snLive">🔍 核对线上版本</button>' +
-        '</div>' +
-        '<p class="admin-tip" id="snLiveOut" hidden></p>' +
-        '<ol class="guide-steps">' +
-          '<li>点上面的按钮，文件会存进「下载」文件夹。</li>' +
-          '<li>用 FTP 或主机商的文件管理器，把它传到网站的 <code>assets/js/</code> 目录，' +
-            '<b>覆盖</b>同名的 site-data.js。</li>' +
-          '<li>浏览器按 <kbd>Ctrl</kbd> / <kbd>⌘</kbd> + <kbd>Shift</kbd> + <kbd>R</kbd> 强刷一次，就能看到新内容。</li>' +
-          '<li>传完点一下「🔍 核对线上版本」—— 它会去读线上那个文件，告诉你到底传上去了没有。</li>' +
-        '</ol>' +
-        '<p class="admin-tip"><code>feed.xml</code> 是 RSS 订阅源，改了分享 / 文章才需要重新传；' +
-          '传完记得也放到网站根目录。不订阅就不用管它。</p>' +
-        '<p class="admin-tip">当前 <code>index.html</code> 已经引入了这个文件，所以以后<b>只换它一个</b>就够了，' +
-          'index.html、data.js、config.js 都不用动。它排在所有脚本最前面，' +
-          '后面的 data.js / config.js 看到「已经有了」就只做兜底。</p>' +
-        (s.pass
-          ? '<p class="admin-tip">⚠️ 你设过自定义访问口令，导出的文件里会带上它的<b>校验值</b>' +
-            '（不是明文），这样线上也认同一个口令。这个文件相当于你的钥匙，别传到公开的地方。</p>'
-          : '<p class="admin-tip">你还没设过自己的访问口令，所以线上仍然用默认口令 ' +
-            '<code>xingyu</code>。想换成自己的：先去「口令」页设一个，再回来导一次。</p>') +
         (s.at ? '<p class="admin-tip">上次导出：' + esc(s.at) + '</p>' : '') +
-        '<div class="sn-gh">' +
-          '<div class="sn-gh__head"><b>⚡ 更省事：直接推到 GitHub</b>' +
-            '<span class="admin-count" id="ghBadge"></span></div>' +
-          '<p class="admin-tip">不用下载文件、不用开终端。点一下就把这份内容提交进仓库，' +
-            'Pages 几分钟内重建；仓库里的 Action 会顺手把 <code>api/app.json</code> 一起重烘，App 也就新了。' +
-            '<br>只剩<b>国内镜像</b>还得回电脑敲一次 <code>xysync</code> —— FTP 只能本地连，浏览器没有这条路。</p>' +
-          '<label class="admin-field"><span class="admin-field__label">GitHub Token' +
-            '<em>fine-grained token，只勾这个仓库的 Contents: Read and write</em></span>' +
-            '<input type="password" id="ghTok" placeholder="github_pat_… 或 ghp_…" autocomplete="off" spellcheck="false" />' +
-          '</label>' +
-          '<div class="admin-actions">' +
-            '<button class="btn btn--primary' + (errN ? ' is-blocked' : '') + '" type="button" id="ghPush"' +
-              (errN ? ' data-errs="' + errN + '"' : '') + '>⬆ 一键推送到线上</button>' +
-            '<button class="btn btn--ghost" type="button" id="ghForget">清除令牌</button>' +
+
+        '<details class="admin-adv">' +
+          '<summary>可选：拆图片 / 单独要 RSS / 只更新网页和 App</summary>' +
+          '<div class="admin-adv__body">' +
+            imgRow +
+            '<div class="admin-actions">' +
+              '<button class="btn btn--ghost" type="button" id="snFeed">⬇ 下载 feed.xml</button>' +
+              '<button class="btn btn--ghost' + (errN ? ' is-blocked' : '') + '" type="button" id="snCopy">复制内容</button>' +
+            '</div>' +
+            '<p class="admin-tip"><code>feed.xml</code> 是 RSS 订阅源，改了分享 / 文章才要重新传，' +
+              '放到网站根目录（第 2 步的同步命令会自动重烘并一起传，平时不用管）。</p>' +
+
+            '<div class="sn-gh">' +
+              '<div class="sn-gh__head"><b>在外面、开不了终端时：只推 GitHub</b>' +
+                '<span class="admin-count" id="ghBadge"></span></div>' +
+              '<p class="admin-tip">点一下就把内容提交进仓库，Pages 几分钟后重建，App 数据由仓库里的 Action 顺手重烘。' +
+                '<br>⚠️ 这条路<b>不碰国内镜像</b> —— 手机上配过镜像的 App 还会读旧内容。回家补双击一次第 2 步就齐了。</p>' +
+              '<label class="admin-field"><span class="admin-field__label">GitHub Token' +
+                '<em>fine-grained token，只勾这个仓库的 Contents: Read and write</em></span>' +
+                '<input type="password" id="ghTok" placeholder="github_pat_… 或 ghp_…" autocomplete="off" spellcheck="false" />' +
+              '</label>' +
+              '<div class="admin-actions">' +
+                '<button class="btn btn--primary' + (errN ? ' is-blocked' : '') + '" type="button" id="ghPush"' +
+                  (errN ? ' data-errs="' + errN + '"' : '') + '>⬆ 只推 GitHub</button>' +
+                '<button class="btn btn--ghost" type="button" id="ghForget">清除令牌</button>' +
+              '</div>' +
+              '<p class="admin-tip" id="ghOut" hidden></p>' +
+              '<p class="admin-tip">令牌只存在这台浏览器的 <code>localStorage</code>，只发往 ' +
+                '<code>api.github.com</code>，不进 site-data.js。</p>' +
+            '</div>' +
+
+            (s.pass
+              ? '<p class="admin-tip">⚠️ 你设过访问口令，导出的文件里带着它的<b>校验值</b>（不是明文），' +
+                '线上也认同一个口令。这份文件等于你的钥匙，别往公开的地方放。</p>'
+              : '') +
           '</div>' +
-          '<p class="admin-tip" id="ghOut" hidden></p>' +
-          '<p class="admin-tip">令牌只存在你这台浏览器的 <code>localStorage</code> 里，只发往 ' +
-            '<code>api.github.com</code> —— 不会进 site-data.js，也不经过任何第三方。</p>' +
-        '</div>' +
+        '</details>' +
       '</div>';
   }
 
@@ -3326,7 +3354,7 @@
 
       '<details class="admin-adv">' +
         '<summary>进阶：不要打包文件，手动写进源码</summary>' +
-        '<p>平常不用看这里 —— 上面的「发布到虚拟主机」已经能一次搞定。' +
+        '<p>平常不用看这里 —— 上面的「发布上线」已经能一次搞定。' +
         '只有在你想把内容直接写死进源码时才用：下面两个按钮会把内容复制到剪贴板，你粘到对应文件里就行。</p>' +
         '<div class="admin-actions">' +
           '<button class="btn btn--ghost" type="button" id="bkCopyData">复制站点数据</button>' +
@@ -3720,7 +3748,7 @@
       ['🎨 主题', '7 套配色 + 自己敲 <code>#ff1d55</code> 这类色值 + 「我的配色」存多套；还有极光强度、圆角、默认主题、卡片密度、正文字号行高'],
       ['🔗 自定义链接', '顶栏/页脚那种自己加的链接，最多 ' + MAX + ' 个'],
       ['🌌 站点信息', '站名、标语、建站日期、Logo、Favicon、分享卡片图'],
-      ['💾 备份', '「发布到虚拟主机」导出前先体检（标红的错误会先拦一下）、再下载 <code>site-data.js</code> / <code>feed.xml</code>，传完能核对线上版本；还有版本历史（改动前自动留底 + 手动打快照，误删能回退）、整站打包成 JSON、导入回来、恢复默认'],
+      ['💾 备份', '<b>「发布上线」就在这一页最上面</b>：导出 <code>site-data.js</code> → 双击桌面的一键同步图标，网页 / App / 镜像一起新。导出前会先体检（标红的错误先拦一下），传完能「核对线上」；还有版本历史（改动前自动留底 + 手动打快照，误删能回退）、整站打包成 JSON、导入回来、恢复默认'],
       ['🔐 口令', '改访问口令。注意这是纯前端门禁，只防误入，不是真安全'],
       ['📖 手册 / 参数', '就是这一页']
     ].map(function (r) { return gRow(r[0], r[1]); }).join('');
@@ -3761,14 +3789,15 @@
           '<li><b>发一条分享</b>：分享 → 「＋ 新建」→ 日期默认今天，填标题和链接（<b>链接可以留空</b>），标签用逗号隔开，写完按 <b>⌘S</b></li>' +
           '<li><b>写一篇文章</b>：文章 → 「＋ 新建」→ 支持 Markdown，右边能实时预览 → <b>⌘S</b> 保存</li>' +
           '<li><b>换个配色</b>：主题 → 点色板，或在 <code>HEX</code> 框里敲 <code>#ff1d55</code> → 回车，全站立刻变</li>' +
-          '<li><b>给别人看</b>：这里改的都只在你本机。想让所有访客看到，去「备份 → 发布到虚拟主机」下载 <code>site-data.js</code>，' +
-            '传到网站的 <code>assets/js/</code> 覆盖同名文件就行</li>' +
+          '<li><b>给别人看</b>：这里改的都只在你本机。想让所有人看到，去「备份 → 发布上线」点两下 —— ' +
+            '① 导出 <code>site-data.js</code>　② 双击桌面「壹号栈 · 一键同步」。' +
+            '网页、App、国内镜像会一起更新</li>' +
         '</ol>' +
 
         '<div class="admin-sub"><b>三件要注意的事</b><em>不然容易白折腾</em></div>' +
         '<div class="guide-list">' +
           gRow('改动只在本机', '后台所有设置存在浏览器 <code>localStorage</code> 里。换设备、清缓存、换浏览器都不会跟过去') +
-          gRow('发布 ≠ 同步设置', '发布上线的是代码，你在后台改的内容仍然只在这台机器上。要让它上线，走「备份 → 发布到虚拟主机」那一份 <code>site-data.js</code>') +
+          gRow('后台改动 ≠ 已上线', '后台改的只存在这台浏览器。要让所有人看到，去「备份 → 发布上线」走那两步（导出 → 双击同步）') +
           gRow('口令不是安全', '纯前端门禁，只挡误入。真正的私密内容别放在这个站里') +
         '</div>' +
       '</div>';
@@ -3811,7 +3840,7 @@
       ['<code>assets/js/admin.js</code>', '这一整套后台面板'],
       ['<code>assets/js/md.js</code>', 'Markdown 渲染 + 代码高亮'],
       ['<code>assets/js/bookmarks.js</code>', '收藏夹的原始数据（50 个分类 / 2000+ 链接）'],
-      ['<code>assets/js/site-data.js</code>', '空文件。后台「发布到虚拟主机」导出的快照就覆盖它 —— 有内容时，整站数据以它为准'],
+      ['<code>assets/js/site-data.js</code>', '空文件。后台「发布上线」导出的快照就覆盖它 —— 有内容时，整站数据以它为准'],
       ['<code>sw.js</code>', 'Service Worker；<code>VERSION</code> 要和 index.html 的 <code>?v=</code> 一起改'],
       ['<code>tools/gen-feed.js</code>', '生成 RSS <code>feed.xml</code> 的小脚本（可选）']
     ].map(function (r) { return gRow(r[0], r[1]); }).join('');
@@ -3825,14 +3854,14 @@
       kv('<code>xingyu.idea.v1</code>', '灵感随记的条目（正文 / 标签 / 时间）；会跟着「下载备份」和「云备份」一起走'),
       kv('<code>xingyu.idea.draft.v1</code>', '灵感随记里还没提交的草稿，切页不丢，保存后自动清掉'),
       kv('<code>xingyu.recent.v1</code>', '最近访问'),
-      kv('<code>xingyu.export.v1</code>', '上次「发布到虚拟主机」导出的时间与签名，用来判断有没有没导出的改动'),
+      kv('<code>xingyu.export.v1</code>', '上次「发布上线」导出的时间与签名，用来判断有没有没导出的改动'),
       kv('<code>xingyu.hist.v1</code>', '版本历史：改动前的旧版本 + 手动快照，最多 14 份 / 1.6 MB。手动快照不会被自动记录挤掉，最多留 5 份')
     ].join('');
 
     var deployGrid = [
       kv('GitHub Pages', '<code>mackxin.github.io/xingyu</code>'),
       kv('WorkBuddy Sites', '<code>xingyu-44428.app.workbuddy.host</code>'),
-      kv('虚拟主机', '后台「备份 → 发布到虚拟主机」导出 <code>site-data.js</code>，覆盖 <code>assets/js/</code> 里的同名文件即可'),
+      kv('虚拟主机', '同一条同步命令一起传，不用另外操作'),
       kv('发布方式', '改代码 → 提版本号（index.html 的 <code>?v=</code> 与 <code>sw.js</code> 的 <code>VERSION</code>）→ 推送'),
       kv('缓存坑', 'Pages 构建完成后 CDN 还会吐一阵旧 HTML，硬刷一次就好')
     ].join('');
@@ -4566,7 +4595,7 @@
       refreshBody(root);
     }
 
-    /* 发布到虚拟主机：下载 site-data.js（体检有标红错误时先拦一道） */
+    /* 发布上线：下载 site-data.js（体检有标红错误时先拦一道） */
     var snDownload = body.querySelector('#snDownload');
     if (snDownload) snDownload.addEventListener('click', function () {
       snapGate(function () {
@@ -4586,6 +4615,12 @@
           : 'site-data.js 已下载，传到 assets/js/ 覆盖同名文件 ⬆');
         refreshBody(root);
       });
+    });
+
+    /* 复制同步命令：不想去桌面找图标时，粘到终端里一样 */
+    var snCmd = body.querySelector('#snCopyCmd');
+    if (snCmd) snCmd.addEventListener('click', function () {
+      copyText('cd "' + LOCAL_REPO + '" && python3 tools/sync.py');
     });
 
     /* 拆图片开关：勾上后重新算一遍体积 */
