@@ -347,6 +347,7 @@ FTP / 主机商文件管理器 → 传到 assets/js/ → 覆盖同名文件
 - 想让**所有访客**都看到，把内容写进 `assets/js/data.js` 的 `feed`（`feed.xml` 也是从那里生成的，改完跑一次 `node tools/gen-feed.js`）
 - **从壹号讯息导入的那批**（716 条，2026-01-01 ~ 2026-11-24）单独放在 `assets/js/feed-import.js`，由 `data.js` 拼在后面；`index.html` 里删掉引入它的那行 `<script>` 就能整批去掉，自己手写的内容不受影响。这批的**图标按域名自动挑**（GitHub 🐙 / 扩展商店 🔍…，认不出来用 ✨），**标签按关键词自动归**（AI / 设计 / 开发 / 效率 / 视频 / 写作 / 阅读 / 音乐 / 教程，最多两个），都可以在后台逐条改
   - 重跑：`python3 tools/import-qiantai.py`（下载源站 → 解析 → 覆盖 feed-import.js）。**老条目的图标和标签原样带过来**，只给新出现的条目自动推断；源站删掉的条目默认保留（加 `--drop-gone` 才一起删）。先看统计用 `--dry`
+    - ⚠️ 2026-11-24：源站 `qiantai.html` 已从服务器删除，这条命令的下载步骤会 404。要增量导入只能加 `--src` 指本地备份：`python3 tools/import-qiantai.py --src ../xingyu-ftp-backup/root-before/qiantai.html`
 
 > 分享条目多（现在 730 条）也没关系：后台「分享」列表和「今日精选」的勾选列表都是**一次全铺开**（v129 起），
 > 想找某一条直接搜列表上方的搜索框 —— 后台里看到的就是数据的全部，不会藏着掖着。
@@ -456,6 +457,11 @@ excerpt: 列表里显示的那句摘要，不写就自动截。
 > 导入的内容和其他后台改动一样只存在本机。想让访客也看到，用「备份」页的「复制站点数据」写回 `data.js`。
 
 ### 从另一个导航站整站搬（naver.html）
+
+> ⚠️ 2026-11-24：「壹号导航」`naver.html` 已从服务器删除（旧站退场），下面这条 `curl` 现在会 404。
+> 抽出来的 50 个分类 / 2078 条书签早已写进 `assets/js/bookmarks.js`，站点不受影响；
+> 真要重跑得用本地备份：`python3 tools/import-naver.py ../xingyu-ftp-backup/root-before/naver.html`。
+> 换个导航站搬的话，换掉 URL 就行，脚本本身没变。
 
 「壹号导航」那种整页都是链接的站，可以直接抽取，不用手抄：
 
@@ -600,6 +606,55 @@ gh api -X POST repos/<用户名>/xingyu/pages \
 >
 > **注意**：因为用的是 `#/xxx` 形式的 hash 路由，服务器不需要任何 rewrite 规则，
 > 刷新任意页面都不会 404 —— 这是静态托管最省心的那种。
+
+### 换虚拟主机 / 换域名怎么对接
+
+站点的**国内镜像**（`http://yihaozhan.xyz/`，香港 Freehost 那台 IIS）靠 FTP 推，
+所有凭据和地址都放在一个文件里：`~/.xy-ftp`（权限 600，不进仓库）。
+
+```
+host=<FTP 主机>
+user=<账号>
+pass=<密码>
+root=/wwwroot        ← 站点在这个 FTP 账号下的根目录
+url=http://yihaozhan.xyz/   ← 对外访问地址，脚本拿它做核对
+```
+
+`tools/sync.py` 的 `MIRROR`、`tools/verify-ftp.py` 的默认核对地址都从这里读，
+**所以换地址只改这一个文件，不用动代码**。
+
+换好之后按这个顺序走一遍（第一次是全量）：
+
+```bash
+# 1. 先看清单，确认要传哪些、传到哪
+python3 tools/deploy-ftp.py --dry
+
+# 2. 全量传（28 个文件，限流下要半小时以上，用后台跑）
+python3 tools/deploy-ftp.py
+
+# 3. 逐个核对（走 HTTP，比 FTP 日志可靠）
+python3 tools/verify-ftp.py
+
+# 4. 剩下没传上去的，一个一个补（一条连接一个文件，别连着传）
+python3 tools/deploy-ftp.py --files index.html
+```
+
+**新主机得满足这几条**，不然 App 那头会瘸：
+
+| 要求 | 为什么 |
+|---|---|
+| 支持 PASV 被动模式 | `deploy-ftp.py` 用的是被动模式 |
+| 能给 `.apk` 正确的 MIME | IIS 默认拒签 `.apk`，靠仓库里的 `web.config` 放行；Nginx/Apache 一般不用管 |
+| `.md` / `.webmanifest` 能正常返回 | 同上是 MIME 问题，缺了就 404.3（`data/help.md` 是 App 帮助页的正文） |
+| 静态文件原样返回，不要二次压缩/改名 | `api/app.json.gz` 是给 App 吃的，它认 gzip 魔数自己解 |
+| 允许 HTTP（不强制跳 HTTPS）也不打紧 | 只有 HTTP 也能用，但 App 里填镜像地址**必须带 `http://`** |
+
+另外两件事容易忘：
+
+- **换域名**还要改 `index.html` 里 4 处写死的网址（`og:url`、`og:image`、`twitter:image`、
+  `apple-touch-icon`，现在是 GitHub Pages 的地址），否则微信/微博抓分享卡片还是旧的。
+- **App 里的镜像地址**是用户自己在「设置」里填的，换域名后得让他手动改；
+  更新包的地址是「镜像地址 + `api/app.apk`」，会跟着自动走。
 
 ### 发版清单（每次改完照着走）
 
