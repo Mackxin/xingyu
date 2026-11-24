@@ -9,3 +9,7 @@
 *.swp
 .idea/
 .vscode/
+
+# Python 编译产物（tools 下跑过就冒出来）
+__pycache__/
+*.pyc
