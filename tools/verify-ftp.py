@@ -9,6 +9,7 @@
     python3 tools/verify-ftp.py                      # 核对 /xingyu/（默认镜像）
     python3 tools/verify-ftp.py --base http://yihaozhan.xyz/
 """
+import json
 import os
 import sys
 import urllib.request
@@ -47,6 +48,31 @@ def head(url):
         return None, str(e)[:40]
 
 
+def check_app_json(local, url):
+    """api/app.json 只比内容、不比字节。
+
+    它每次重烘都会把 build 换成当前时间（`202611242202`），数据一个字没动也会变 ——
+    纯比大小/字节只会天天报「不一致」，把这条校验弄成噪音就没意义了。
+    """
+    try:
+        a = json.loads(open(local, 'rb').read().decode('utf-8'))
+    except Exception as e:
+        return False, f'本地读不出：{e}'
+    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+    try:
+        req = urllib.request.Request(url)
+        req.add_header('Cache-Control', 'no-cache')
+        with opener.open(req, timeout=45) as r:
+            b = json.loads(r.read().decode('utf-8'))
+    except Exception as e:
+        return False, f'远端读不出：{str(e)[:40]}'
+
+    ba, bb = a.pop('build', None), b.pop('build', None)
+    if a == b:
+        return True, f'内容一致（build {ba} vs {bb}）'
+    return False, f'内容不同（build {ba} vs {bb}）'
+
+
 if __name__ == '__main__':
     base = 'http://yihaozhan.xyz/xingyu/'
     if '--base' in sys.argv:
@@ -56,6 +82,12 @@ if __name__ == '__main__':
     print(f'核对 {len(files)} 个文件  →  {base}\n')
     bad = []
     for rel, local in files:
+        if rel == 'api/app.json':
+            same, note = check_app_json(os.path.join(REPO, rel), base + rel)
+            print(f'  {"✓" if same else "✗"} {rel:38} {note}')
+            if not same:
+                bad.append((rel, note))
+            continue
         code, remote = head(base + rel)
         same = code == 200 and remote == local
         if same:
