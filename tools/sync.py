@@ -40,7 +40,7 @@ SITE_DATA = os.path.join(REPO, 'assets/js/site-data.js')
 APP_JSON = os.path.join(REPO, 'api/app.json')
 APP_GZ = APP_JSON + '.gz'
 
-MIRROR = 'http://yihaozhan.xyz/xingyu'
+MIRROR = 'http://yihaozhan.xyz'
 PAGES = 'https://mackxin.github.io/xingyu'
 
 # 「导出于 2026-11-20 23:40」—— 后台导出时写在文件头那行
@@ -345,7 +345,7 @@ def push_once(env):
 # ---------------------------------------------------------------- 4 镜像
 
 def push_mirror(changed, force_all, dry):
-    step(4, '同步到国内虚拟主机（http://yihaozhan.xyz/xingyu/）')
+    step(4, '同步到国内虚拟主机（http://yihaozhan.xyz/）')
     ship = [f for f in changed if shippable(f)]
     full = force_all or len(ship) > 14
 
