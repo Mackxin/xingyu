@@ -4007,13 +4007,18 @@
   }
 
   /* ---------- 主题 ---------- */
+  /* 颜色值只在这里出现，index.html 里那段提前定主题的内联脚本用的是同一组
+     （#05060b / #e8ecf7），两处要一起改，否则首屏底色和地址栏会差一点点 */
   function applyTheme(v, persist) {
     var t = v === 'light' ? 'light' : 'dark';
     document.documentElement.setAttribute('data-theme', t);
     if (persist) { try { localStorage.setItem(THEME_KEY, t); } catch (e) {} }
     var meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute('content', t === 'light' ? '#eef1f8' : '#05060b');
+    if (meta) meta.setAttribute('content', t === 'light' ? '#e8ecf7' : '#05060b');
   }
+  /* 首帧的主题已经由 index.html 的 <head> 那段脚本定好了（读完 localStorage 才渲染，
+     所以不会先暗一下再变白）。这里只需要在数据到位后（site-data.js 里可能带着
+     默认主题）做一次校正，不一致时以这里为准。 */
   function initTheme() {
     var saved = null;
     try { saved = localStorage.getItem(THEME_KEY); } catch (e) {}
@@ -4894,6 +4899,12 @@
     refreshPosts();
     refreshFeed();
     applyChrome();
+    /* 主题、强调色、顶栏显隐都定完了，把 index.html 里关掉过渡的标记摘掉 ——
+       之前挂着它是为了避免这些「一次设定」的颜色走 0.5s 渐变。
+       放在 rAF 里：这一帧画完再摘，第一帧已经是不带过渡的正确样子。 */
+    requestAnimationFrame(function () {
+      document.documentElement.classList.remove('xy-no-anim');
+    });
     header = $('#header'); progress = $('#scrollProgress'); cursorGlow = $('#cursorGlow');
 
     // 解析初始路由（不依赖 hashchange），并补齐 URL

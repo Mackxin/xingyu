@@ -25,7 +25,10 @@
 window.XYNote = (function () {
   'use strict';
 
-  var SRC = 'assets/note/index.html';
+  /* 带上版本号：Service Worker 对本站资源是缓存优先，不加版本号的话
+     改了 assets/note/index.html（比如这次的主题首帧修复）老用户永远看旧版。
+     站点发版时跟 index.html 里的 ?v= 一起 +1。 */
+  var SRC = 'assets/note/index.html?v=159';
   var frame = null;
   var rootEl = null;
   var themeHandler = null;
@@ -84,8 +87,11 @@ window.XYNote = (function () {
       if (doc.documentElement.getAttribute('data-theme') !== want) {
         doc.documentElement.setAttribute('data-theme', want);
         /* 它自己的主题按钮也切过 localStorage，顺手对齐一下，
-           免得下次独立打开时是另一个配色 */
-        try { localStorage.setItem('xingyu.note.theme.v1', want); } catch (e) {}
+           免得下次独立打开时是另一个配色。
+           注意 key 是随手记自己用的 'ssj.theme.v1'（见 assets/note/index.html 的
+           STORE 那一行）—— 以前这里写成 'xingyu.note.theme.v1'，随手记根本不读那个键，
+           等于白写了一行。 */
+        try { localStorage.setItem('ssj.theme.v1', want); } catch (e) {}
       }
     } catch (e) { /* 跨域或还没加载完，忽略 */ }
   }

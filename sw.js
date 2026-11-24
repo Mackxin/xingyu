@@ -11,7 +11,7 @@
 
    ⚠️ 发布新版本时，把 VERSION 和 index.html 里的 ?v= 一起改。
    ========================================================================= */
-var VERSION = 'v158';
+var VERSION = 'v159';
 /* 缓存前缀跟着站名走（v134 起叫壹号栈）。CACHE_PREFIXES 里留着旧的 xingyu-，
    activate 时一起清 —— 不然改过名的老用户机器上会一直搁着几份旧站名的缓存。 */
 var CACHE_PREFIX = 'yihaozhan-';
@@ -27,9 +27,8 @@ var CORE = [
   './assets/icon-512.png'
 ];
 
-/* 站点根：部署在域名根目录时是 '/'，部署在子目录（老的 /xingyu/）时是 '/xingyu/'。
-   v158 起站点搬到了域名根，老的子目录还留着给已装旧版 App 兜底 —— 两种位置都得认，
-   否则 Base 写死成 '/' 会让子目录里的注册全部失效。 */
+/* 站点根：虚拟主机在域名根（'/'），GitHub Pages 在子目录（'/xingyu/'）。
+   两种部署位置都得认，写死成 '/' 会让 Pages 那边的注册失效。 */
 var BASE = new URL('./', self.location.href).pathname;
 
 /* 只管自己的路径。

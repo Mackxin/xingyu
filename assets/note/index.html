@@ -3,7 +3,23 @@
 <html lang="zh-CN" data-theme="light">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+
+<!-- 主题得在样式表之前定，理由跟站点首页一样：上面 <html> 写死了 light，
+     等页面末尾的 applyTheme() 跑完再改，选了深色的人会先看见一帧白。
+     判断顺序照抄 applyTheme()：存的是 dark/light 就照办，没存或选了「跟随系统」
+     就看系统偏好。改 applyTheme() 记得回来同步这段。 -->
+<script>
+(function () {
+  var m = null;
+  try { m = localStorage.getItem('ssj.theme.v1'); } catch (e) {}
+  var dark;
+  if (m === 'dark') dark = true;
+  else if (m === 'light') dark = false;
+  else dark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+})();
+</script>
 <title>随手记 · 壹号栈</title>
 <meta name="description" content="一个支持 Markdown 的轻量在线便签本：粘贴即记录、自动保存、多笔记管理，内容只存在你的浏览器中。">
 <meta name="theme-color" content="#05060b">
