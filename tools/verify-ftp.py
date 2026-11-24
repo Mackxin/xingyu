@@ -6,8 +6,7 @@
 所以直接走 HTTP（浏览器真实走的那条路）比大小，比什么日志都可靠。
 
 用法：
-    python3 tools/verify-ftp.py                      # 核对 /xingyu/（默认镜像）
-    python3 tools/verify-ftp.py --base http://yihaozhan.xyz/
+    python3 tools/verify-ftp.py                      # 核对域名根（默认镜像）
 """
 import json
 import os
@@ -74,7 +73,7 @@ def check_app_json(local, url):
 
 
 if __name__ == '__main__':
-    base = 'http://yihaozhan.xyz/xingyu/'
+    base = 'http://yihaozhan.xyz/'
     if '--base' in sys.argv:
         base = sys.argv[sys.argv.index('--base') + 1].rstrip('/') + '/'
 

@@ -2,8 +2,9 @@
 """把站点同步到国内虚拟主机（香港 Freehost / IIS）。
 
 为什么需要它：GitHub Pages 在国内又慢又抖，App 和网页端都该有个国内出口。
-这个脚本把整站（或只把 api/）推到 /wwwroot/xingyu/，让
-`http://yihaozhan.xyz/xingyu/` 成为一条不依赖 GitHub 的路。
+这个脚本把整站（或只把 api/）推到虚拟主机的 /wwwroot（域名根），让
+`http://yihaozhan.xyz/` 成为一条不依赖 GitHub 的路。
+（2026-11-24 之前是放在 /wwwroot/xingyu 子目录，那份已删除。）
 
 用法：
     python3 tools/deploy-ftp.py            # 全量同步
@@ -15,10 +16,10 @@
     host=103.115.56.106
     user=你的 FTP 账号
     pass=你的 FTP 密码
-    root=/wwwroot/xingyu
+    root=/wwwroot
 
 或者写成一个 JSON：
-    {"host": "...", "user": "...", "pass": "...", "root": "/wwwroot/xingyu"}
+    {"host": "...", "user": "...", "pass": "...", "root": "/wwwroot"}
 
 坑（都是踩过的）：
   * 服务器欢迎语是 GBK，ftplib 得设 encoding='gbk'，否则一登录就 UnicodeDecodeError。
@@ -77,7 +78,7 @@ def load_conf():
     for k in ('host', 'user', 'pass'):
         if not conf.get(k):
             sys.exit(f'{CONF} 里少了 {k}')
-    conf.setdefault('root', '/wwwroot/xingyu')
+    conf.setdefault('root', '/wwwroot')
     return conf
 
 
