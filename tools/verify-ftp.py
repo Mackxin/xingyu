@@ -73,9 +73,21 @@ def check_app_json(local, url):
 
 
 if __name__ == '__main__':
-    base = 'http://yihaozhan.xyz/'
+    # 镜像域名跟 FTP 凭据一起放在 ~/.xy-ftp（url= 那行）：
+    # 换主机 / 换域名只改那一个文件，这里不用动。
+    base_url = ''
+    try:
+        for _line in open(os.path.expanduser('~/.xy-ftp'), encoding='utf-8'):
+            _line = _line.strip()
+            if _line.startswith('url='):
+                base_url = _line.split('=', 1)[1].strip()
+                break
+    except Exception:
+        pass
+    base = (base_url or 'http://yihaozhan.xyz/')
     if '--base' in sys.argv:
-        base = sys.argv[sys.argv.index('--base') + 1].rstrip('/') + '/'
+        base = sys.argv[sys.argv.index('--base') + 1]
+    base = base.rstrip('/') + '/'
 
     files = collect(REPO)
     print(f'核对 {len(files)} 个文件  →  {base}\n')

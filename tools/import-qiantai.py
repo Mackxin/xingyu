@@ -2,6 +2,13 @@
 # -*- coding: utf-8 -*-
 """把「壹号讯息」时间线（http://yihaozhan.xyz/qiantai.html）搬进分享页。
 
+⚠️ 2026-11-24：qiantai.html 已从服务器上删掉（旧站退场），这个脚本的线上数据源
+   没了。716 条内容早已导进 assets/js/feed-import.js，站点本身不依赖它。
+   只有在你还留着本地副本（备份在 ../xingyu-ftp-backup/root-before/qiantai.html）时
+   才跑得动，且必须用 --src 指过去：
+       python3 tools/import-qiantai.py --src ~/备份/qiantai.html
+   想再增量导入，得先把那份 html 放回服务器，或者改写数据源。
+
 产出 assets/js/feed-import.js，data.js 会把它拼在自带 feed 后面。
 只读 + 只写这一个文件；拿不准就先 --dry 看一眼统计。
 

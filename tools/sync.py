@@ -40,7 +40,24 @@ SITE_DATA = os.path.join(REPO, 'assets/js/site-data.js')
 APP_JSON = os.path.join(REPO, 'api/app.json')
 APP_GZ = APP_JSON + '.gz'
 
-MIRROR = 'http://yihaozhan.xyz'
+# 镜像地址读 ~/.xy-ftp 里的 url=，跟 FTP 凭据放一处：
+# 换主机 / 换域名只改那一个文件，不用来这里改代码。
+# 那个文件不在（换机器、CI）时回落到默认值。
+XY_FTP_CONF = os.path.expanduser('~/.xy-ftp')
+
+
+def _conf_value(key):
+    try:
+        for line in open(XY_FTP_CONF, encoding='utf-8'):
+            line = line.strip()
+            if line.startswith(key + '='):
+                return line.split('=', 1)[1].strip()
+    except Exception:
+        pass
+    return ''
+
+
+MIRROR = (_conf_value('url') or 'http://yihaozhan.xyz').rstrip('/')
 PAGES = 'https://mackxin.github.io/xingyu'
 
 # 「导出于 2026-11-20 23:40」—— 后台导出时写在文件头那行
@@ -345,7 +362,7 @@ def push_once(env):
 # ---------------------------------------------------------------- 4 镜像
 
 def push_mirror(changed, force_all, dry):
-    step(4, '同步到国内虚拟主机（http://yihaozhan.xyz/）')
+    step(4, '同步到国内虚拟主机（%s/）' % MIRROR)
     ship = [f for f in changed if shippable(f)]
     full = force_all or len(ship) > 14
 

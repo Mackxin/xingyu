@@ -3,6 +3,11 @@
 """
 从「壹号导航」naver.html 抽取全部书签，生成 assets/js/bookmarks.js。
 
+⚠️ 2026-11-24：naver.html 已从服务器上删掉（旧站退场），线上数据源没了。
+   抽出来的书签早已写进 assets/js/bookmarks.js，站点不依赖它。
+   要重跑只能拿本地副本（备份在 ../xingyu-ftp-backup/root-before/naver.html）：
+       python3 tools/import-naver.py ~/备份/naver.html
+
 用法：
     python3 tools/import-naver.py /path/to/naver.html
 
