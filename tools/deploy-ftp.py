@@ -280,4 +280,8 @@ def main():
     print(f'访问：{conf.get("url", root)}')
 
 
-main()
+# 必须留这个保护：没有它，任何 `import deploy-ftp` 或 importlib 取 collect()
+# 都会**当场把整站传一遍**（2026-11-25 真踩了 —— 只想看看清单，结果传掉一半，
+# 还赶上 feed.xml 传失败被服务器删掉，线上 404）。
+if __name__ == '__main__':
+    main()
