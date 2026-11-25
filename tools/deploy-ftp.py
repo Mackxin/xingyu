@@ -92,6 +92,8 @@ def bake_gzip():
     App 端（Repo.bodyText）看到 gzip 魔数会自己解；老版本 APK 根本不会请求这个文件名，零影响。
 
     mtime=0：同样内容每次压出来字节完全一样，git 不会天天报「已修改」。
+    **用 `gzip.compress(raw, 9, mtime=0)`，别用 `gzip.GzipFile(filename=...)`** ——
+    后者多一个 FNAME 头，同样内容差 9 字节，跟 CI 烘出来的对不上（见 sync.py 同函数注释）。
     """
     src = os.path.join(REPO, 'api', 'app.json')
     if not os.path.exists(src):
@@ -101,9 +103,7 @@ def bake_gzip():
         return
     raw = open(src, 'rb').read()
     with open(dst, 'wb') as out:
-        with gzip.GzipFile(filename='app.json', mode='wb', fileobj=out,
-                           compresslevel=9, mtime=0) as gz:
-            gz.write(raw)
+        out.write(gzip.compress(raw, 9, mtime=0))
     print(f'· app.json.gz 已生成：{len(raw) / 1024:.0f} KB → {os.path.getsize(dst) / 1024:.0f} KB')
 
 

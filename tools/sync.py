@@ -25,7 +25,6 @@
 
 import glob
 import gzip
-import io
 import json
 import os
 import re
@@ -138,19 +137,17 @@ def shippable(rel):
 def bake_gzip():
     """把 api/app.json 压成 api/app.json.gz（镜像主机不让开压缩，自己压一份给它）。
 
-    写法必须跟 deploy-ftp.py 里那份一模一样（含 filename 头字段），否则两边
-    交替跑会互相「改」一次，白白多出几百 KB 的 diff。
+    **必须用 `gzip.compress(raw, 9, mtime=0)`，不能用 `gzip.GzipFile(filename=...)`**：
+    后者会多写一个 FNAME 头，同样内容压出来正好差 9 字节，跟 CI（rebake.yml 用的是
+    gzip.compress）永远对不齐 —— 每次推送 CI 都会多一条「自动重烘」空提交。
+    2026-11-25 实测：本机 gzip.compress 出来跟 CI 那份 sha256 完全一致。
     mtime=0：同样内容每次压出来字节完全一样，git 不会天天报「已修改」。
     """
     if not os.path.exists(APP_JSON):
         return False
     raw = open(APP_JSON, 'rb').read()
     old = open(APP_GZ, 'rb').read() if os.path.exists(APP_GZ) else b''
-    buf = io.BytesIO()
-    with gzip.GzipFile(filename='app.json', mode='wb', fileobj=buf,
-                       compresslevel=9, mtime=0) as gz:
-        gz.write(raw)
-    data = buf.getvalue()
+    data = gzip.compress(raw, 9, mtime=0)
     if data == old:
         return False
     with open(APP_GZ, 'wb') as fh:
