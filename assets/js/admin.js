@@ -2704,6 +2704,25 @@
       }
     });
 
+    /* 本机数据比「随站的那份 site-data.js」还少 → 一导出就把线上内容回退了。
+       2026-11-25 真踩：浏览器里那份本地数据是早上导出的快照（676 条分享 / 4 篇文章），
+       只新加了一条分享，直接导出会把线上那篇「游猴脚本」删掉。
+       比的是 window.SITE_DATA（index.html 加载的那份文件），所以在 file:// 下也照样能查。 */
+    var filePost = ((window.SITE_DATA || {}).posts || []).length;
+    var fileFeed = ((window.SITE_DATA || {}).feed || []).length;
+    var minePost = (posts || []).length;
+    var mineFeed = (feed || []).length;
+    if (filePost && minePost < filePost) {
+      push('err', '本机文章比站点少 ' + (filePost - minePost) + ' 篇',
+        '站点随带的 site-data.js 里有 ' + filePost + ' 篇，这台浏览器里只有 ' + minePost +
+        ' 篇。现在导出去，线上会跟着少掉这些文章。先去「文章」核对一下，别把线上的删了。');
+    }
+    if (fileFeed && mineFeed < fileFeed) {
+      push('err', '本机分享比站点少 ' + (fileFeed - mineFeed) + ' 条',
+        '站点随带的 site-data.js 里有 ' + fileFeed + ' 条，这台浏览器里只有 ' + mineFeed +
+        ' 条。多半是这台浏览器存着更早的快照 —— 导出去会把线上那些分享删掉。');
+    }
+
     return out;
   }
 
@@ -4611,8 +4630,10 @@
         });
 
         toast(imgs.length
-          ? 'site-data.js + ' + imgs.length + ' 张图片已下载，图片放 assets/img/ ⬆'
-          : 'site-data.js 已下载，传到 assets/js/ 覆盖同名文件 ⬆');
+          ? 'site-data.js + ' + imgs.length + ' 张图片已下载（分享 ' + Store.feedAll().length +
+            ' 条 · 文章 ' + Store.postsAll().length + ' 篇），图片放 assets/img/ ⬆'
+          : 'site-data.js 已下载：分享 ' + Store.feedAll().length + ' 条 · 文章 ' +
+            Store.postsAll().length + ' 篇 ⬆');
         refreshBody(root);
       });
     });
