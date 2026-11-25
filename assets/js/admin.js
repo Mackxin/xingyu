@@ -4660,11 +4660,13 @@
           setTimeout(function () { saveImageFile(im); }, 400 * (i + 1));
         });
 
+        /* 导完就把下一步递到眼前 —— 用户最常卡在「导出了，然后呢」 */
         toast(imgs.length
-          ? 'site-data.js + ' + imgs.length + ' 张图片已下载（分享 ' + Store.feedAll().length +
-            ' 条 · 文章 ' + Store.postsAll().length + ' 篇），图片放 assets/img/ ⬆'
-          : 'site-data.js 已下载：分享 ' + Store.feedAll().length + ' 条 · 文章 ' +
-            Store.postsAll().length + ' 篇 ⬆');
+          ? '已导出（分享 ' + Store.feedAll().length + ' 条 · 文章 ' + Store.postsAll().length +
+            ' 篇）。下一步：双击桌面「壹号栈 · 一键同步」；有 ' + imgs.length +
+            ' 张图片要放 assets/img/'
+          : '已导出（分享 ' + Store.feedAll().length + ' 条 · 文章 ' + Store.postsAll().length +
+            ' 篇）。下一步：双击桌面「壹号栈 · 一键同步」');
         refreshBody(root);
       });
     });
