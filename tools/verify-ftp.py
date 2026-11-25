@@ -8,6 +8,7 @@
 用法：
     python3 tools/verify-ftp.py                      # 核对域名根（默认镜像）
 """
+import gzip
 import json
 import os
 import sys
@@ -77,6 +78,32 @@ def check_app_json(local, url):
     return False, f'内容不同（build {ba} vs {bb}）'
 
 
+def check_app_json_gz(local, url):
+    """api/app.json.gz 同理：解开比内容，不比压缩后的字节。
+
+    同一份 app.json 在不同机器上 gzip 出来能差几个字节（zlib 版本不同），
+    本机烘的和 CI 烘的永远对不齐 —— 比大小只会一直挂着一条假的不一致。
+    """
+    try:
+        a = json.loads(gzip.decompress(open(local, 'rb').read()).decode('utf-8'))
+    except Exception as e:
+        return False, f'本地读不出：{e}'
+    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+    try:
+        req = urllib.request.Request(url)
+        req.add_header('Cache-Control', 'no-cache')
+        with opener.open(req, timeout=45) as r:
+            raw = r.read()
+        b = json.loads(gzip.decompress(raw).decode('utf-8'))
+    except Exception as e:
+        return False, f'远端读不出：{str(e)[:40]}'
+
+    ba, bb = a.pop('build', None), b.pop('build', None)
+    if a == b:
+        return True, f'解压后内容一致（build {ba} vs {bb}）'
+    return False, f'解压后内容不同（build {ba} vs {bb}）'
+
+
 if __name__ == '__main__':
     # 镜像域名跟 FTP 凭据一起放在 ~/.xy-ftp（url= 那行）：
     # 换主机 / 换域名只改那一个文件，这里不用动。
@@ -98,8 +125,9 @@ if __name__ == '__main__':
     print(f'核对 {len(files)} 个文件  →  {base}\n')
     bad = []
     for rel, local in files:
-        if rel == 'api/app.json':
-            same, note = check_app_json(os.path.join(REPO, rel), base + rel)
+        if rel in ('api/app.json', 'api/app.json.gz'):
+            fn = check_app_json if rel == 'api/app.json' else check_app_json_gz
+            same, note = fn(os.path.join(REPO, rel), base + rel)
             print(f'  {"✓" if same else "✗"} {rel:38} {note}')
             if not same:
                 bad.append((rel, note))
