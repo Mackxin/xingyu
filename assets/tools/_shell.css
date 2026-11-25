@@ -1,0 +1,187 @@
+/* =========================================================================
+   壹号栈 · 工具页外壳（_shell.css）
+   -------------------------------------------------------------------------
+   给 assets/tools/ 下的独立工具页用的：孕期全程管理、电池跑单、出生日期计算器。
+
+   这些页面原本是各自独立做的小应用，配色和站点（暗色玻璃拟态 + 极光背景）
+   对不上 —— 从深色的网站点进来突然一片白，割裂感很明显。这里不重写它们的
+   交互和布局，只做三件事：
+
+     1. 顶上一条和站点同款的「返回」栏（文档流内 sticky，不遮内容）；
+     2. 把页面底色 / 正文色 / 强调色对齐站点的那套变量；
+     3. 跟随站点的深浅主题（读 localStorage 的 xingyu.theme.v1）。
+
+   主题判定由各页 <head> 里的同步脚本写到 <html data-xy-theme="dark|light">，
+   所以首帧就是对的，不会先白后黑。
+   ========================================================================= */
+
+:root {
+  --xy-bg:       #05060b;
+  --xy-bg-soft:  #0a0c15;
+  --xy-panel:    rgba(124, 156, 255, .055);
+  --xy-panel-2:  rgba(124, 156, 255, .088);
+  --xy-line:     rgba(124, 156, 255, .14);
+  --xy-text:     #eef1f8;
+  --xy-dim:      #a7b0c4;
+  --xy-mute:     #7b8496;
+  --xy-a1:       #7c9cff;
+  --xy-a2:       #b47cff;
+  --xy-a3:       #4fe3d0;
+  --xy-grad:     linear-gradient(120deg, var(--xy-a1), var(--xy-a2) 52%, var(--xy-a3));
+  --xy-r:        18px;
+  --xy-bar-h:    54px;
+  --xy-ease:     cubic-bezier(.22, .68, .32, 1);
+}
+
+html[data-xy-theme="light"] {
+  --xy-bg:      #e8ecf7;
+  --xy-bg-soft: #e0e5f2;
+  --xy-panel:   rgba(211, 221, 243, .62);
+  --xy-panel-2: rgba(203, 215, 240, .78);
+  --xy-line:    rgba(120, 140, 190, .24);
+  --xy-text:    #0d1424;
+  --xy-dim:     #333d57;
+  --xy-mute:    #4e5878;
+}
+
+/* ---------- 顶部返回栏 ---------- */
+.xy-bar {
+  position: sticky;
+  top: 0;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: var(--xy-bar-h);
+  padding: 8px clamp(14px, 2.6vw, 34px);
+  background: color-mix(in srgb, var(--xy-bg) 84%, transparent);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  backdrop-filter: blur(16px) saturate(1.4);
+  border-bottom: 1px solid var(--xy-line);
+}
+
+.xy-bar__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 13px 6px 10px;
+  border-radius: 999px;
+  background: var(--xy-panel-2);
+  color: var(--xy-text);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: .01em;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background .25s var(--xy-ease), transform .25s var(--xy-ease);
+}
+
+.xy-bar__back:hover {
+  background: var(--xy-panel);
+  transform: translateX(-2px);
+}
+
+.xy-bar__back:focus-visible {
+  outline: 2px solid var(--xy-a1);
+  outline-offset: 2px;
+}
+
+.xy-bar__back svg {
+  width: 15px;
+  height: 15px;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+}
+
+.xy-bar__title {
+  font-size: 13px;
+  color: var(--xy-dim);
+  letter-spacing: .01em;
+}
+
+.xy-bar__title::before {
+  content: "·";
+  margin-right: 9px;
+  color: var(--xy-mute);
+}
+
+/* 电池跑单那种自带 appbar 的页面，只用「胶囊」那一小块，不重复整条栏 */
+.xy-back-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px 5px 9px;
+  border-radius: 999px;
+  background: var(--xy-panel-2);
+  color: var(--xy-text);
+  font-size: 12.5px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background .25s var(--xy-ease);
+}
+
+.xy-back-pill:hover { background: var(--xy-panel); }
+
+.xy-back-pill svg {
+  width: 14px;
+  height: 14px;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+}
+
+/* 侧栏底部那种通栏样式（电池跑单的 rail 里用） */
+.xy-back-pill--wide {
+  display: flex;
+  width: 100%;
+  justify-content: center;
+  padding: 9px 12px;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+
+/* ---------- 页面底色：跟站点同一个氛围 ---------- */
+/* 站点是纯色底 + 几团飘动的光斑；这里用静态渐变近似，避免在工具页里跑动画 */
+html[data-xy-theme="dark"] body,
+html:not([data-xy-theme]) body {
+  background-color: var(--xy-bg);
+}
+
+html[data-xy-theme="light"] body {
+  background-color: var(--xy-bg);
+}
+
+body.xy-tool {
+  background-image:
+    radial-gradient(58vw 46vw at 12% -8%, color-mix(in srgb, var(--xy-a1) 16%, transparent), transparent 66%),
+    radial-gradient(52vw 42vw at 92% 4%, color-mix(in srgb, var(--xy-a2) 13%, transparent), transparent 68%),
+    radial-gradient(64vw 50vw at 60% 100%, color-mix(in srgb, var(--xy-a3) 9%, transparent), transparent 70%);
+  background-attachment: fixed;
+}
+
+html[data-xy-theme="light"] body.xy-tool {
+  background-image:
+    radial-gradient(58vw 46vw at 12% -8%, color-mix(in srgb, var(--xy-a1) 22%, transparent), transparent 66%),
+    radial-gradient(52vw 42vw at 92% 4%, color-mix(in srgb, var(--xy-a2) 18%, transparent), transparent 68%);
+}
+
+/* 外层容器的入场上移：从站点跳过来时不至于「啪」地出现 */
+.xy-fade {
+  animation: xyIn .42s var(--xy-ease) both;
+}
+
+@keyframes xyIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .xy-fade { animation: none; }
+  .xy-bar__back { transition: none; }
+}

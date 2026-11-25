@@ -28,7 +28,7 @@ window.XYNote = (function () {
   /* 带上版本号：Service Worker 对本站资源是缓存优先，不加版本号的话
      改了 assets/note/index.html（比如这次的主题首帧修复）老用户永远看旧版。
      站点发版时跟 index.html 里的 ?v= 一起 +1。 */
-  var SRC = 'assets/note/index.html?v=160';
+  var SRC = 'assets/note/index.html?v=162';
   var frame = null;
   var rootEl = null;
   var themeHandler = null;

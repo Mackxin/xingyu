@@ -15,15 +15,18 @@ window.SITE_BOOKMARKS = (function () {
   "links": [
   {
   "n": "壹号讯息",
-  "u": "http://yihaozhan.xyz/qiantai.html"
+  "u": "#/share",
+  "d": "每天一小条，记下遇见的工具与新发现"
   },
   {
   "n": "从零安装系统",
-  "u": "http://yihaozhan.xyz/system.html"
+  "u": "#/post/install-os",
+  "d": "从装机到常用软件，一步步来"
   },
   {
   "n": "mac",
-  "u": "http://yihaozhan.xyz/mac.html"
+  "u": "#/post/mac-software",
+  "d": "Mac 上常用的那几款工具"
   },
   {
   "n": "灵感随记",
@@ -42,15 +45,18 @@ window.SITE_BOOKMARKS = (function () {
   },
   {
   "n": "游猴脚本",
-  "u": "http://yihaozhan.xyz/jiaoben.html"
+  "u": "#/post/tampermonkey-scripts",
+  "d": "浏览器脚本与油猴玩法"
   },
   {
   "n": "孕期全程管理",
-  "u": "http://yihaozhan.xyz/yuchanqi.html"
+  "u": "assets/tools/yuchanqi.html",
+  "d": "预产期计算与每周提醒"
   },
   {
   "n": "电池跑单",
-  "u": "http://yihaozhan.xyz/dianchipaodan.html"
+  "u": "assets/tools/dianchipaodan.html",
+  "d": "充电 · 里程 · 跑单记账"
   },
   {
   "n": "随手记",

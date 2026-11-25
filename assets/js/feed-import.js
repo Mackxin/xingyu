@@ -1,8 +1,9 @@
 /* =========================================================================
    壹号栈 · 从「壹号讯息」导入的分享条目
    -------------------------------------------------------------------------
-   来源：http://yihaozhan.xyz/qiantai.html （壹号讯息的「时光轨迹」时间线）
-   共 716 条，日期跨度 2026-01-01 ~ 2026-11-24。
+   来源：壹号讯息的「时光轨迹」时间线（原 http://yihaozhan.xyz/qiantai.html，
+  该页 2026-11-24 已下线，最后一版快照在 tools/import-qiantai.py 的 --src）
+   共 717 条，日期跨度 2026-01-01 ~ 2026-11-24。
    同一条链接重复出现时只留最近的一次。
 
    字段和 data.js 里的 feed 完全一样：
@@ -142,6 +143,9 @@ window.XY_FEED_IMPORT = [
     { date: '2026-10-30', icon: '✨', title: '网站消息',
       url: '', tags: [],
       desc: '网站即将更新改版，外观将有所调整 · 坐等更新吧' },
+    { date: '2026-10-29', icon: '✨', title: '影策',
+      url: 'https://yingce.tv/', tags: ['AI', '设计'],
+      desc: '一个开源的 AI 影视创作工作台 · 把剧本、角色、分镜、素材放在一块无限画布上组织，直接调各家模型生成图片、视频与配音，再用内置时间线剪成片' },
     { date: '2026-10-29', icon: '🐙', title: '开源地址',
       url: 'https://github.com/ddcat-ai/open-ai-canvas', tags: ['AI', '开发'],
       desc: '一个实用的开源AI影视创作工作台：影策 · 专门给做AI短剧和视频的人用 · 它把剧本、角色、分镜、素材都放在一块无限画布上组织，直接调用各家AI模型生成图片、视频和配音 · 再用内置时间线剪辑导出成片，把整条创作流程收进一个工具里。项目用React + Go开发，支持Docker一键部署' },
@@ -596,7 +600,7 @@ window.XY_FEED_IMPORT = [
       url: 'https://emilkowal.ski/skill', tags: ['AI', '开发'],
       desc: '主要是让 Agent 把代码规范化 · 现在AI已经不缺写代码的能力了，审美判断和细节还是非常重要的' },
     { date: '2026-08-03', icon: '✨', title: '出生日期年龄计算器',
-      url: 'http://yihaozhan.xyz/baoju/chusheng/index.html', tags: ['AI'],
+      url: 'assets/tools/chusheng.html', tags: ['AI'],
       desc: '用AI写的一个页面 · 公历/农历输入，自动换算年龄与生肖、六合、十二时辰等传统文化信息' },
     { date: '2026-07-22', icon: '✨', title: '效率坊解析工具',
       url: 'https://www.xiaolvfang.com/', tags: ['效率'],
