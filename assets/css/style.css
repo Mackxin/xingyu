@@ -2194,6 +2194,50 @@ body.is-dragging-row, body.is-dragging-row *{ cursor:grabbing !important; }
 .pub-step__body .admin-actions{ margin:11px 0 0; }
 .pub-step__body > .admin-tip:last-child{ margin-bottom:0 !important; }
 .pub-note{ margin-top:16px !important; }
+
+/* 「完整流程」一页纸（后台 → 备份 → 发布上线 → 折叠区） */
+.pub-guide__steps{
+  margin:14px 0 6px; padding:0; list-style:none; counter-reset:pubstep;
+  display:flex; flex-direction:column; gap:10px;
+}
+.pub-guide__steps > li{
+  counter-increment:pubstep; position:relative; padding-left:34px;
+  font-size:12.8px; line-height:1.75; color:var(--text);
+}
+.pub-guide__steps > li::before{
+  content:counter(pubstep); position:absolute; left:0; top:1px;
+  width:22px; height:22px; border-radius:999px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:11.5px; font-weight:700; font-variant-numeric:tabular-nums;
+  color:var(--text-dim); background:var(--surface-2); border:1px solid var(--border);
+}
+.pub-guide__steps > li > b{ display:block; font-size:13px; }
+.pub-guide__steps > li > span{ display:block; color:var(--text-dim); }
+/* 「打开打印版一页纸」—— 全站 a 是 color:inherit，这里得单独让它像链接 */
+#pubGuide a{
+  color:var(--ink-a1); font-weight:600; margin-left:6px;
+  text-decoration:underline; text-underline-offset:3px;
+}
+#pubGuide a:hover{ color:var(--ink-a2); }
+.pub-guide__faq{
+  width:100%; margin:16px 0 4px; border-collapse:collapse;
+  font-size:12.5px; line-height:1.7;
+}
+.pub-guide__faq th{
+  text-align:left; font-weight:600; color:var(--text-dim);
+  font-size:11.5px; letter-spacing:.04em; padding:0 10px 7px 0;
+  border-bottom:1px solid var(--border);
+}
+.pub-guide__faq td{
+  padding:9px 10px 9px 0; vertical-align:top; border-bottom:1px solid var(--border);
+  color:var(--text-dim);
+}
+.pub-guide__faq td:first-child{ color:var(--text); width:38%; }
+.pub-guide__faq tr:last-child td{ border-bottom:0; }
+.pub-guide__faq code{ font-size:11.5px; }
+@media (max-width:560px){
+  .pub-guide__faq td:first-child{ width:44%; }
+}
 .admin-adv__body{ padding-bottom:4px; }
 .admin-adv__body > p{ margin:0 0 4px !important; font-size:12.8px !important; line-height:1.8; color:var(--text-dim) !important; }
 .admin-adv__body > p.admin-tip{ margin-top:12px !important; }

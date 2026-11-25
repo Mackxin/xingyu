@@ -2662,7 +2662,8 @@
         var u = String(l.u == null ? '' : l.u).trim();
         if (!n) push('err', '站点没名字', '分类「' + cname + '」里有个站点没填名字');
         if (!u) { push('err', '空链接', '「' + (n || '未命名') + '」没有网址'); return; }
-        if (u.charAt(0) === '#' || u.charAt(0) === '/') return;
+        /* 站内相对路径也是合法的：assets/tools/xxx.html 跟着站点根走，别当「少了 https://」报错 */
+        if (u.charAt(0) === '#' || u.charAt(0) === '/' || /^(assets|api|data)\//.test(u)) return;
         if (!/^https?:\/\//i.test(u)) {
           push('warn', '网址不规范', '「' + (n || u) + '」是 ' + u.slice(0, 48) + '，前面少了 https://');
         } else if (/\s/.test(u)) {
@@ -3024,11 +3025,40 @@
           '不勾也能用，只是 <code>site-data.js</code> 会大一大截。</p>';
     }
 
+    /* 「完整流程」一页纸：默认折叠，第一次走这个；之后只走第 1、2 步 */
+    var guide =
+      '<details class="admin-adv" id="pubGuide">' +
+        '<summary>🧭 完整流程 · 一页纸（第一次照着走，之后只走上面两步）</summary>' +
+        '<div class="admin-adv__body">' +
+          '<p class="admin-tip"><b>只有一句话要记：后台改完 → 导出 → 双击桌面那个图标。</b>' +
+              '<a href="assets/guide/publish-flow.html" target="_blank" rel="noopener">打开打印版一页纸 →</a></p>' +
+          '<ol class="pub-guide__steps">' +
+            '<li><b>在后台改</b><span>站点 / 分享 / 文章，改完点保存。这些只存在你这台浏览器里，别人还看不到。</span></li>' +
+            '<li><b>点「⬇ 导出 site-data.js」</b><span>文件落进「下载」夹，名字别改。这一份 = 整站内容 + 后台设置 + 口令校验值。</span></li>' +
+            '<li><b>双击桌面「壹号栈 · 一键同步」</b><span>它自己从「下载」夹挑最新那份，不用你挪文件。' +
+              '窗口里逐条打 ✓ —— 收内容 → 烘 app.json / feed.xml / app.json.gz → 提交推送 → 传国内镜像 → 核对三端。</span></li>' +
+            '<li><b>看最后一句</b><span>出现「全部完成 ✓」就是三端都新了。网页 ⌘⇧R 强刷一次、App 切后台再回来，就能看到。</span></li>' +
+          '</ol>' +
+          '<p class="admin-tip"><b>你永远只产出一个文件。</b><code>api/app.json</code>（App 读的）、' +
+            '<code>api/app.json.gz</code>（镜像上那份压过的）、<code>feed.xml</code>（RSS）都是电脑从' +
+            '<code>site-data.js</code> 现烘的 —— <b>不用你管，也别手工改</b>。</p>' +
+          '<table class="pub-guide__faq">' +
+            '<thead><tr><th>碰到的样子</th><th>意思 / 怎么办</th></tr></thead><tbody>' +
+            '<tr><td>最后一句不是「全部完成 ✓」</td><td>上面标 <b>✗</b> 的那行就是原因，按它写的重跑一次；已经做完的步骤不会重复做。</td></tr>' +
+            '<tr><td><b>✗ 推送还是失败</b></td><td>网络没通。开代理再跑一次。<b>这一步失败时镜像会整段跳过</b>' +
+              '（第 4 步会打印「镜像那边没有要更新的文件」），所以必须补跑一次，否则手机上还是旧内容。</td></tr>' +
+            '<tr><td>导出被拦下「有 N 处错误」</td><td>空链接、站点没名字、文章没标题这类。改完再导；心里有数就点「仍然导出」。</td></tr>' +
+            '<tr><td>App 还是旧内容</td><td>设置里镜像地址要写 <code>http://yihaozhan.xyz/</code>（<b>带 http://</b>），然后切后台再回来。</td></tr>' +
+            '<tr><td>只想让网页变、不动镜像</td><td>终端跑 <code>python3 tools/sync.py --no-ftp</code>。</td></tr>' +
+            '<tr><td>在外面、开不了终端</td><td>打开下面折叠里的「只推 GitHub」（要 token）。它不碰镜像，回家补一次第 2 步才齐。</td></tr>' +
+            '</tbody></table>' +
+        '</div>' +
+      '</details>';
+
     return '<div class="admin-card" id="pubCard">' +
         '<div class="admin-card__head">' +
           '<div><h2>发布上线</h2>' +
-            '<p>后台改的东西只存在<b>你这台浏览器</b>里。想让别人也看到（网页 + 手机 App + 国内镜像），' +
-            '走下面两步，点两下就完。</p></div>' +
+            '<p>你只产出一个文件 —— <code>site-data.js</code>。App 那份、RSS 那份都由电脑现烘，你碰都不用碰。</p></div>' +
           '<span class="admin-count ' + (s.never ? '' : s.dirty ? 'is-dirty' : 'is-ok') + '">' +
             (s.never ? '还没导出过' : s.dirty ? '有改动没导出' : '已是最新') + '</span>' +
         '</div>' +
@@ -3037,14 +3067,12 @@
           '<div class="pub-step">' +
             '<span class="pub-step__n">1</span>' +
             '<div class="pub-step__body">' +
-              '<b>把现在的内容导出成文件</b>' +
+              '<b>导出这份内容</b>' +
               '<div class="admin-actions">' +
                 '<button class="btn btn--primary' + (errN ? ' is-blocked' : '') + '" type="button" id="snDownload"' +
                   (errN ? ' data-errs="' + errN + '"' : '') + '>⬇ 导出 site-data.js</button>' +
-                '<button class="btn btn--ghost" type="button" id="snLive">🔍 核对线上</button>' +
               '</div>' +
-              '<p class="admin-tip">文件直接落进「下载」文件夹，<b>不用改名、不用打开</b>。</p>' +
-              '<p class="admin-tip" id="snLiveOut" hidden></p>' +
+              '<p class="admin-tip">落进「下载」夹，<b>不用改名、不用打开</b>。</p>' +
             '</div>' +
           '</div>' +
           '<div class="pub-step">' +
@@ -3054,30 +3082,33 @@
               '<div class="admin-actions">' +
                 '<button class="btn btn--ghost" type="button" id="snCopyCmd">📋 复制同步命令</button>' +
               '</div>' +
-              '<p class="admin-tip">它一次做完这些：收下刚导出的文件 → 重烘 App 数据 → 提交推仓库 ' +
-                '→ 网页和 App 变新 → 传国内镜像 → 核对三端。窗口里会逐条打 ✓，最后一句话告诉你成了没有。</p>' +
-              '<p class="admin-tip">桌面上找不到那个图标？点「复制同步命令」，粘进「终端」回车，效果一样。</p>' +
+              '<p class="admin-tip">它会自己从「下载」夹挑最新那份，<b>你不用挪文件、也不用改文件名</b>。' +
+                '窗口里逐条打 ✓，最后一句告诉你成了没有。</p>' +
             '</div>' +
           '</div>' +
         '</div>' +
 
-        '<p class="admin-tip pub-note">只做第 1 步 = 内容还在你电脑里，线上没变。' +
-          '<b>两步都走完</b>，网页 / App / 镜像才会一起新。</p>' +
+        '<p class="admin-tip pub-note">两步都走完，网页 / App / 镜像才会一起新。' +
+          '<b>只做第 1 步 = 线上一个字都没变。</b></p>' +
 
+        (s.issues.length ? healthHtml(s.issues) : '') +
         '<p class="admin-tip">' + esc(s.summary) + '</p>' +
-        healthHtml(s.issues) +
-        (s.at ? '<p class="admin-tip">上次导出：' + esc(s.at) + '</p>' : '') +
+
+        guide +
 
         '<details class="admin-adv">' +
-          '<summary>可选：拆图片 / 单独要 RSS / 只更新网页和 App</summary>' +
+          '<summary>其它按钮与选项（平常不用打开）</summary>' +
           '<div class="admin-adv__body">' +
-            imgRow +
             '<div class="admin-actions">' +
+              '<button class="btn btn--ghost" type="button" id="snLive">🔍 核对线上</button>' +
               '<button class="btn btn--ghost" type="button" id="snFeed">⬇ 下载 feed.xml</button>' +
               '<button class="btn btn--ghost' + (errN ? ' is-blocked' : '') + '" type="button" id="snCopy">复制内容</button>' +
             '</div>' +
-            '<p class="admin-tip"><code>feed.xml</code> 是 RSS 订阅源，改了分享 / 文章才要重新传，' +
-              '放到网站根目录（第 2 步的同步命令会自动重烘并一起传，平时不用管）。</p>' +
+            '<p class="admin-tip" id="snLiveOut" hidden></p>' +
+            '<p class="admin-tip">「核对线上」= 拿这份内容和线上那份比一遍，告诉你差在哪、线上是哪次导的。' +
+              '<code>feed.xml</code> 是 RSS 订阅源，第 2 步会自动重烘并一起传，平时不用管。</p>' +
+            (s.at ? '<p class="admin-tip">上次导出：' + esc(s.at) + '</p>' : '') +
+            imgRow +
 
             '<div class="sn-gh">' +
               '<div class="sn-gh__head"><b>在外面、开不了终端时：只推 GitHub</b>' +
