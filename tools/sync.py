@@ -208,6 +208,19 @@ def take_content(explicit, dry):
         ok(f'仓库里已经是这一版（导出于 {new_stamp or "未知"}），不用重复导')
         return False
 
+    # 护栏：下载夹里那份可能是很久以前导出的。无脑覆盖会把手改过的仓库版本顶回去
+    # （2026-11-25 就踩过：站点内容已经手改过，跑一次 sync 被 06:38 的旧导出整份盖掉）
+    force = os.environ.get('XY_FORCE_CONTENT') == '1'
+    if not force and new_stamp and old_stamp:
+        if new_stamp < old_stamp:
+            ok(f'「下载」里那份导出于 {new_stamp}，比仓库里的 {old_stamp} 旧 —— 跳过，不覆盖')
+            info('确实要用这一份：XY_FORCE_CONTENT=1 重跑；或先把仓库里那份挪走。')
+            return False
+        if new_stamp == old_stamp:
+            ok(f'两边都是 {new_stamp} 那次导出，内容却不一样 —— 保留仓库里的（多半手改过）')
+            info('在后台重新导出一次，时间戳会变新，那时才会正常覆盖。')
+            return False
+
     info(f'来源：{path}')
     info(f'导出于：{new_stamp or "文件头没写时间"}'
          + (f'  →  仓库里原来那份导出于 {old_stamp}' if old_stamp else '  →  仓库里原来没有内容'))
