@@ -66,7 +66,12 @@ function absUrl(u) {
   const s = String(u == null ? '' : u).trim();
   if (!s) return '';
   if (s.charAt(0) === '#') return SITE_URL + s;
-  return s;
+  /* app://（App 内置页）、mailto:、tel:、http(s) 原样留着 */
+  if (/^[a-z][a-z0-9+.\-]*:/i.test(s)) return s;
+  /* 站点里的相对路径（assets/tools/yuchanqi.html 这种独立工具页）也拼成绝对地址：
+     App 的 WebView 没有「当前页面」可参照，相对路径直接打不开。
+     2.9.3 之前的版本不认识相对路径，这一步是给它们兜底。 */
+  return SITE_URL + s.replace(/^\.?\//, '');
 }
 
 /* ---- 跟着 App 一起走的两份「说明书」，直接读仓库里的文件 ----
