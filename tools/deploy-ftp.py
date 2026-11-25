@@ -38,8 +38,10 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CONF = os.path.expanduser('~/.xy-ftp')
 
 # 这些是开发期的东西，传上去只会占空间、还可能被人翻到
-SKIP_DIRS = {'.git', '.workbuddy', '.githooks', '.github', 'tools', 'docs',
+SKIP_DIRS = {'.git', '.workbuddy', '.githooks', '.github',
              'node_modules', '__pycache__'}
+# 只跳过仓库根下这两个（assets/tools/ 是要发布的，不受影响）
+SKIP_ROOT_DIRS = {'tools', 'docs'}
 SKIP_FILES = {'README.md', '.gitignore', 'CNAME', 'web.config'}   # web.config 单独处理（见 main 末尾）
 SKIP_PREFIX = ('.',)          # 隐藏文件 + macOS 的 ._xxx 资源分叉
 
@@ -108,7 +110,13 @@ def bake_gzip():
 def collect(base):
     out = []
     for dirpath, dirnames, filenames in os.walk(base):
-        dirnames[:] = sorted(d for d in dirnames if d not in SKIP_DIRS)
+        # 只跳过「仓库根」下的 tools / docs（Python 脚本和坑记录），
+        # 别按名字一刀切 —— assets/tools/ 是要发布的工具页，名字也叫 tools
+        at_root = os.path.normpath(dirpath) == os.path.normpath(base)
+        dirnames[:] = sorted(
+            d for d in dirnames
+            if d not in SKIP_DIRS and not (at_root and d in SKIP_ROOT_DIRS)
+        )
         rel = os.path.relpath(dirpath, base)
         rel = '' if rel == '.' else rel
         for f in sorted(filenames):

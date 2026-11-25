@@ -16,8 +16,10 @@ import urllib.request
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # 跟 deploy-ftp.py 的跳过规则保持一致，否则会去核对根本没传的文件
-SKIP_DIRS = {'.git', '.workbuddy', '.githooks', '.github', 'tools', 'docs',
+SKIP_DIRS = {'.git', '.workbuddy', '.githooks', '.github',
              'node_modules', '__pycache__'}
+# 只跳过仓库根下这两个；assets/tools/ 是发布内容，必须核对（按名一刀切会把它漏掉）
+SKIP_ROOT_DIRS = {'tools', 'docs'}
 SKIP_FILES = {'README.md', '.gitignore', 'CNAME', 'web.config'}
 SKIP_SUFFIX = ('.pyc', '.command')   # .command 是本机双击入口，deploy 不传
 
@@ -25,7 +27,10 @@ SKIP_SUFFIX = ('.pyc', '.command')   # .command 是本机双击入口，deploy �
 def collect(base):
     out = []
     for root, dirs, files in os.walk(base):
-        dirs[:] = [d for d in dirs if d not in SKIP_DIRS and not d.startswith('.')]
+        at_root = os.path.normpath(root) == os.path.normpath(base)
+        dirs[:] = [d for d in dirs
+                   if d not in SKIP_DIRS and not d.startswith('.')
+                   and not (at_root and d in SKIP_ROOT_DIRS)]
         for name in files:
             if name in SKIP_FILES or name.startswith('.') or name.endswith(SKIP_SUFFIX):
                 continue
