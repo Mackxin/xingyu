@@ -103,6 +103,19 @@
     background:#fff8ed; border:1px solid #fbe3c2; font-size:12.8px; color:#7c4a03;
   }
   .note b{ color:#7c4a03; }
+
+  /* 完全手动版：一段可复制的命令 */
+  .manual{ margin-top:18px; padding-top:16px; border-top:1px dashed var(--line); }
+  .manual h3{ margin:0 0 6px; font-size:14px; }
+  .manual .sub{ margin:0; color:var(--dim); font-size:12.6px; }
+  pre{
+    margin:11px 0 0; padding:14px 16px; border-radius:10px;
+    background:#111827; color:#e7ecf7; overflow-x:auto;
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    font-size:11.4px; line-height:1.9;
+  }
+  pre code{ background:none; padding:0; color:inherit; font-size:inherit; }
+  .manual .note{ margin-top:12px; }
   footer{
     margin-top:44px; padding-top:16px; border-top:1px solid var(--line);
     color:var(--mute); font-size:12px; display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap;
@@ -121,6 +134,8 @@
     .page{ max-width:none; }
     section{ margin-top:20px; page-break-inside:avoid; }
     .card{ border-color:#ddd; }
+    /* 打印时深色底会被丢掉，白字就跟着消失了 —— 必须换成浅底深字 */
+    pre{ background:#f6f7fb !important; color:#141b2b !important; border:1px solid #dcdfe8; font-size:9.4pt; line-height:1.7; }
     footer{ margin-top:22px; }
   }
 </style>
@@ -237,9 +252,47 @@
         <dt><span class="mono">… --no-ftp</span></dt><dd>只推 GitHub，不动国内镜像</dd>
         <dt><span class="mono">… --all</span></dt><dd>整站重传镜像（改了代码才用，慢且容易掉文件）</dd>
         <dt><span class="mono">deploy-ftp.py --files a,b</span></dt><dd>只补传指定文件（一次别超过 3 个）</dd>
-        <dt><span class="mono">verify-ftp.py</span></dt><dd>走 HTTP 逐文件核对镜像，<b>32 个全 ✓ 才算完</b></dd>
+        <dt><span class="mono">verify-ftp.py</span></dt><dd>走 HTTP 逐文件核对镜像，<b>全部 ✓ 才算完</b>（现在是 33 个）</dd>
         <dt><span class="mono">XY_FORCE_CONTENT=1 …</span></dt><dd>确实要用一份比仓库旧的导出时，强制覆盖</dd>
       </dl>
+
+      <div class="manual">
+        <h3>全部自己手动（不跑一键脚本）</h3>
+        <p class="sub">一键脚本没有别的魔法，就是下面这 6 个动作串起来。想自己一条条跑，照这个顺序，别跳步。</p>
+        <pre><code>cd "/Volumes/1T宝盘/workbuddy/星屿"
+
+# ① 收内容：把后台导出的那份盖进仓库
+cp ~/Downloads/site-data.js assets/js/site-data.js
+
+# ② 重烘三份产物（产物不许手改，只能现烘）
+node tools/gen-app-json.js --plain
+node tools/gen-feed.js
+python3 - &lt;&lt;'PY'
+import gzip
+raw = open('api/app.json','rb').read()
+open('api/app.json.gz','wb').write(gzip.compress(raw, 9, mtime=0))
+PY
+
+# ③ 提交 + 推送
+git add -A &amp;&amp; git commit -m "内容同步" &amp;&amp; git push
+
+# ④ 传国内镜像（只传变了的这 4 个）
+python3 tools/deploy-ftp.py --files assets/js/site-data.js,api/app.json,api/app.json.gz,feed.xml
+
+# ⑤ 让 jsDelivr 的兜底源立刻失效
+curl -s -o /dev/null -A "xingyu-sync" "https://purge.jsdelivr.net/gh/Mackxin/xingyu@main/api/app.json"
+
+# ⑥ 核对：全部 ✓ 才算完
+python3 tools/verify-ftp.py</code></pre>
+        <div class="note">
+          <b>手动比一键少的只有两样：</b>① 那层「这份导出比仓库旧就跳过」的护栏 —— 盖之前自己看一眼文件头的
+          <span class="mono">导出于 …</span> 是不是刚才那次；② 自动算出「该传哪些文件」。其余一模一样。
+        </div>
+        <p class="sub" style="margin-top:12px">
+          最容易漏的三处：<b>忘了压 app.json.gz</b>（网页是新的、App 还是旧的）、
+          <b>commit 了没 push</b>（本地全对、线上一字未变）、<b>传完不核对</b>（传失败会在服务器上删掉那个文件）。
+        </p>
+      </div>
       <div class="note">
         <b>什么时候要发版（+1 版本号）：</b>只有<b>改代码</b>才需要 —— 动 <span class="mono">app.js</span> /
         <span class="mono">style.css</span> / <span class="mono">sw.js</span> 这类文件时，把

@@ -2485,6 +2485,31 @@
       '<div class="head-stat"><b>' + Math.max(0, tags.length - 1) + '</b><span>个标签</span></div>' +
       '</div>';
 
+    /* 本机存着旧的一批文章：比站点文件少的那些在这台机器上根本不出现。
+       列表页先说一句，省得以为文章丢了。 */
+    var shadowHint = '';
+    if (window.XYStore && window.XYStore.postsIsCustom && window.XYStore.postsIsCustom()) {
+      var filePosts = (window.SITE_DATA && window.SITE_DATA.posts) || [];
+      var have = {};
+      all.forEach(function (p) { have[String(p.id)] = 1; });
+      var missing = filePosts.filter(function (p) {
+        return p && !p.draft && !have[String(p.id)];
+      });
+      if (missing.length) {
+        var names = missing.slice(0, 2).map(function (p) {
+          return '《' + (p.title || '') + '》';
+        }).join('、');
+        shadowHint =
+          '<div class="local-shadow local-shadow--inline">' +
+            '<b>站点文件里还有 ' + missing.length + ' 篇，在这台机器上看不到</b>' +
+            '<p>浏览器里存着一批旧文章，它的优先级比站点文件高，' + esc(names) +
+              (missing.length > 2 ? ' 等等' : '') + '就是因为这个没出现。</p>' +
+            '<button class="btn btn--ghost" type="button" data-adopt-post="">用站点的版本重新加载</button>' +
+            '<p class="local-shadow__note">只会丢掉这台机器上的文章改动，站点文件一个字不动。</p>' +
+          '</div>';
+      }
+    }
+
     /* 标签筛选条：和分享页同一个组件（宽屏横条 / 窄屏收进顶栏），走 data-post-tag */
     var tagBar = '';
     if (tags.length > 1) {
@@ -2521,18 +2546,49 @@
         '</div>' +
         '<div class="page-head__side">' + statsHtml + '</div>' +
       '</div>' +
+      shadowHint +
       tagBar +
       (items.length ? body : emptyHtml('📝', all.length ? '这个标签下还没有文章' : '还没有文章',
         all.length ? '换个标签，或者点下面的「全部」看看。' : '到后台「文章」页写第一篇，或直接导入 .md 文件。')) +
       '</section>';
   }
 
+  /* 本机存着旧的一批文章时（localStorage 比 site-data.js 优先），文件里新加的那篇
+     在这台机器上就是「找不到」。这里查一下文件里到底有没有，好把真相说清楚。 */
+  function bundledPostBlocking(id) {
+    var list = (window.SITE_DATA && window.SITE_DATA.posts) || [];
+    var want = String(id || '');
+    for (var i = 0; i < list.length; i++) {
+      var it = list[i];
+      if (it && String(it.id) === want && !it.draft) return it;
+    }
+    return null;
+  }
+
   function renderPost() {
     var p = findPost(state.postId);
     if (!p || p.draft) {
+      var blocked = bundledPostBlocking(state.postId);
+      var fix = '';
+      if (blocked) {
+        fix =
+          '<div class="local-shadow">' +
+            '<b>站点上其实有这一篇：《' + esc(blocked.title || '') + '》</b>' +
+            '<p>挡住你的是<b>这台机器自己存着的一批旧文章</b> —— 浏览器里那份比站点文件优先，' +
+              '所以文件里新加的、改过的，在这台机器上看不到。</p>' +
+            '<button class="btn btn--primary" type="button" data-adopt-post="' +
+              esc(String(blocked.id)) + '">用站点的版本打开</button>' +
+            '<p class="local-shadow__note">只会丢掉这台机器上的文章改动，站点文件一个字不动。</p>' +
+          '</div>';
+      }
       return '<section class="page page--posts">' +
         '<a class="post-back" href="#/post">' + I.arrow + '<span>全部文章</span></a>' +
-        emptyHtml('🌫', '这篇找不到了', '可能是删掉了，或者链接少了一个字符。') +
+        '<div class="empty">' +
+          '<span class="empty__emoji">🌫</span>' +
+          '<h3>这篇找不到了</h3>' +
+          '<p>可能是删掉了，或者链接少了一个字符。</p>' +
+          fix +
+        '</div>' +
         '</section>';
     }
     var st = MD.stats(p.body || '');
@@ -4532,6 +4588,17 @@
     document.addEventListener('xy:data', function () { refreshData(); });
     // 后台文章变化 → 刷新列表数据
     document.addEventListener('xy:posts', function () { refreshPosts(); });
+
+    // 文章 404 页上那条「用站点的版本打开」：清掉本机那份旧副本，再按原地址打开
+    document.addEventListener('click', function (e) {
+      var b = e.target.closest ? e.target.closest('[data-adopt-post]') : null;
+      if (!b) return;
+      e.preventDefault();
+      var id = b.getAttribute('data-adopt-post');
+      if (window.XYStore && window.XYStore.resetPosts) window.XYStore.resetPosts();
+      if (id) openPost(id);
+      else render({ animate: false });
+    });
     // 后台分享条目变化 → 刷新时间线数据
     document.addEventListener('xy:feed', function () { refreshFeed(); });
 

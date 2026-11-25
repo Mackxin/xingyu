@@ -1084,6 +1084,26 @@ html[data-cat-icon="off"] #headerCatEmoji{ display:none; }
 .empty h3{ margin:0; font-size:17px; }
 .empty p{ margin:0; color:var(--text-mute); font-size:13.5px; }
 
+/* 本机存着旧副本时的说明块
+   404 页：接在「这篇找不到了」下面，是同一块卡片的下半部分（只有一条分隔线，不另起盒子）
+   列表页：--inline，独立的一条提示卡 */
+.local-shadow{
+  width:100%; max-width:540px; margin:4px auto 0; padding:18px 2px 0;
+  display:grid; gap:9px; text-align:left;
+  border-top:1px solid var(--border);
+}
+.local-shadow > b{ font-size:14px; line-height:1.6; }
+.local-shadow > p{ margin:0; font-size:13px; line-height:1.75; color:var(--text-mute); }
+.local-shadow .btn{ justify-self:start; margin-top:2px; }
+.local-shadow__note{ font-size:12.2px !important; color:var(--text-dim) !important; }
+.local-shadow--inline{
+  max-width:none; margin:0 0 22px; padding:16px 18px; gap:7px;
+  border-top:0; border-radius:var(--r-lg);
+  background:var(--glass); border:1px solid var(--border);
+}
+.local-shadow--inline > b{ font-size:13.2px; }
+.local-shadow--inline > p{ font-size:12.6px; }
+
 /* =========================================================
    分享页
    ========================================================= */
