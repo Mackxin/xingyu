@@ -562,11 +562,72 @@
     links.splice(at, 0, { n: '随手记', u: '#/note', d: 'Markdown 便签，记一条算一条' });
     return cats;
   }
+  /**
+   * 把导航里那些「指向已经删掉的老页面」的地址换成现在该去的地方。
+   *
+   * 为什么非要在内存里改：2026-11-25 把根目录十几张老页面清干净了
+   * （`qiantai.html` / `system.html` / `mac.html` / `jiaoben.html` 等），内容都搬进了
+   * 站内页和文章。但老访客的分类数据存在 `localStorage['xingyu.data.v1']`，
+   * 优先级高于 `bookmarks.js` —— 只改文件对他们无效，点上去就是 404，
+   * 表现成「有些入口打不开」。跟「本地音乐 / 待办清单 / 随手记」是同一个坑。
+   *
+   * 认的是**文件名**而不是整条网址：老数据里可能是
+   * `http://yihaozhan.xyz/system.html`、`https://mackxin.github.io/xingyu/system.html`，
+   * 甚至后台手填的别的域名，路径尾巴都是一样的。
+   * 幂等：已经是新地址的不再动；`assets/tools/xxx.html` 是要保留的真页面，不能误伤。
+   */
+  var STALE_MAP = [
+    /* 旧页面 → 现在的位置 */
+    [/\/qiantai(\.html)?$/i, '#/share'],
+    [/\/system\.html$/i, '#/post/install-os'],
+    [/\/mac\.html$/i, '#/post/mac-software'],
+    [/\/jiaoben\.html$/i, '#/post/tampermonkey-scripts'],
+    [/\/yuchanqi\.html$/i, 'assets/tools/yuchanqi.html'],
+    [/\/dianchipaodan\.html$/i, 'assets/tools/dianchipaodan.html'],
+    [/\/chusheng\.html$/i, 'assets/tools/chusheng.html'],
+    [/\/suishouji(\/index\.html)?$/i, '#/note'],
+    [/\/daohang\.html$/i, '#/nav'],
+    [/\/linggan\.html$/i, '#/idea'],
+    [/\/about\.html$/i, '#/about']
+  ];
+  /* 只改「我们自己这几台机器」上的地址。别的网站也有 /about.html、/system.html，
+     两千多个站点里撞上的概率不低，误改就是把人家的链接偷走。 */
+  function isOwnUrl(u) {
+    var m = /^https?:\/\/([^\/]+)(\/.*)?$/i.exec(u);
+    if (!m) return true;                       /* 没有域名 = 站内相对路径 */
+    var host = m[1].toLowerCase();
+    var path = m[2] || '/';
+    if (host === 'yihaozhan.xyz' || host === 'www.yihaozhan.xyz') return true;
+    if (host === '127.0.0.1' || host === 'localhost') return true;
+    if (host === 'mackxin.github.io') return path.indexOf('/xingyu/') === 0;
+    return false;
+  }
+  function fixStaleLinks(cats) {
+    if (!cats || !cats.length) return cats;
+    for (var i = 0; i < cats.length; i++) {
+      var links = cats[i] && cats[i].links;
+      if (!Array.isArray(links)) continue;
+      for (var j = 0; j < links.length; j++) {
+        var l = links[j];
+        if (!l) continue;
+        var u = String(l.u || '');
+        /* 站内路由、以及 assets/tools/ 下那几个真页面，一律别碰 */
+        if (!u || u.charAt(0) === '#' || u.indexOf('assets/tools/') === 0 ||
+            u.indexOf('/assets/tools/') > -1) continue;
+        if (!isOwnUrl(u)) continue;
+        var q = u.replace(/[?#].*$/, '');
+        for (var k = 0; k < STALE_MAP.length; k++) {
+          if (STALE_MAP[k][0].test(q)) { l.u = STALE_MAP[k][1]; break; }
+        }
+      }
+    }
+    return cats;
+  }
   /* 所有「站点自带页」的导航入口都在这儿过一遍，别的模块只认结果。
      顺序有讲究：music 先插到 #/idea 后面，todo 再插到 #/idea 后面 →
      最终是「灵感随记 / 待办清单 / 本地音乐 / 随手记」。 */
   function withBuiltinEntries(cats) {
-    return ensureNoteEntry(ensureTodoEntry(ensureMusicEntry(cats)));
+    return ensureNoteEntry(ensureTodoEntry(ensureMusicEntry(fixStaleLinks(cats))));
   }
   /* 后台改过站点数据后调用：重新取分类 → 重建索引 */
   function refreshData() {
