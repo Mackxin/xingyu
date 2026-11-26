@@ -5073,8 +5073,11 @@
     }
 
     /* PWA：注册 Service Worker —— 注册成功后可以「添加到主屏幕」并离线打开。
-       file:// 直接双击打开时不支持 SW，会自动跳过，不影响其它功能。 */
-    if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+       file:// 直接双击打开时不支持 SW，会自动跳过，不影响其它功能。
+       本地预览（127.0.0.1 / localhost）也不注册：预览要看的是「刚烘出来的那份」，
+       让 SW 插一脚只会得到旧文件。线上域名不是这两个 host，不受影响。 */
+    var isLocalPreview = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
+    if ('serviceWorker' in navigator && location.protocol !== 'file:' && !isLocalPreview) {
       window.addEventListener('load', function () {
         try { navigator.serviceWorker.register('sw.js').catch(function () {}); } catch (e) {}
       });

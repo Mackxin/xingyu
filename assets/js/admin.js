@@ -3081,6 +3081,8 @@
               '改完是本机<b>草稿</b>，前台和线上都还没变。</span></li>' +
             '<li><b>点「⬇ 导出 site.json」</b><span>下载到<b>一个文件</b>，里面是全站内容' +
               '（导航 + 分享 + 文章 + 外观），没有别的文件要管。</span></li>' +
+            '<li><b>（可选）先拖到桌面「壹号栈 · 本地预览」看一眼</b><span>它只校验、只烘、只在' +
+              '本机开个页面，<b>不推远端</b>。看完满意再往下走，不满意就接着改。</span></li>' +
             '<li><b>把这份 site.json 拖到桌面「壹号栈 · 拖文件上传」</b><span>' +
               '它自动拷进 <code>content/site.json</code>、烘好网页和 App 的数据、传到 GitHub 和国内镜像，' +
               '最后逐项核对。整个全端就一起新了。</span></li>' +
@@ -3094,7 +3096,7 @@
             '<tr><td>App 还是旧内容</td><td>设置里镜像地址要写 <code>http://yihaozhan.xyz/</code>（<b>带 http://</b>），然后切后台再回来。</td></tr>' +
             '<tr><td>只想让网页变、不动镜像</td><td>终端跑 <code>python3 tools/sync.py --no-ftp</code>。</td></tr>' +
             '<tr><td>手机 / 别的电脑上发一条分享</td><td>GitHub 网页打开 <code>content/site.json</code> 改 <code>feed</code> 里那几条，保存后 Action 会自动烘好并发布（几分钟）。</td></tr>' +
-            '<tr><td>本机看着还是旧的</td><td>后台改了只是草稿，前台要等同步完才变；如果你是在「别的浏览器」看的，那本来就不共享草稿。</td></tr>' +
+            '<tr><td>本机看着还是旧的</td><td>先看是不是<b>只覆盖了 content/site.json 却没烘</b> —— 覆盖源文件不等于上线，站点读的是烘出来的那份。拖到桌面「本地预览」看一眼最省事。</td></tr>' +
             '</tbody></table>' +
         '</div>' +
       '</details>';
@@ -3125,7 +3127,18 @@
           '<div class="pub-step">' +
             '<span class="pub-step__n">2</span>' +
             '<div class="pub-step__body">' +
-              '<b>把 site.json 拖到桌面「壹号栈 · 拖文件上传」</b>' +
+              '<b>（可选）先在本机看一眼，再决定发不发</b>' +
+              '<p class="admin-tip">把导出的 <code>site.json</code> 拖到桌面「壹号栈 · 本地预览」——' +
+                '它只做三件事：校验 → 烘产物 → 在本机开个页面给你看。<b>完全不碰远端</b>，' +
+                '不提交、不推送、不传镜像。看完不满意就接着改。</p>' +
+              '<p class="admin-tip">已经覆盖进 <code>content/site.json</code> 了？双击「本地预览」就行，' +
+                '不用再拖一次。</p>' +
+            '</div>' +
+          '</div>' +
+          '<div class="pub-step">' +
+            '<span class="pub-step__n">3</span>' +
+            '<div class="pub-step__body">' +
+              '<b>满意了，把 site.json 拖到桌面「壹号栈 · 拖文件上传」</b>' +
               '<p class="admin-tip">它会自己走完：拷进 <code>content/</code> → 构建 → 推送 → 传镜像 → 核对。' +
                 '不想拖也行：把它覆盖进 <code>content/site.json</code>，再双击「壹号栈 · 一键同步」。</p>' +
               '<div class="admin-actions">' +

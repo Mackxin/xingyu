@@ -46,11 +46,14 @@ function lineOf(text, pos) {
 
 function readSource() {
   if (!fs.existsSync(SRC)) {
-    /* 老结构还在的话，给一句能照做的提示，而不是「文件不见了」 */
+    /* 老结构还在的话，给一句能照做的提示，而不是「文件不见了」。
+       v169 之前的 content/ 是 nav.json / feed.json / posts/*.md 一堆文件，
+       那些文件现在已经没人读了 —— 唯一的内容源是 site.json。 */
     if (fs.existsSync(path.join(CONTENT, 'nav.json'))) {
-      fail('content/site.json', '不见了（目录里还有 nav.json —— 先跑 python3 tools/merge-content.py 合并）');
+      fail('content/site.json', '不见了，只剩 v168 那批老文件（nav.json 等），它们已经没人读了。'
+        + '去后台「发布上线 → ⬇ 导出 site.json」重新导一份放进来。');
     } else {
-      fail('content/site.json', '不见了');
+      fail('content/site.json', '不见了 —— 后台「发布上线 → ⬇ 导出 site.json」导一份放进来');
     }
     return null;
   }

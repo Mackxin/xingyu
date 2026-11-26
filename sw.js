@@ -11,7 +11,12 @@
 
    ⚠️ 发布新版本时，把 VERSION 和 index.html 里的 ?v= 一起改。
    ========================================================================= */
-var VERSION = 'v170';
+var VERSION = 'v171';
+
+/* 本地预览（127.0.0.1 / localhost）不该有缓存。预览要的是「刚改完的那份」，
+   可要是以前在同一个端口注册过 SW，刷新拿到的会是旧文件 —— 那就成了假的「没生效」。
+   这里主动注销自己并清空所有缓存。线上域名不是这两个 host，走不到这段。 */
+var LOCAL_PREVIEW = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(self.location.hostname);
 /* 缓存前缀跟着站名走（v134 起叫壹号栈）。CACHE_PREFIXES 里留着旧的 xingyu-，
    activate 时一起清 —— 不然改过名的老用户机器上会一直搁着几份旧站名的缓存。 */
 var CACHE_PREFIX = 'yihaozhan-';
@@ -48,6 +53,7 @@ function own(path) {
 }
 
 self.addEventListener('install', function (e) {
+  if (LOCAL_PREVIEW) { self.skipWaiting(); return; }
   e.waitUntil(
     caches.open(CACHE)
       // 逐个 add，某个文件 404 不至于让整个安装失败
@@ -61,6 +67,17 @@ self.addEventListener('install', function (e) {
 });
 
 self.addEventListener('activate', function (e) {
+  if (LOCAL_PREVIEW) {
+    e.waitUntil(
+      caches.keys()
+        .then(function (keys) {
+          return Promise.all(keys.map(function (k) { return caches.delete(k); }));
+        })
+        .then(function () { return self.registration.unregister(); })
+        .catch(function () {})
+    );
+    return;
+  }
   e.waitUntil(
     caches.keys().then(function (keys) {
       return Promise.all(keys.map(function (k) {
@@ -72,6 +89,7 @@ self.addEventListener('activate', function (e) {
 });
 
 self.addEventListener('fetch', function (e) {
+  if (LOCAL_PREVIEW) return;   // 本地预览：一律直接走网络，不接管
   var req = e.request;
   if (req.method !== 'GET') return;
 

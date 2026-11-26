@@ -146,7 +146,7 @@
   <header>
     <div class="kicker">YIHAOZHAN · 更新流程</div>
     <h1>后台改完，导出这一个文件</h1>
-    <p class="lede">全站内容只有 <code>content/site.json</code> 一个文件：导航、分享、文章、外观都在里面。在后台改，导出它，拖到桌面那个图标 —— 网页 / App / 国内镜像一起新。</p>
+    <p class="lede">全站内容只有 <code>content/site.json</code> 一个文件：导航、分享、文章、外观都在里面。在后台改，导出它；<b>想先看效果就丢给「本地预览」</b>（不碰远端），满意了再拖给「拖文件上传」—— 网页 / App / 国内镜像一起新。</p>
     <div class="rule"></div>
   </header>
 
@@ -166,12 +166,18 @@
       </div>
       <div class="model" style="margin-top:14px">
         <div class="box">
-          <b>③ 把 site.json 拖到桌面图标</b>
-          <span>「壹号栈 · 拖文件上传」。它拷进仓库、校验、构建、推送、传镜像、核对。</span>
+          <b>③（可选）拖到「本地预览」看一眼</b>
+          <span>只校验、只烘、只在本机开个页面 —— <b>完全不碰远端</b>。看完不满意就接着改。</span>
         </div>
         <div class="arrow">→</div>
+        <div class="box">
+          <b>④ 把 site.json 拖到「拖文件上传」</b>
+          <span>拷进仓库、校验、构建、推送、传镜像、核对。</span>
+        </div>
+      </div>
+      <div class="model" style="margin-top:14px">
         <div class="box box--you">
-          <b>④ 全端新了</b>
+          <b>⑤ 全端新了</b>
           <span>网页 ⌘⇧R 强刷、App 切后台再回来。草稿在导出时就清掉了。</span>
         </div>
       </div>
@@ -183,7 +189,7 @@
   </section>
 
   <section>
-    <h2><span class="n">2</span>三步（第二次以后就是这三步）</h2>
+    <h2><span class="n">2</span>三步（想先看效果就插一步）</h2>
     <div class="card">
       <ol class="steps">
         <li>
@@ -197,14 +203,25 @@
           <p class="expect">提示会念出来：<b>已导出：2081 条链接 · 677 条分享 · 5 篇</b>。</p>
         </li>
         <li>
+          <h3>（可选）本地先看一眼</h3>
+          <p>把下载夹里那个 <code>site.json</code> 拖到桌面 <b>「壹号栈 · 本地预览」</b> 上松手。
+            它只做三件事：校验 → 烘产物 → 在本机开个页面给你看。</p>
+          <p class="expect">窗口里会写 <b>「只看，不上线」</b>，并念出条数。这一步<b>不提交、不推送、不传镜像</b> ——
+            看完不满意就接着改，远端一点没动。</p>
+          <p>如果你已经把文件覆盖进 <code>content/site.json</code> 了，直接双击这个图标就行，不用再拖一次。</p>
+        </li>
+        <li>
           <h3>拖到桌面图标</h3>
-          <p>把下载夹里那个 <code>site.json</code> 拖到桌面 <b>「壹号栈 · 拖文件上传」</b> 上松手。</p>
+          <p>满意了，把 <code>site.json</code> 拖到桌面 <b>「壹号栈 · 拖文件上传」</b> 上松手。</p>
           <p class="expect">窗口最后一行是 <b>全部完成 ✓ —— 网页 / App / 国内镜像都已经是新内容</b>。</p>
         </li>
       </ol>
       <div class="note">
         不想拖也行：把 <code>site.json</code> 覆盖进仓库的 <code>content/site.json</code>，再双击桌面
         <b>「壹号栈 · 一键同步」</b>。两条路做的是同一件事。
+        <br><b>注意：覆盖文件本身不会让网站变</b> —— 站点读的是烘出来的
+        <code>assets/js/site-data.js</code>，不是 <code>site.json</code>。漏了「烘」这一步，
+        前台就一直是旧的。
       </div>
     </div>
   </section>
@@ -271,6 +288,7 @@
           <tr><td class="bad">✗ content/site.json 里有 N 处写得不对</td><td>会指出<b>第几行第几列</b>（多半是少了逗号）。改完重跑。<b>这次一个字都没发出去，线上没事。</b></td></tr>
           <tr><td class="bad">✗ 推送还是失败</td><td>网络没通。开代理再跑一次 —— 这一步失败时镜像会整段跳过，不补跑手机上就是旧的。</td></tr>
           <tr><td>后台改了，前台没变</td><td>正常。草稿还没导出、没同步。走第 2 节那三步。</td></tr>
+          <tr><td class="bad">覆盖了 site.json，网站还是旧的</td><td>少烘了一步。站点读的是 <code>assets/js/site-data.js</code>，不是 <code>site.json</code>。拖到桌面「壹号栈 · 本地预览」（或双击它）就会烘好；也可以直接拖到「拖文件上传」，那一步会连烘带传一起做完。</td></tr>
           <tr><td>App 还是旧内容</td><td>设置里镜像地址要写 <code>http://yihaozhan.xyz/</code>（<b>带 http://</b>），然后切后台再回来。</td></tr>
           <tr><td>只想让网页变、不动镜像</td><td>终端跑 <code>python3 tools/sync.py --no-ftp</code>。</td></tr>
           <tr><td>手机 / 别的电脑上加一条分享</td><td>GitHub 网页打开 <code>content/site.json</code>，改 <code>feed</code> 里那几条并提交，Action 会自动烘好并发布（几分钟）。</td></tr>
@@ -289,6 +307,7 @@
           <tr><td><code>python3 tools/sync.py</code></td><td>一条做完：校验 → 构建 → 推送 → 传镜像 → 核对</td></tr>
           <tr><td><code>python3 tools/sync.py --no-ftp</code></td><td>只推 GitHub，不动镜像（出门在外用）</td></tr>
           <tr><td><code>python3 tools/sync.py --dry</code></td><td>只说会做什么，什么都不动</td></tr>
+          <tr><td><code>python3 tools/preview.py</code></td><td>本地预览：校验 → 烘产物 → 本机开个页面，<b>不碰远端</b></td></tr>
           <tr><td><code>node tools/build-content.js --check</code></td><td>只校验 site.json，不写文件</td></tr>
           <tr><td><code>python3 tools/verify-ftp.py</code></td><td>逐文件核对镜像（32 个全 ✓ 才算好）</td></tr>
           <tr><td><code>python3 tools/upload-files.py 某文件</code></td><td>补传单个文件（镜像掉了东西时用）</td></tr>
