@@ -1,6 +1,6 @@
 #!/bin/zsh
-# 双击运行 —— 后台「备份 → 下载 site-data.js」之后，双击这个文件就行。
-# 它会把：导出的内容 + 重烘的 app.json/feed.xml 一起推到 GitHub 和国内镜像，
+# 双击运行 —— 改完 content/ 里的文件（feed.json / posts/*.md / nav.json）之后，双击这个文件。
+# 它会把：校验+构建 content/ → 重烘 app.json/feed.xml → 推 GitHub 和国内镜像，
 # 最后核对三端版本号。具体做了什么看终端里的输出，或者看 tools/sync.py 开头。
 #
 # 想带参数跑（比如只推 GitHub 不碰镜像），在这个文件上右键 → 打开方式 → 终端，
