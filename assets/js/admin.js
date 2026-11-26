@@ -89,7 +89,7 @@
   function mutate(fn) {
     var list = cats();
     fn(list);
-    Store.setData(list);   // 触发 xy:data → 前台重建索引
+    Store.setData(list);   // 写进草稿 + 触发 xy:data；前台不读草稿，要导出同步才上线
     return list;
   }
   function counts(list) {
@@ -192,6 +192,7 @@
   /* ======================= 渲染 ======================= */
   function render() {
     if (!Store.isUnlocked()) return lockHtml();
+    bindExportDelegates();
     /* v142：面板名进地址栏了（#/admin/feed），刷新/后退都停在同一面板。
        地址里没带就沿用内存里的 tab（第一次进来是「站点数据」）。 */
     var fromHash = app().adminTab ? app().adminTab() : '';
@@ -215,14 +216,23 @@
   /* 面板标题跟着当前面板变 —— 切面板时只换这一块，不整页重绘 */
   function headHtml() {
     var meta = tabMeta(tab);
+    var isContent = tab === 'sites' || tab === 'feed' || tab === 'posts';
+    var draft = Store.draftInfo();
+    /* 这一句始终在场 —— 「改的东西还在本机」是后台最容易忘的一件事。
+       内容面板改的是草稿（前台完全不变），外观面板是实时生效但只在这台机器。 */
+    var note = isContent
+      ? '这里改的存成<b>草稿</b>：前台和线上都还是旧的。要上线 → 导出 <code>site.json</code> → ' +
+        '拖到桌面「壹号栈 · 拖文件上传」。'
+      : '这里的改动<b>实时生效</b>，但只存在这台设备的浏览器里；要让所有人看到，' +
+        '同样得导出 <code>site.json</code> 再同步。';
+    var bar = draft.any
+      ? '<div class="admin-head__draft"><b>草稿里还有没发布的改动：' + esc(draft.text) + '</b>' +
+        '<button class="btn btn--ghost" type="button" data-export-site>⬇ 导出 site.json</button></div>'
+      : '';
     return '<span class="eyebrow">Admin · 后台</span>' +
       '<h1>' + esc(meta.icon) + ' ' + esc(meta.label) + '</h1>' +
       '<p>' + esc(meta.hint || '') + '</p>' +
-      /* 这一句始终在场 —— 标题可以跟着面板换，但「改的是本机、别人看不到」
-         是后台最容易忘的一件事，丢了会以为自己已经更新了线上。 */
-      '<p class="admin-head__note">这里的改动<b>实时生效</b>，但只存在这台设备的浏览器里；' +
-        '要让所有人看到，去「备份 → 发布上线」：① 导出 <code>site-data.js</code>　' +
-        '② 双击桌面「壹号栈 · 一键同步」。</p>';
+      '<p class="admin-head__note">' + note + '</p>' + bar;
   }
 
   /* 左侧导航栏（v142：按「内容 / 外观 / 系统」分组，10 项一排到底太长了） */
@@ -1146,7 +1156,7 @@
     /* 存完就退出编辑器，回到列表（不然会以为没保存上） */
     editing = null;
     savedId = key;
-    toast(data.draft ? '已存草稿 ✦ 前台暂时看不到' : '已保存 ✦ 前台马上能看到');
+    toast(data.draft ? '已存草稿 ✦ 前台暂时看不到' : '已存进草稿 ✦ 导出 site.json 并同步后才上前台');
     refreshBody(root);
     var row = root.querySelector('.post-admin-row.is-saved');
     if (row) {
@@ -1555,7 +1565,7 @@
       return;
     }
     feedEditing = null;
-    toast('已保存 ✦ 前台「分享」页马上能看到');
+    toast('已存进草稿 ✦ 导出 site.json 并同步后，前台「分享」页才会变');
     refreshBody(root);
   }
 
@@ -2470,8 +2480,8 @@
           '<a class="btn btn--ghost" href="#/about" target="_blank" rel="noopener">↗ 打开这一页看看</a>' +
           '<button class="btn btn--ghost" type="button" id="adminAboutReset">↺ 恢复默认正文</button>' +
         '</div>' +
-        '<p class="admin-tip">改完直接生效（本机）。要让所有访客看到，回「备份 → 发布上线」点两下：' +
-          '导出 <code>site-data.js</code>，再双击桌面的一键同步图标。</p>' +
+        '<p class="admin-tip">改完只在这台机器的浏览器里生效。要让所有访客看到：去「发布上线」' +
+          '点「⬇ 导出 site.json」，再把下载到的文件拖到桌面「壹号栈 · 拖文件上传」。</p>' +
       '</div>' +
 
       '<div class="admin-card">' +
@@ -3005,6 +3015,31 @@
       cb(null, { at: m ? m[1] : '', bytes: bytes, empty: !/window\.SITE_DATA\s*=/.test(txt) });
     }).catch(function (e) {
       cb((e && e.message) || '网络错误');
+    });
+  }
+
+  /* ============ 导出整站内容（后台所有「导出 site.json」都走这里） ============
+     一个文件装全部内容：{ _note, site, nav, feed, entries, posts }。
+     导出即交棒：草稿当场清掉，免得下次改动跟这一份混在一起分不清。 */
+  function exportSiteFile() {
+    var data = Store.exportSite();
+    var links = (data.nav || []).reduce(function (n, c) {
+      return n + ((c && c.links) ? c.links.length : 0); }, 0);
+    download('site.json', JSON.stringify(data, null, 2) + '\n', 'application/json');
+    Store.draftClear();
+    toast('已导出：' + links + ' 条链接 · ' + (data.feed || []).length + ' 条分享 · ' +
+      (data.posts || []).length + ' 篇。下一步：拖到桌面「壹号栈 · 拖文件上传」');
+    if (app().rerender) app().rerender();
+  }
+  /* 面板会反复重绘，委托只挂一次 */
+  function bindExportDelegates() {
+    if (bindExportDelegates.done) return;
+    bindExportDelegates.done = true;
+    document.addEventListener('click', function (e) {
+      var t = e.target && e.target.closest ? e.target.closest('[data-export-site]') : null;
+      if (!t) return;
+      e.preventDefault();
+      exportSiteFile();
     });
   }
 
@@ -4671,17 +4706,7 @@
 
     /* 外观调完想上线：把当前设置导成 content/site.json 同名文件，覆盖过去即可 */
     var snSite = body.querySelector('#snSiteJson');
-    if (snSite) snSite.addEventListener('click', function () {
-      var data = Store.exportSite();
-      var links = (data.nav || []).reduce(function (n, c) {
-        return n + ((c && c.links) ? c.links.length : 0); }, 0);
-      download('site.json', JSON.stringify(data, null, 2) + '\n', 'application/json');
-      /* 导出即「已交棒」：草稿清掉，避免下次改动跟上一份混在一起分不清 */
-      Store.draftClear();
-      toast('已导出：' + links + ' 条链接 · ' + (data.feed || []).length + ' 条分享 · ' +
-        (data.posts || []).length + ' 篇。下一步：拖到桌面「壹号栈 · 拖文件上传」');
-      render();
-    });
+    if (snSite) snSite.addEventListener('click', exportSiteFile);
 
     /* 顺手生成 RSS */
     var snFeed = body.querySelector('#snFeed');
