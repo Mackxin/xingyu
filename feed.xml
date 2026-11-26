@@ -5,9 +5,19 @@
     <link>https://mackxin.github.io/xingyu/</link>
     <description>壹号为栈，随处可归 —— 每天一小条，记录遇见的工具、灵感与小发现，也写点长一点的文章。</description>
     <language>zh-cn</language>
-    <lastBuildDate>Thu, 22 Oct 2026 09:00:00 GMT</lastBuildDate>
+    <lastBuildDate>Thu, 26 Nov 2026 09:00:00 GMT</lastBuildDate>
     <generator>YIHAOZHAN gen-feed</generator>
     <atom:link href="https://mackxin.github.io/xingyu/feed.xml" rel="self" type="application/rss+xml" />
+  <item>
+    <title>OpenDownloader</title>
+    <link>https://opendownloader.app/zh-Hans</link>
+    <guid isPermaLink="true">https://opendownloader.app/zh-Hans</guid>
+    <pubDate>Thu, 26 Nov 2026 09:00:00 GMT</pubDate>
+    <description>一款在浏览器里运行的免费、开源视频和音频下载工具
+Video DownloadHelper 和 4K Video Downloader 的开源替代品
+粘贴视频、音频文件或流的链接，它就会保存到你的电脑
+中断的下载会从停下的地方继续，每个完成的文件都会用从磁盘读回的 SHA-256 摘要做校验</description>
+  </item>
   <item>
     <title>ComfyUI 无限画布</title>
     <link>https://canvas.imihoo.com/</link>
@@ -165,14 +175,6 @@
     <pubDate>Sat, 17 Oct 2026 09:00:00 GMT</pubDate>
     <description>macOS27菜单栏图标折叠与隐藏工具，补充系统原生折叠仅在空间挤满时触发的局限，支持用户主动设置隐藏范围并一键展开或收起 · 图标隐藏后后台应用仍正常运行，无Dock占用与账号限制，支持外接显示器配置防护，免费开源</description>
     <category>设计</category>
-    <category>开发</category>
-  </item>
-  <item>
-    <title>WinTray</title>
-    <link>https://github.com/OUBIGFA/WinTray</link>
-    <guid isPermaLink="true">https://github.com/OUBIGFA/WinTray</guid>
-    <pubDate>Sat, 17 Oct 2026 09:00:00 GMT</pubDate>
-    <description>Windows应用静默启动工具，可将任意Windows程序自启动后自动最小化到系统托盘 · 也支持让.bat、.cmd、.ps1、.py 和 .pyw等脚本在后台无窗口启动，还支持即时后台启动和任务完成后自动退出，不在托盘残留，免费开源，便携版无需安装</description>
     <category>开发</category>
   </item>
   </channel>

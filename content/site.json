@@ -8869,6 +8869,14 @@
   ],
   "feed": [
     {
+      "date": "2026-11-26",
+      "icon": "✨",
+      "title": "OpenDownloader",
+      "url": "https://opendownloader.app/zh-Hans",
+      "desc": "一款在浏览器里运行的免费、开源视频和音频下载工具\nVideo DownloadHelper 和 4K Video Downloader 的开源替代品\n粘贴视频、音频文件或流的链接，它就会保存到你的电脑\n中断的下载会从停下的地方继续，每个完成的文件都会用从磁盘读回的 SHA-256 摘要做校验",
+      "tags": []
+    },
+    {
       "date": "2026-10-22",
       "icon": "✨",
       "title": "ComfyUI 无限画布",
