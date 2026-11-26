@@ -3061,6 +3061,12 @@
             '<div class="pub-step__body">' +
               '<b>改 content/ 里的文件</b>' +
               fileTable +
+              '<p class="admin-tip" style="margin-top:12px">' +
+                '「首页内容 / 主题 / 站点信息」这几页还能调<b>外观</b>，调完先在本机看效果；' +
+                '满意了点下面这颗，把下载到的 <code>site.json</code> 覆盖进 <code>content/</code>，再走第 2 步。</p>' +
+              '<div class="admin-actions">' +
+                '<button class="btn btn--ghost" type="button" id="snSiteJson">⬇ 导出 site.json（当前外观）</button>' +
+              '</div>' +
             '</div>' +
           '</div>' +
           '<div class="pub-step">' +
@@ -4617,6 +4623,15 @@
     if (snDrop) snDrop.addEventListener('click', function () {
       var gone = Store.dropLegacyContent();
       toast(gone.length ? '已清掉：' + gone.join('、') + '，刷新一次就干净了' : '本来就是干净的');
+    });
+
+    /* 外观调完想上线：把当前设置导成 content/site.json 同名文件，覆盖过去即可 */
+    var snSite = body.querySelector('#snSiteJson');
+    if (snSite) snSite.addEventListener('click', function () {
+      var cfg = Store.get();
+      delete cfg._ver;              /* 版本戳是本机的，不属于站点配置 */
+      download('site.json', JSON.stringify(cfg, null, 2) + '\n', 'application/json');
+      toast('已下载 site.json —— 覆盖仓库里的 content/site.json，再双击同步');
     });
 
     /* 顺手生成 RSS */
