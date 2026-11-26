@@ -18,6 +18,7 @@
 """
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -311,7 +312,11 @@ def main():
         r = subprocess.run([sys.executable, DEPLOY, '--files', rel],
                            cwd=REPO, capture_output=True, text=True, errors='replace')
         out = (r.stdout or '') + (r.stderr or '')
-        if r.returncode != 0 or '✗' in out:
+        # 别拿「输出里有没有 ✗」当失败判据：deploy-ftp 补一轮成功时也会把
+        # 第一次的 ✗ 留在日志里，那会把「其实传上去了」误报成失败。
+        # 只认退出码 + 它最后那句「成功 N / 失败 M」。
+        m = re.search(r'完成：成功 (\d+) / 失败 (\d+)', out)
+        if r.returncode != 0 or (m and int(m.group(2)) > 0):
             failed.append((rel, 'FTP 那一步失败'))
             for line in out.strip().splitlines()[-3:]:
                 say('    ' + line.strip())
