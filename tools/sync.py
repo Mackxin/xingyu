@@ -1,13 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""一条命令，把「content/ 里改的内容」推到全端。
+"""一条命令，把「content/site.json」推到全端。
 
-内容全在 content/ 这几个文件里，改完跑这条就行：
-    content/feed.json      加一条分享（一行一条）
-    content/posts/*.md     写文章（一篇一个文件）
-    content/nav.json       导航分类与站点
-    content/site.json      站点名 / 首页文案 / 外观
-    content/entries.json   首页快捷卡片
+全站内容就一个文件：content/site.json（导航 / 分享 / 文章 / 外观都在里面）。
+后台「发布上线 → ⬇ 导出 site.json」产出的就是它；拖到桌面「壹号栈 · 拖文件上传」
+也会自动拷进来并跑这条命令，所以平时不用手敲。
 
 它做的事（按顺序）：
     构建 site-data.js（先校验，写错就停）→ 重烘 app.json / feed.xml / app.json.gz
@@ -149,13 +146,12 @@ def fetch_json(url, timeout=25):
 # ---------------------------------------------------------------- 1 构建内容
 
 def build_content(dry):
-    """content/ 里的文件 → assets/js/site-data.js。
+    """content/site.json → assets/js/site-data.js。
 
-    内容是普通文件了：改 content/feed.json 加一条分享、往 content/posts/
-    丢一篇 .md，然后跑这条命令。构建器会先校验，写错了（少个逗号）当场
-    报文件名和行号并退出 —— 不会把一份坏数据推上线。
+    全站内容就在那一个文件里（后台导出的那份）。构建器先校验，写错了（少个逗号）
+    当场报第几行第几列并退出 —— 不会把一份坏数据推上线。
     """
-    step(1, '构建内容（content/ → assets/js/site-data.js）')
+    step(1, '构建内容（content/site.json → assets/js/site-data.js）')
     node = shutil.which('node')
     if not node:
         sys.exit('找不到 node，先装 Node.js（brew install node）')
@@ -167,7 +163,7 @@ def build_content(dry):
     if dry:
         good, out = sh([node, script, '--check'], quiet=True)
         if not good:
-            bad('content/ 里有写得不对的地方：')
+            bad('content/site.json 里有写得不对的地方：')
             for line in out.splitlines():
                 print('      ' + line)
             sys.exit(1)
@@ -176,7 +172,7 @@ def build_content(dry):
 
     good, out = sh([node, script], quiet=True)
     if not good:
-        bad('content/ 里有写得不对的地方，先改好再同步：')
+        bad('content/site.json 里有写得不对的地方，先改好再同步：')
         for line in out.splitlines():
             print('      ' + line)
         sys.exit(1)
@@ -514,9 +510,9 @@ def main():
     if dry:
         print('（--dry 演练模式：不写文件、不提交、不上传）')
     if explicit:
-        sys.exit(f'内容现在写在 content/ 目录里，不用再传文件了。\n'
-                 f'  改完 content/feed.json（或 content/posts/*.md）直接重跑：\n'
-                 f'      python3 tools/sync.py\n'
+        sys.exit(f'内容现在只有一个文件 content/site.json，不用再传文件了。\n'
+                 f'  后台「导出 site.json」拖到桌面「壹号栈 · 拖文件上传」会自动走这条；\n'
+                 f'  手动的话：覆盖 content/site.json 后重跑 python3 tools/sync.py\n'
                  f'  （刚才多传的参数：{explicit}）')
 
     if not os.path.isdir(os.path.join(REPO, '.git')):

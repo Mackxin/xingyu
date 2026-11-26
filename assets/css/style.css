@@ -2214,6 +2214,13 @@ body.is-dragging-row, body.is-dragging-row *{ cursor:grabbing !important; }
 .pub-step__body .admin-actions{ margin:11px 0 0; }
 .pub-step__body > .admin-tip:last-child{ margin-bottom:0 !important; }
 .pub-note{ margin-top:16px !important; }
+/* 「草稿里还有没发布的改动」——只在真有草稿时出现，别做成常驻横幅 */
+.pub-draft{
+  margin:14px 0 0 !important; padding:11px 14px; border-radius:14px;
+  background:color-mix(in srgb, #f0b429 13%, transparent);
+  border:1px solid color-mix(in srgb, #f0b429 34%, transparent);
+  color:var(--text); font-size:12.6px; line-height:1.7;
+}
 
 /* 「完整流程」一页纸（后台 → 备份 → 发布上线 → 折叠区） */
 .pub-guide__steps{

@@ -2,15 +2,17 @@
 /* =========================================================================
    壹号栈 · 内容构建器
    -------------------------------------------------------------------------
-   content/ 里的普通文件  →  assets/js/site-data.js（站点运行时读的那份）
+   content/site.json（一个文件，全站内容）  →  assets/js/site-data.js
 
-   改内容只改 content/，然后跑这个：
+   为什么要这一步：站点是纯静态的，读的是 <script> 里那份 window.SITE_DATA；
+   把 JSON 变成这一份，网页 / App / 后台都不用改运行时代码。
+
+   用法：
        node tools/build-content.js            构建 + 校验
        node tools/build-content.js --check    只校验，不写文件
        node tools/build-content.js --quiet    只报错
 
-   产出格式跟以前「后台导出的快照」一模一样，所以网页、App、后台一行都不用改。
-   写错了（少个逗号、日期不成形）这里当场报文件名和行号，并且**不写盘**——
+   写错了（少个逗号、日期不成形）当场报**第几行第几列**，并且不写盘 ——
    线上不会因为一次手滑变成白页。
    ========================================================================= */
 
@@ -20,6 +22,7 @@ const fs = require('fs');
 const path = require('path');
 
 const REPO = path.resolve(__dirname, '..');
+const SRC = path.join(REPO, 'content/site.json');
 const CONTENT = path.join(REPO, 'content');
 const OUT = path.join(REPO, 'assets/js/site-data.js');
 
@@ -28,14 +31,10 @@ const checkOnly = process.argv.includes('--check');
 
 const problems = [];   /* 阻断：不修好就不生成 */
 const warns = [];      /* 提醒：老数据里本来就有，照搬不拦 */
-function fail(where, msg) {
-  problems.push(where + '：' + msg);
-}
-function warn(where, msg) {
-  warns.push(where + '：' + msg);
-}
+function fail(where, msg) { problems.push(where + '：' + msg); }
+function warn(where, msg) { warns.push(where + '：' + msg); }
 
-/* ---------------------------------------------------------------- 读 JSON */
+/* ---------------------------------------------------------------- 读文件 */
 
 /* JSON.parse 的报错只给 position，换算成「第几行第几列」才找得到 */
 function lineOf(text, pos) {
@@ -45,68 +44,26 @@ function lineOf(text, pos) {
   return line + ' 行 ' + col + ' 列';
 }
 
-function readJSON(name, required) {
-  const file = path.join(CONTENT, name);
-  if (!fs.existsSync(file)) {
-    if (required) fail(name, '文件不见了');
+function readSource() {
+  if (!fs.existsSync(SRC)) {
+    /* 老结构还在的话，给一句能照做的提示，而不是「文件不见了」 */
+    if (fs.existsSync(path.join(CONTENT, 'nav.json'))) {
+      fail('content/site.json', '不见了（目录里还有 nav.json —— 先跑 python3 tools/merge-content.py 合并）');
+    } else {
+      fail('content/site.json', '不见了');
+    }
     return null;
   }
-  const text = fs.readFileSync(file, 'utf8');
+  const text = fs.readFileSync(SRC, 'utf8');
   try {
     return JSON.parse(text);
   } catch (e) {
     const m = /position (\d+)/.exec(e.message);
-    fail(name, m ? '第 ' + lineOf(text, Number(m[1])) + ' 附近写错了（' + e.message + '）'
-                 : e.message);
+    fail('content/site.json', m
+      ? '第 ' + lineOf(text, Number(m[1])) + ' 附近写错了（' + e.message + '）'
+      : e.message);
     return null;
   }
-}
-
-/* ------------------------------------------------------------ 读 front-matter */
-
-function parseFrontMatter(text, name) {
-  const m = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?/.exec(text);
-  if (!m) {
-    fail(name, '开头要有 --- 包住的那几行（title / date / tags）');
-    return null;
-  }
-  const meta = {};
-  const lines = m[1].split(/\r?\n/);
-  let listKey = null;
-  lines.forEach(function (raw, i) {
-    const line = raw.trim();
-    if (!line || line.charAt(0) === '#') { listKey = null; return; }
-    /* YAML 的列表写法：
-         tags:
-           - 工具
-           - 前端
-       这种也认，省得被逼着写 [工具, 前端] */
-    if (listKey && /^-\s+/.test(line)) {
-      meta[listKey].push(unquote(line.replace(/^-\s+/, '')));
-      return;
-    }
-    const kv = /^([A-Za-z_][\w-]*)\s*:\s*(.*)$/.exec(line);
-    if (!kv) { fail(name, '第 ' + (i + 2) + ' 行看不懂：「' + line + '」'); return; }
-    const key = kv[1];
-    const val = kv[2].trim();
-    if (!val) { listKey = key; meta[key] = []; return; }
-    listKey = null;
-    if (/^\[.*\]$/.test(val)) {
-      meta[key] = val.slice(1, -1).split(',').map(function (s) { return unquote(s.trim()); })
-        .filter(Boolean);
-    } else if (val === 'true' || val === 'false') {
-      meta[key] = val === 'true';
-    } else {
-      meta[key] = unquote(val);
-    }
-  });
-  return { meta: meta, body: text.slice(m[0].length).replace(/^\s+/, '') };
-}
-
-function unquote(s) {
-  if (/^".*"$/.test(s)) return s.slice(1, -1).replace(/\\"/g, '"');
-  if (/^'.*'$/.test(s)) return s.slice(1, -1).replace(/''/g, "'");
-  return s;
 }
 
 /* ------------------------------------------------------------------ 校验 */
@@ -120,16 +77,20 @@ function checkDate(where, d) {
 }
 
 function main() {
-  /* ---------- 配置 ---------- */
-  const site = readJSON('site.json', true) || {};
+  const root = readSource();
+  if (!root) { report(); return; }
+
+  /* ---------- 外观 / 站点信息 ---------- */
+  const site = (root.site && typeof root.site === 'object') ? root.site : {};
+  if (!root.site) fail('content/site.json', '缺少 site 这一段（站名、主题、首页文案都在里面）');
 
   /* ---------- 导航 ---------- */
-  const nav = readJSON('nav.json', true) || [];
-  if (!Array.isArray(nav)) fail('nav.json', '最外层要是一个数组 [ … ]');
+  const nav = Array.isArray(root.nav) ? root.nav : [];
+  if (!Array.isArray(root.nav)) fail('nav', '要是数组 [ … ]（分类列表）');
   const catIds = new Set();
   let linkCount = 0;
   nav.forEach(function (c, i) {
-    const where = 'nav.json 第 ' + (i + 1) + ' 个分类';
+    const where = 'nav 第 ' + (i + 1) + ' 个分类';
     if (!c || typeof c !== 'object') { fail(where, '不是一个对象'); return; }
     if (!c.name) fail(where, '缺少 name（分类名）');
     if (!c.id) c.id = 'cat-' + i;
@@ -149,81 +110,61 @@ function main() {
   });
 
   /* ---------- 分享 ---------- */
-  const feed = readJSON('feed.json', true) || [];
-  if (!Array.isArray(feed)) fail('feed.json', '最外层要是一个数组 [ … ]');
+  const feed = Array.isArray(root.feed) ? root.feed : [];
+  if (!Array.isArray(root.feed)) fail('feed', '要是数组 [ … ]（分享条目）');
   const feedKeys = new Set();
   feed.forEach(function (f, i) {
-    const where = 'feed.json 第 ' + (i + 1) + ' 条';
+    const where = 'feed 第 ' + (i + 1) + ' 条';
     if (!f || typeof f !== 'object') { fail(where, '不是一个对象'); return; }
     if (!f.title) fail(where, '缺少 title');
     else if (!f.url) warn(where, '「' + f.title + '」没有 url（纯文字分享，能显示但点不动）');
     checkDate(where, f.date);
     const k = String(f.date || '') + '|' + String(f.title || '');
     if (feedKeys.has(k)) {
-      /* 不算错：同一天写了两条同名分享是允许的。只是「今日精选」按
+      /* 不算错：同一天写两条同名分享是允许的。只是「今日精选」按
          「日期|标题」认条，会分不清是哪一条 —— 提醒一句就好 */
       warn(where, '跟前面某条同日期同标题，首页「今日精选」会分不清是哪条');
     }
     feedKeys.add(k);
     if (f.tags && !Array.isArray(f.tags)) fail(where, 'tags 要写成 ["工具", "前端"]');
   });
-  /* 日期新的排前面，同一天保持你写的顺序 */
+  /* 日期新的排前面，同一天保持你排的顺序 */
   feed.sort(function (a, b) {
     return String((b && b.date) || '').localeCompare(String((a && a.date) || ''));
   });
 
   /* ---------- 首页卡片 ---------- */
-  const entries = readJSON('entries.json', false) || [];
-  if (entries.length && !Array.isArray(entries)) fail('entries.json', '最外层要是数组');
+  const entries = Array.isArray(root.entries) ? root.entries : [];
+  if (root.entries && !Array.isArray(root.entries)) fail('entries', '要是数组');
 
   /* ---------- 文章 ---------- */
-  const posts = [];
-  const postDir = path.join(CONTENT, 'posts');
-  if (fs.existsSync(postDir)) {
-    const files = fs.readdirSync(postDir).filter(function (f) {
-      return /\.md$/i.test(f) && f.charAt(0) !== '.';
-    }).sort();                        /* 名字排序保证每次构建顺序一致 */
-    const seen = new Set();
-    files.forEach(function (f) {
-      const name = 'posts/' + f;
-      const parsed = parseFrontMatter(fs.readFileSync(path.join(postDir, f), 'utf8'), name);
-      if (!parsed) return;
-      const meta = parsed.meta;
-      const p = {
-        id: meta.id || f.replace(/\.md$/i, ''),
-        title: meta.title || '',
-        date: meta.date || '',
-        tags: Array.isArray(meta.tags) ? meta.tags : [],
-        pin: !!meta.pin,
-        excerpt: meta.excerpt || '',
-        body: parsed.body.replace(/\s+$/, '')
-      };
-      if (!p.title) fail(name, '缺少 title（文章标题）');
-      checkDate(name, p.date);
-      if (seen.has(p.id)) fail(name, 'id「' + p.id + '」跟别的文章重复了');
-      seen.add(p.id);
-      if (!p.body) fail(name, '正文是空的');
-      if (!p.excerpt) {
-        /* 没写摘要就用正文第一段，别让列表页空着 */
-        const first = p.body.split(/\n\s*\n/).filter(Boolean)[0] || '';
-        p.excerpt = first.replace(/[#>*`\-\[\]]/g, '').trim().slice(0, 90);
-      }
-      if (!p.pin) delete p.pin;
-      posts.push(p);
-    });
-    /* 日期新的在前；同一天按 id 排，保证产物稳定 */
-    posts.sort(function (a, b) {
-      return String(b.date).localeCompare(String(a.date)) || a.id.localeCompare(b.id);
-    });
-  }
+  const posts = Array.isArray(root.posts) ? root.posts : [];
+  if (root.posts && !Array.isArray(root.posts)) fail('posts', '要是数组（一篇文章一个对象）');
+  const seen = new Set();
+  posts.forEach(function (p, i) {
+    const where = 'posts 第 ' + (i + 1) + ' 篇' + (p && p.title ? '「' + p.title + '」' : '');
+    if (!p || typeof p !== 'object') { fail(where, '不是一个对象'); return; }
+    if (!p.id) p.id = 'post-' + i;
+    if (!p.title) fail(where, '缺少 title（文章标题）');
+    checkDate(where, p.date);
+    if (seen.has(p.id)) fail(where, 'id「' + p.id + '」跟别的文章重复了');
+    seen.add(p.id);
+    if (!Array.isArray(p.tags)) p.tags = p.tags ? [String(p.tags)] : [];
+    p.body = String(p.body == null ? '' : p.body).replace(/\s+$/, '');
+    if (!p.body) fail(where, '正文是空的');
+    if (!p.excerpt) {
+      /* 没写摘要就用正文第一段，别让列表页空着 */
+      const first = p.body.split(/\n\s*\n/).filter(Boolean)[0] || '';
+      p.excerpt = first.replace(/[#>*`\-\[\]]/g, '').trim().slice(0, 90);
+    }
+    if (!p.pin) delete p.pin;
+  });
+  /* 日期新的在前；同一天按 id 排，保证产物逐字节稳定 */
+  posts.sort(function (a, b) {
+    return String(b.date).localeCompare(String(a.date)) || String(a.id).localeCompare(String(b.id));
+  });
 
-  /* 校验没过就停，一个字都不写 */
-  if (problems.length) {
-    console.error('\n✗ content/ 里有 ' + problems.length + ' 处写得不对：\n');
-    problems.forEach(function (p) { console.error('  · ' + p); });
-    console.error('\n改好了再跑一次。这次没有生成任何文件，线上还是上一版。\n');
-    process.exit(1);
-  }
+  if (problems.length) { report(); return; }
   if (warns.length && !quiet) {
     console.log('· 有 ' + warns.length + ' 条提醒（不影响发布）：');
     warns.slice(0, 8).forEach(function (w) { console.log('    · ' + w); });
@@ -233,7 +174,8 @@ function main() {
   const payload = { categories: nav, feed: feed, entries: entries, posts: posts };
   const js =
     '/* 壹号栈 · 站点数据（自动生成，别手改）\n' +
-    '   来源：仓库里的 content/ 目录。改内容去改那边的文件，然后跑：\n' +
+    '   来源：content/site.json —— 那是全站内容的唯一源文件。\n' +
+    '   改内容：后台「发布上线 → ⬇ 导出 site.json」覆盖它，或者直接手改，然后跑\n' +
     '       node tools/build-content.js\n' +
     '   或者双击桌面「壹号栈 · 一键同步」，它会自己先跑这一步。\n' +
     '   这个文件是产物：手改会在下次构建时被覆盖。 */\n' +
@@ -241,14 +183,14 @@ function main() {
     'window.SITE_DATA = ' + JSON.stringify(payload) + ';\n';
 
   if (checkOnly) {
-    console.log('✓ content/ 没问题：' + nav.length + ' 分类 / ' + linkCount + ' 条链接 / ' +
+    console.log('✓ content/site.json 没问题：' + nav.length + ' 分类 / ' + linkCount + ' 条链接 / ' +
       feed.length + ' 条分享 / ' + posts.length + ' 篇文章（--check，没写文件）');
     return;
   }
 
   const old = fs.existsSync(OUT) ? fs.readFileSync(OUT, 'utf8') : '';
   if (old === js) {
-    if (!quiet) console.log('✓ content/ 没变化，site-data.js 不用重写');
+    if (!quiet) console.log('✓ 内容没变化，site-data.js 不用重写');
     return;
   }
   fs.writeFileSync(OUT, js);
@@ -257,6 +199,13 @@ function main() {
     console.log('    ' + nav.length + ' 分类 / ' + linkCount + ' 条链接 / ' +
       feed.length + ' 条分享 / ' + posts.length + ' 篇文章 / ' + entries.length + ' 张首页卡片');
   }
+}
+
+function report() {
+  console.error('\n✗ content/site.json 里有 ' + problems.length + ' 处写得不对：\n');
+  problems.forEach(function (p) { console.error('  · ' + p); });
+  console.error('\n改好了再跑一次。这次没有生成任何文件，线上还是上一版。\n');
+  process.exit(1);
 }
 
 main();

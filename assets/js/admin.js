@@ -1,7 +1,8 @@
 /* =========================================================================
    壹号栈 · 后台管理面板（路由 #/admin）
-   纯前端实现：改动实时生效并写入 localStorage。
-   想对所有访客永久生效 → 「备份」页导出 JSON/JS，粘回 index.html 或 data.js。
+   纯前端实现：改动都写进本机 localStorage。
+     · 外观类 → 实时生效（只有你自己看得到）
+     · 内容类 → 存成草稿，导出 site.json 并同步后才对所有人生效
    ========================================================================= */
 (function () {
   'use strict';
@@ -9,12 +10,18 @@
   var Store = window.XYStore;
   var MD = window.XYMarkdown || null;
   var MAX = Store.MAX_LINKS;
-  /* v167：sites / feed / posts 三个内容编辑面板下掉了 —— 内容现在是仓库里的
-     普通文件（content/），后台改完也存不进去，留着只会让人白忙一次。
-     要改内容：content/feed.json、content/posts/*.md、content/nav.json。 */
+  /* v169：sites / feed / posts 三个内容面板回来了。改的东西进「草稿」
+     （xingyu.draft.v1，只有后台读），要导出 site.json 并同步才上线 ——
+     前台永远只读 site-data.js，不会再出现「本机一套、线上一套」。 */
   var TABS = [
+    { id: 'sites',    label: '导航',     icon: '🗂', badge: 'adminTabSitesN',
+      hint: '分类与站点。改完先存草稿，导出 site.json 再同步才上线' },
+    { id: 'feed',     label: '分享',     icon: '📰', badge: 'adminTabFeedN',
+      hint: '按日期发一条，前台「分享」页按时间线排' },
+    { id: 'posts',    label: '文章',     icon: '✍️', badge: 'adminTabPostsN',
+      hint: 'Markdown 写作 + 实时预览，也能批量导入 .md' },
     { id: 'backup',   label: '发布上线', icon: '💾',
-      hint: '改 content/ 里的文件 → 双击桌面同步；这里也能核对线上' },
+      hint: '导出 site.json（全站内容就这一个文件）→ 双击桌面同步' },
     { id: 'home',     label: '首页内容', icon: '🏠',
       hint: '标语、统计、入口卡、今日精选、关于页、赞助位' },
     { id: 'look',     label: '主题',     icon: '🎨',
@@ -29,9 +36,9 @@
       hint: '怎么用、快捷键、后台每个面板管什么、技术参数' }
   ];
 
-  /* v142：面板一排到底太长，按「外观 / 系统」分组 ——
-     分组按你找东西的思路分，不是按代码里的顺序。 */
+  /* 按「内容 / 外观 / 系统」分组 —— 跟改东西时的想法走，不是按代码顺序 */
   var TAB_GROUPS = [
+    { name: '内容', ids: ['sites', 'feed', 'posts'] },
     { name: '外观', ids: ['home', 'look', 'site', 'links'] },
     { name: '系统', ids: ['backup', 'security', 'guide'] }
   ];
@@ -3005,46 +3012,54 @@
   var LOCAL_REPO = '/Volumes/1T宝盘/workbuddy/星屿';
 
   function staticCard() {
-    /* v167：内容搬进仓库 content/ 之后，这张卡从「导出 → 同步两步」
-       变成「改文件 → 同步」。后台不再负责内容，只负责外观。 */
+    /* v169：回到「后台改 → 导出 site.json → 同步」，
+       但全站内容（导航 / 分享 / 文章 / 外观）**只有这一个文件**。
+       后台改的东西先落本机草稿（前台不读），点导出才攒成这份文件。 */
     var rows = [
-      ['content/feed.json', '加一条分享', '一行一条，粘在数组最上面'],
-      ['content/posts/*.md', '写文章', '一篇一个文件，开头几行写标题 / 日期 / 标签'],
-      ['content/nav.json', '导航分类与站点', '一个分类一段，每条链接一行'],
-      ['content/site.json', '站点信息 / 首页文案 / 外观', '以前「站点信息」「首页内容」「主题」调的那堆都在这儿'],
-      ['content/entries.json', '首页快捷卡片', '首页那四张方块']
+      ['🗂 导航', '分类与站点', '左边第一个面板'],
+      ['📰 分享', '一条一条的分享', '按日期发，前台「分享」页按时间线排'],
+      ['✍️ 文章', 'Markdown 正文', '一篇文章一个条目'],
+      ['🏠 首页内容 / 🎨 主题 / 🌌 站点信息', '标语、今日精选、配色、站名', '外观这几页，改完一并进同一个文件']
     ];
     var fileTable =
-      '<table class="pub-guide__faq"><thead><tr><th>改这个文件</th><th>管什么</th></tr></thead><tbody>' +
+      '<table class="pub-guide__faq"><thead><tr><th>在哪改</th><th>管什么</th></tr></thead><tbody>' +
       rows.map(function (r) {
-        return '<tr><td><code>' + esc(r[0]) + '</code></td><td><b>' + esc(r[1]) + '</b>' +
+        return '<tr><td><b>' + esc(r[0]) + '</b></td><td>' + esc(r[1]) +
           (r[2] ? '<br><span class="admin-tip">' + esc(r[2]) + '</span>' : '') + '</td></tr>';
       }).join('') +
       '</tbody></table>';
+
+    var draft = Store.draftInfo();
+    var draftBar = draft.any
+      ? '<p class="admin-tip pub-draft"><b>草稿里还有没发布的改动：' + esc(draft.text) + '</b>' +
+        ' —— 点下面的「⬇ 导出 site.json」，再同步一次就上线。</p>'
+      : '';
 
     var guide =
       '<details class="admin-adv" id="pubGuide">' +
         '<summary>🧭 完整流程 · 一页纸（第一次照着走）</summary>' +
         '<div class="admin-adv__body">' +
-          '<p class="admin-tip"><b>只有一句话要记：改 content/ 里的文件 → 双击桌面那个图标。</b>' +
+          '<p class="admin-tip"><b>只有一句话要记：在后台改 → 导出 site.json → 同步。</b>' +
               '<a href="assets/guide/publish-flow.html" target="_blank" rel="noopener">打开打印版一页纸 →</a></p>' +
           '<ol class="pub-guide__steps">' +
-            '<li><b>改文件</b><span>加分享改 <code>content/feed.json</code>，写文章新建 <code>content/posts/标题.md</code>。' +
-              '保存就好 —— 不用开后台、不用导出。</span></li>' +
-            '<li><b>双击桌面「壹号栈 · 一键同步」</b><span>它先校验再构建：少个逗号会当场告诉你哪个文件第几行，' +
-              '并且<b>不发布</b>，线上还是上一版。</span></li>' +
-            '<li><b>它接着烘 app.json / feed.xml / app.json.gz</b><span>这三样都是从 content/ 现烘的产物，' +
-              '不用你管，也别手工改。</span></li>' +
-            '<li><b>看最后一句</b><span>出现「全部完成 ✓」就是三端都新了。网页 ⌘⇧R 强刷一次、App 切后台再回来就能看到。</span></li>' +
+            '<li><b>在左边改</b><span>导航、分享、文章、首页文案、主题 —— 都在这个后台里。' +
+              '改完是本机<b>草稿</b>，前台和线上都还没变。</span></li>' +
+            '<li><b>点「⬇ 导出 site.json」</b><span>下载到<b>一个文件</b>，里面是全站内容' +
+              '（导航 + 分享 + 文章 + 外观），没有别的文件要管。</span></li>' +
+            '<li><b>把这份 site.json 拖到桌面「壹号栈 · 拖文件上传」</b><span>' +
+              '它自动拷进 <code>content/site.json</code>、烘好网页和 App 的数据、传到 GitHub 和国内镜像，' +
+              '最后逐项核对。整个全端就一起新了。</span></li>' +
+            '<li><b>看最后一句</b><span>出现「全部完成 ✓」就好了。网页 ⌘⇧R 强刷一次、App 切后台再回来就能看到。' +
+              '草稿会在导出时自动清掉。</span></li>' +
           '</ol>' +
           '<table class="pub-guide__faq">' +
             '<thead><tr><th>碰到的样子</th><th>意思 / 怎么办</th></tr></thead><tbody>' +
-            '<tr><td><b>✗ content/ 里有 N 处写得不对</b></td><td>它会指出文件和行号（多半是少了逗号、多了逗号、date 写成了 2026/1/1）。改完重跑。<b>这次一个字都没发出去，线上没事。</b></td></tr>' +
+            '<tr><td><b>✗ content/site.json 里有 N 处写得不对</b></td><td>同步的第一步就会指出第几行第几列（少见，多半是手改过那个文件）。改完重跑。<b>这次一个字都没发出去，线上没事。</b></td></tr>' +
             '<tr><td><b>✗ 推送还是失败</b></td><td>网络没通，开代理再跑一次。这一步失败时镜像会整段跳过，必须补跑一次，否则手机上还是旧内容。</td></tr>' +
             '<tr><td>App 还是旧内容</td><td>设置里镜像地址要写 <code>http://yihaozhan.xyz/</code>（<b>带 http://</b>），然后切后台再回来。</td></tr>' +
             '<tr><td>只想让网页变、不动镜像</td><td>终端跑 <code>python3 tools/sync.py --no-ftp</code>。</td></tr>' +
-            '<tr><td>手机 / 别的电脑上加一条分享</td><td>GitHub 网页打开 <code>content/feed.json</code> 直接改，保存后 Action 会自动烘好并发布（几分钟）。</td></tr>' +
-            '<tr><td>本机看着还是旧的</td><td>老浏览器里存着一份旧内容的副本。下面「其它」里有「清掉本机旧副本」，点一下再刷新。</td></tr>' +
+            '<tr><td>手机 / 别的电脑上发一条分享</td><td>GitHub 网页打开 <code>content/site.json</code> 改 <code>feed</code> 里那几条，保存后 Action 会自动烘好并发布（几分钟）。</td></tr>' +
+            '<tr><td>本机看着还是旧的</td><td>后台改了只是草稿，前台要等同步完才变；如果你是在「别的浏览器」看的，那本来就不共享草稿。</td></tr>' +
             '</tbody></table>' +
         '</div>' +
       '</details>';
@@ -3052,32 +3067,35 @@
     return '<div class="admin-card" id="pubCard">' +
         '<div class="admin-card__head">' +
           '<div><h2>发布上线</h2>' +
-            '<p>内容已经是仓库里的普通文件了：<b>改文件 = 改内容</b>，改完双击同步就上线，不用导出。</p></div>' +
+            '<p>全站内容只有一个文件：<code>content/site.json</code>。' +
+            '<b>后台改 → 导出这一个文件 → 同步</b>，网页 / App / 镜像一起新。</p></div>' +
         '</div>' +
+
+        draftBar +
 
         '<div class="pub-flow">' +
           '<div class="pub-step">' +
             '<span class="pub-step__n">1</span>' +
             '<div class="pub-step__body">' +
-              '<b>改 content/ 里的文件</b>' +
+              '<b>改完，导出这一个文件</b>' +
               fileTable +
               '<p class="admin-tip" style="margin-top:12px">' +
-                '「首页内容 / 主题 / 站点信息」这几页还能调<b>外观</b>，调完先在本机看效果；' +
-                '满意了点下面这颗，把下载到的 <code>site.json</code> 覆盖进 <code>content/</code>，再走第 2 步。</p>' +
+                '导出的 <code>site.json</code> 就是仓库里 <code>content/site.json</code> 那一份。' +
+                '不用管别的文件 —— 网页读的、App 读的、RSS 全是脚本现烘的。</p>' +
               '<div class="admin-actions">' +
-                '<button class="btn btn--ghost" type="button" id="snSiteJson">⬇ 导出 site.json（当前外观）</button>' +
+                '<button class="btn btn--primary" type="button" id="snSiteJson">⬇ 导出 site.json（全站内容）</button>' +
               '</div>' +
             '</div>' +
           '</div>' +
           '<div class="pub-step">' +
             '<span class="pub-step__n">2</span>' +
             '<div class="pub-step__body">' +
-              '<b>双击桌面的「壹号栈 · 一键同步」</b>' +
+              '<b>把 site.json 拖到桌面「壹号栈 · 拖文件上传」</b>' +
+              '<p class="admin-tip">它会自己走完：拷进 <code>content/</code> → 构建 → 推送 → 传镜像 → 核对。' +
+                '不想拖也行：把它覆盖进 <code>content/site.json</code>，再双击「壹号栈 · 一键同步」。</p>' +
               '<div class="admin-actions">' +
                 '<button class="btn btn--ghost" type="button" id="snCopyCmd">📋 复制同步命令</button>' +
               '</div>' +
-              '<p class="admin-tip">它先校验 content/，通过了才构建，然后推 GitHub、传镜像、核对三端。' +
-                '窗口里逐条打 ✓，最后一句告诉你成了没有。</p>' +
             '</div>' +
           '</div>' +
         '</div>' +
@@ -3096,7 +3114,7 @@
             '</div>' +
             '<p class="admin-tip" id="snLiveOut" hidden></p>' +
             '<p class="admin-tip">「核对线上」= 比一下线上那份 app.json 的 build 号和本地一不一样。' +
-              '<br>「清掉本机旧副本」= 老版本把内容存在这个浏览器里（<code>xingyu.data.v1</code> 那几个），' +
+              '<br>「清掉本机旧副本」= v167 之前那批存在浏览器里的内容（<code>xingyu.data.v1</code> 那几个），' +
               '现在不读了，清掉只回收空间。清完刷新一次。</p>' +
           '</div>' +
         '</details>' +
@@ -3114,15 +3132,46 @@
   var HIST_MAX = 14;
   var HIST_BUDGET = 1600 * 1024;
   var HIST_PIN_MAX = 5;
+  /* v169：内容（导航 / 分享 / 文章）不再各占一个 localStorage key，
+     而是存在同一个草稿 'xingyu.draft.v1' 的不同分区里 —— 用 part 标出来，
+     读写成整段 JSON 字符串，跟以前一样比较、恢复。 */
   var HIST_KINDS = {
-    data:   { store: 'xingyu.data.v1',   name: '站点数据' },
-    feed:   { store: 'xingyu.feed.v1',   name: '分享' },
-    posts:  { store: 'xingyu.posts.v1',  name: '文章' },
+    data:   { part: 'nav',    name: '导航' },
+    feed:   { part: 'feed',   name: '分享' },
+    posts:  { part: 'posts',  name: '文章' },
     config: { store: 'xingyu.config.v1', name: '站点设置' },
-    /* 手动快照：一条装下上面四样，恢复时一起回去。没有 store，因为它不对应单个 key */
+    /* 手动快照：一条装下上面四样，恢复时一起回去 */
     all:    { name: '整站快照' }
   };
   var HIST_LIVE = ['data', 'feed', 'posts', 'config'];
+
+  /* 读某一类「现在是哪一版」（统一成 JSON 字符串，null = 还没改过） */
+  function histGet(kind) {
+    var meta = HIST_KINDS[kind];
+    if (!meta) return null;
+    if (meta.part) {
+      var d = Store.draft() || {};
+      return d[meta.part] == null ? null : JSON.stringify(d[meta.part]);
+    }
+    var raw = null;
+    try { raw = localStorage.getItem(meta.store); } catch (e) {}
+    return raw;
+  }
+  /* 恢复某一类 */
+  function histSet(kind, json) {
+    var meta = HIST_KINDS[kind];
+    if (!meta) return;
+    if (meta.part) {
+      var part = {};
+      part[meta.part] = json == null ? null : JSON.parse(json);
+      Store.draftSet(part);
+      return;
+    }
+    try {
+      if (json == null) localStorage.removeItem(meta.store);
+      else localStorage.setItem(meta.store, json);
+    } catch (e) {}
+  }
 
 
   function histAll() {
@@ -3168,8 +3217,7 @@
   function histPush(kind) {
     var meta = HIST_KINDS[kind];
     if (!meta) return;
-    var raw = null;
-    try { raw = localStorage.getItem(meta.store); } catch (e) {}
+    var raw = histGet(kind);
     var now = Date.now();
     var list = histAll();
     var top = list[0];
@@ -3185,8 +3233,8 @@
   function histSnapshot(name) {
     var obj = {}, bytes = 0, canRead = false;
     HIST_LIVE.forEach(function (k) {
-      var raw = null;
-      try { raw = localStorage.getItem(HIST_KINDS[k].store); canRead = true; } catch (e) {}
+      var raw = histGet(k);
+      canRead = true;
       obj[k] = raw;
       bytes += raw ? raw.length * 2 : 0;
     });
@@ -3220,15 +3268,9 @@
     try {
       if (rec.kind === 'all') {
         var obj = rec.json || {};
-        HIST_LIVE.forEach(function (k) {
-          var v = obj[k];
-          if (v == null) localStorage.removeItem(HIST_KINDS[k].store);
-          else localStorage.setItem(HIST_KINDS[k].store, v);
-        });
-      } else if (rec.json == null) {
-        localStorage.removeItem(HIST_KINDS[rec.kind].store);
+        HIST_LIVE.forEach(function (k) { histSet(k, obj[k] == null ? null : obj[k]); });
       } else {
-        localStorage.setItem(HIST_KINDS[rec.kind].store, rec.json);
+        histSet(rec.kind, rec.json);
       }
     } catch (e) { return ''; }
     return rec.kind;
@@ -3756,17 +3798,18 @@
     ].map(function (r) { return gRow(r[0], r[1]); }).join('');
 
     var adminRows = [
-      ['💾 发布上线', '<b>改 content/ 里的文件 → 双击桌面「壹号栈 · 一键同步」</b>。' +
-        '内容（导航 / 分享 / 文章）是仓库里的普通文件，不再在后台编辑：' +
-        '<code>content/feed.json</code> 加分享、<code>content/posts/*.md</code> 写文章、' +
-        '<code>content/nav.json</code> 改导航。同步脚本会先校验再发布，写错不会推到线上'],
+      ['🗂 导航', '增删分类与站点、拖拽排序、改图标与描述。这是「导航」页和全站搜索的数据源。' +
+        '改完是<b>草稿</b>，要导出 site.json 并同步才上线'],
+      ['📰 分享', '发一条分享（日期 / 图标 / 标题 / 链接 / 标签 / 描述），列表里可搜索、可编辑、可就地展开。' +
+        '<b>链接可以留空</b> → 变成一条点了不跳的纯文字卡（发公告好用）；<b>描述里回车换行，前台照原样分段</b>'],
+      ['✍️ 文章', '写文章、导入 <code>.md</code>、存草稿、预览正文。ID 决定网址（<code>#/post/&lt;id&gt;</code>），改 ID 等于换了个网址'],
       ['🏠 首页内容', '改标语、统计数字、入口卡、今日精选（勾哪几条显示哪几条，最多 12 条）、关于页正文、赞助卡片（开关 + 文案 + 收款码图片）'],
       ['🎨 主题', '7 套配色 + 自己敲 <code>#ff1d55</code> 这类色值 + 「我的配色」存多套；还有极光强度、圆角、默认主题、卡片密度、正文字号行高'],
-      ['🔗 自定义链接', '顶栏/页脚那种自己加的链接，最多 ' + MAX + ' 个'],
       ['🌌 站点信息', '站名、标语、建站日期、Logo、Favicon、分享卡片图'],
-      ['💾 发布上线', '<b>「改文件 → 双击同步」两步</b>：内容在仓库 <code>content/</code> 里，' +
-        '同步脚本先校验（写错会指出文件和行号，不发布）再烘 <code>app.json</code> / <code>feed.xml</code>、' +
-        '推 GitHub、传国内镜像。还有「核对线上」「清掉本机旧副本」两个小工具'],
+      ['🔗 自定义链接', '顶栏/页脚那种自己加的链接，最多 ' + MAX + ' 个'],
+      ['💾 发布上线', '<b>导出 site.json → 拖到桌面「壹号栈 · 拖文件上传」</b>，两步。' +
+        '导出的那一个文件就是全站内容（导航 + 分享 + 文章 + 外观），同步脚本会先校验（写错指出第几行第几列，不发布）' +
+        '再烘 <code>app.json</code> / <code>feed.xml</code>、推 GitHub、传国内镜像。折叠区还有「核对线上」「清掉本机旧副本」'],
       ['🔐 口令', '改访问口令。注意这是纯前端门禁，只防误入，不是真安全'],
       ['📖 手册 / 参数', '就是这一页']
     ].map(function (r) { return gRow(r[0], r[1]); }).join('');
@@ -3858,15 +3901,16 @@
       ['<code>assets/js/admin.js</code>', '这一整套后台面板'],
       ['<code>assets/js/md.js</code>', 'Markdown 渲染 + 代码高亮'],
       ['<code>assets/js/bookmarks.js</code>', '收藏夹的原始数据（50 个分类 / 2000+ 链接）'],
-      ['<code>content/</code>', '内容源文件：site.json / nav.json / feed.json / entries.json / posts/*.md。改内容只改这里'],
-      ['<code>assets/js/site-data.js</code>', '<b>产物，别手改</b>：由 <code>tools/build-content.js</code> 从 content/ 烘出来，站点运行时读的就是它'],
+      ['<code>content/site.json</code>', '<b>全站内容就这一个文件</b>：导航 / 分享 / 文章 / 外观。后台「导出 site.json」产出的就是它'],
+      ['<code>assets/js/site-data.js</code>', '<b>产物，别手改</b>：由 <code>tools/build-content.js</code> 从 content/site.json 烘出来，站点运行时读的就是它'],
       ['<code>sw.js</code>', 'Service Worker；<code>VERSION</code> 要和 index.html 的 <code>?v=</code> 一起改'],
       ['<code>tools/gen-feed.js</code>', '生成 RSS <code>feed.xml</code> 的小脚本（可选）']
     ].map(function (r) { return gRow(r[0], r[1]); }).join('');
 
     var storeGrid = [
       kv('<code>xingyu.config.v1</code>', '整站设置：站名、首页文案、主题配色、阅读排版、显示项、口令'),
-      kv('<code>xingyu.data.v1</code> / <code>.feed.v1</code> / <code>.posts.v1</code>', '老版本存的内容副本。<b>v167 起不再读取</b>，内容以 content/ 为准；清掉只回收空间'),
+      kv('<code>xingyu.draft.v1</code>', '后台改内容的<b>草稿</b>（导航 / 分享 / 文章）。只有后台读它，前台永远读站点文件；导出 site.json 时自动清空'),
+      kv('<code>xingyu.data.v1</code> / <code>.feed.v1</code> / <code>.posts.v1</code>', '更早版本存的内容副本，<b>已不再读取</b>；清掉只回收空间'),
       kv('<code>xingyu.fav.v1</code>', '收藏夹（星标过的站点网址）；和最近访问一起会进「云备份」'),
       kv('<code>xingyu.idea.v1</code>', '灵感随记的条目（正文 / 标签 / 时间）；会跟着「下载备份」和「云备份」一起走'),
       kv('<code>xingyu.idea.draft.v1</code>', '灵感随记里还没提交的草稿，切页不丢，保存后自动清掉'),
@@ -4628,10 +4672,15 @@
     /* 外观调完想上线：把当前设置导成 content/site.json 同名文件，覆盖过去即可 */
     var snSite = body.querySelector('#snSiteJson');
     if (snSite) snSite.addEventListener('click', function () {
-      var cfg = Store.get();
-      delete cfg._ver;              /* 版本戳是本机的，不属于站点配置 */
-      download('site.json', JSON.stringify(cfg, null, 2) + '\n', 'application/json');
-      toast('已下载 site.json —— 覆盖仓库里的 content/site.json，再双击同步');
+      var data = Store.exportSite();
+      var links = (data.nav || []).reduce(function (n, c) {
+        return n + ((c && c.links) ? c.links.length : 0); }, 0);
+      download('site.json', JSON.stringify(data, null, 2) + '\n', 'application/json');
+      /* 导出即「已交棒」：草稿清掉，避免下次改动跟上一份混在一起分不清 */
+      Store.draftClear();
+      toast('已导出：' + links + ' 条链接 · ' + (data.feed || []).length + ' 条分享 · ' +
+        (data.posts || []).length + ' 篇。下一步：拖到桌面「壹号栈 · 拖文件上传」');
+      render();
     });
 
     /* 顺手生成 RSS */

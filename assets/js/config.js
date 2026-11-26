@@ -14,9 +14,12 @@
   'use strict';
 
   var CFG_KEY = 'xingyu.config.v1';
-  var DATA_KEY = 'xingyu.data.v1';
+  var DATA_KEY = 'xingyu.data.v1';       /* v167 之前的内容影子层，只用来清理 */
   var POSTS_KEY = 'xingyu.posts.v1';
   var FEED_KEY = 'xingyu.feed.v1';
+  /* v169：后台改内容的「草稿」。一个 key 装整份（nav / feed / posts）。
+     只有后台读它；前台永远读 site-data.js。 */
+  var DRAFT_KEY = 'xingyu.draft.v1';
   var PASS_KEY = 'xingyu.pass.v1';
   var OPEN_KEY = 'xingyu.unlocked.v1';
 
@@ -725,16 +728,85 @@
       return true;
     },
 
-    /* ---------- 站点数据（分类 / 站点 —— 导航页与全站搜索的数据源） ----------
-       v167 起内容只有一份：仓库里的 content/ 烘成 assets/js/site-data.js。
-       以前这里优先读 localStorage['xingyu.data.v1']，那层「本机影子」是
-       「改了文件本地看不到、线上一套本机一套」的根源，已经拆掉了。
-       老浏览器里存着的旧 key 不读也不写，留着不影响任何事。 ---------- */
+    /* ---------- 内容：草稿（只有后台读）+ 导出 ----------
+       正本永远是仓库里的 content/site.json —— 它烘成 assets/js/site-data.js，
+       前台、App 都读那一份。
+       后台改的内容先落进本机「草稿」（一个 key 装 nav / feed / posts 三样），
+       前台**不读**它，所以不会出现「本机一套、线上一套」的错觉。
+       改完点「⬇ 导出 site.json」→ 覆盖 content/site.json（或拖到桌面脚本）→ 同步。 ---------- */
+    draft: function () {
+      var v = null;
+      try { v = JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null'); } catch (e) {}
+      return (v && typeof v === 'object') ? v : null;
+    },
+    draftSet: function (part) {
+      var d = Store.draft() || {};
+      Object.keys(part).forEach(function (k) {
+        if (part[k] == null) delete d[k]; else d[k] = part[k];
+      });
+      d.at = Date.now();
+      try { localStorage.setItem(DRAFT_KEY, JSON.stringify(d)); }
+      catch (e) { Store.saveFailed = true; return false; }
+      Store.saveFailed = false;
+      return d;
+    },
+    draftClear: function () {
+      try { localStorage.removeItem(DRAFT_KEY); } catch (e) {}
+      document.dispatchEvent(new CustomEvent('xy:data', {}));
+      document.dispatchEvent(new CustomEvent('xy:posts', { detail: Store.posts() }));
+      document.dispatchEvent(new CustomEvent('xy:feed', { detail: Store.feed() }));
+    },
+    /* 后台顶上那条提示用：草稿里改了哪几块、各多少条 */
+    draftInfo: function () {
+      var d = Store.draft() || {};
+      var out = { nav: 0, feed: 0, posts: 0, any: false, text: '' };
+      if (Array.isArray(d.nav)) out.nav = d.nav.reduce(function (n, c) {
+        return n + ((c && c.links) ? c.links.length : 0); }, 0);
+      if (Array.isArray(d.feed)) out.feed = d.feed.length;
+      if (Array.isArray(d.posts)) out.posts = d.posts.length;
+      var bits = [];
+      if (d.nav) bits.push('导航 ' + out.nav + ' 条');
+      if (d.feed) bits.push('分享 ' + out.feed + ' 条');
+      if (d.posts) bits.push('文章 ' + out.posts + ' 篇');
+      out.any = bits.length > 0;
+      out.text = bits.join(' · ');
+      return out;
+    },
+
+    /* ---------- 站点数据（分类 / 站点 —— 导航页与全站搜索的数据源） ---------- */
+    /* 后台用：草稿优先，始终返回独立副本 */
     dataAll: function () {
+      var d = Store.draft();
+      if (d && Array.isArray(d.nav)) return clone(d.nav);
       return clone((window.SITE_DATA && window.SITE_DATA.categories) || []);
     },
-    /* 清掉老版本存在浏览器里的内容副本（v167 之前才有）。现在根本不读它们，
-       留着只是占空间 —— 后台「数据」页有个按钮，也可以在这里手动调一次。 */
+    /* 前台只读：只认 site-data.js，直接返回原数组引用，零开销 */
+    dataCategories: function () {
+      return (window.SITE_DATA && window.SITE_DATA.categories) || [];
+    },
+    dataIsCustom: function () {
+      var d = Store.draft();
+      return !!(d && Array.isArray(d.nav));
+    },
+    setData: function (cats) {
+      Store.draftSet({ nav: Array.isArray(cats) ? cats : [] });
+      document.dispatchEvent(new CustomEvent('xy:data', { detail: cats }));
+      return cats;
+    },
+    resetData: function () {
+      Store.draftSet({ nav: null });
+      document.dispatchEvent(new CustomEvent('xy:data', {}));
+    },
+    exportDataJSON: function () { return JSON.stringify(Store.dataAll(), null, 2); },
+    importDataJSON: function (str) {
+      var v;
+      try { v = JSON.parse(str); } catch (e) { return false; }
+      if (!Array.isArray(v)) return false;
+      Store.setData(v);
+      return true;
+    },
+
+    /* 清掉 v167 之前那几个内容影子层（现在的草稿不叫这些名字） */
     dropLegacyContent: function () {
       var gone = [];
       [DATA_KEY, POSTS_KEY, FEED_KEY].forEach(function (k) {
@@ -744,41 +816,40 @@
       });
       return gone;
     },
-    /* 前台只读：直接返回原数组引用，零开销 */
-    dataCategories: function () {
-      return (window.SITE_DATA && window.SITE_DATA.categories) || [];
-    },
-    dataIsCustom: function () { return false; },
-    setData: function (cats) {
-      /* 内容不再存在浏览器里：改 content/nav.json，然后跑 tools/build-content.js */
-      console.warn('[壹号栈] 导航内容请改 content/nav.json —— 后台改的内容不再保存');
-      return cats;
-    },
-    resetData: function () {
-      document.dispatchEvent(new CustomEvent('xy:data', {}));
-    },
-    exportDataJSON: function () { return JSON.stringify(Store.dataAll(), null, 2); },
-    importDataJSON: function () { return false; },
 
     /* ---------- 文章（Markdown） ---------- */
-    /* 一篇一个文件：content/posts/*.md */
+    /* 后台用：草稿优先 */
     postsAll: function () {
+      var d = Store.draft();
+      if (d && Array.isArray(d.posts)) return clone(d.posts);
       return clone((window.SITE_DATA && window.SITE_DATA.posts) || []);
     },
-    /* 前台只读：直接返回原数组引用，零开销 */
+    /* 前台只读 */
     posts: function () {
       return (window.SITE_DATA && window.SITE_DATA.posts) || [];
     },
-    postsIsCustom: function () { return false; },
-    setPosts: function () {
-      console.warn('[壹号栈] 文章请写 content/posts/*.md —— 后台改的文章不再保存');
-      return false;
+    postsIsCustom: function () {
+      var d = Store.draft();
+      return !!(d && Array.isArray(d.posts));
+    },
+    setPosts: function (list) {
+      var arr = (Array.isArray(list) ? list : []).map(normPost);
+      Store.draftSet({ posts: arr });
+      document.dispatchEvent(new CustomEvent('xy:posts', { detail: arr }));
+      return arr;
     },
     resetPosts: function () {
+      Store.draftSet({ posts: null });
       document.dispatchEvent(new CustomEvent('xy:posts', { detail: Store.posts() }));
     },
     exportPostsJSON: function () { return JSON.stringify(Store.postsAll(), null, 2); },
-    importPostsJSON: function () { return false; },
+    importPostsJSON: function (str) {
+      var v;
+      try { v = JSON.parse(str); } catch (e) { return false; }
+      if (!Array.isArray(v)) return false;
+      Store.setPosts(v);
+      return true;
+    },
 
     /* ---------- 分享条目（#/share 时间线） ---------- */
     /* 一条分享的稳定标识：日期 + 标题。没有 id 字段，就用它当钥匙 ——
@@ -788,24 +859,63 @@
       return String(f.date == null ? '' : f.date) + '|' + String(f.title == null ? '' : f.title);
     },
 
-    /* 一条一条写在 content/feed.json 里 */
+    /* 后台用：草稿优先（已按日期倒序，和前台分组顺序一致） */
     feedAll: function () {
+      var d = Store.draft();
+      if (d && Array.isArray(d.feed)) return clone(d.feed);
       return clone((window.SITE_DATA && window.SITE_DATA.feed) || []);
     },
-    /* 前台只读：直接返回原数组引用，零开销 */
+    /* 前台只读 */
     feed: function () {
       return (window.SITE_DATA && window.SITE_DATA.feed) || [];
     },
-    feedIsCustom: function () { return false; },
-    setFeed: function () {
-      console.warn('[壹号栈] 分享请加在 content/feed.json —— 后台改的分享不再保存');
-      return false;
+    feedIsCustom: function () {
+      var d = Store.draft();
+      return !!(d && Array.isArray(d.feed));
+    },
+    setFeed: function (list) {
+      var arr = (Array.isArray(list) ? list : []).map(normFeed);
+      /* 存的时候就排好：日期倒序、同一天保持你排的顺序（Array.sort 是稳定排序） */
+      arr.sort(function (a, b) { return String(b.date || '').localeCompare(String(a.date || '')); });
+      Store.draftSet({ feed: arr });
+      document.dispatchEvent(new CustomEvent('xy:feed', { detail: arr }));
+      return arr;
     },
     resetFeed: function () {
+      Store.draftSet({ feed: null });
       document.dispatchEvent(new CustomEvent('xy:feed', { detail: Store.feed() }));
     },
     exportFeedJSON: function () { return JSON.stringify(Store.feedAll(), null, 2); },
-    importFeedJSON: function () { return false; },
+    importFeedJSON: function (str) {
+      var v;
+      try { v = JSON.parse(str); } catch (e) { return false; }
+      if (!Array.isArray(v)) return false;
+      Store.setFeed(v);
+      return true;
+    },
+
+    /* ---------- 导出：整站内容就这一个文件 ----------
+       content/site.json 的结构：site（外观+站点信息）/ nav / feed / entries / posts。
+       后台「发布上线 → ⬇ 导出 site.json」调它；导出成功后草稿自动清掉。 */
+    exportSite: function () {
+      var cfg = clone(Store.get());
+      delete cfg._ver;               /* 版本戳是本机的，不属于站点配置 */
+      var posts = Store.postsAll().map(function (p) {
+        var q = clone(p);
+        if (!q.pin) delete q.pin;
+        if (!q.draft) delete q.draft;
+        return q;
+      });
+      return {
+        _note: '壹号栈的全部内容。后台改完点「导出 site.json」覆盖这个文件，'
+             + '或者直接拖到桌面「壹号栈 · 拖文件上传」。别手动删键。',
+        site: cfg,
+        nav: Store.dataAll(),
+        feed: Store.feedAll(),
+        entries: clone((window.SITE_DATA && window.SITE_DATA.entries) || []),
+        posts: posts
+      };
+    },
 
     /* ---------- 口令 ---------- */
     /* 优先级：本机设的 > site-data.js 里带来的（后台导出时打包）> 默认口令。

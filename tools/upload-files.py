@@ -18,8 +18,10 @@
 """
 import json
 import os
+import shutil
 import subprocess
 import sys
+import tempfile
 import time
 import urllib.error
 import urllib.request
@@ -188,6 +190,68 @@ def pick_files():
     return [x.strip() for x in r.stdout.splitlines() if x.strip()], None
 
 
+def is_site_content(path):
+    """是不是后台导出的那份「全站内容」site.json。
+
+    判据是结构不是文件名：顶层有 nav / feed / posts 里任意两个就算。
+    这样不论它叫 site.json 还是 site(1).json、从下载夹拖来的都认。"""
+    if not path.lower().endswith('.json'):
+        return False
+    try:
+        with open(path, encoding='utf-8') as fh:
+            d = json.load(fh)
+    except Exception:                                       # noqa: BLE001
+        return False
+    if not isinstance(d, dict):
+        return False
+    marks = sum(1 for k in ('nav', 'feed', 'posts') if isinstance(d.get(k), list))
+    return marks >= 2
+
+
+def take_site_content(path, dry):
+    """拖进来的是全站内容 → 拷进 content/site.json，然后交棒给 sync.py。
+
+    为什么不在这一层自己烘、自己传：一条链（校验 → 构建 → 推送 → 传镜像 → 核对）
+    已经在 sync.py 里了，两条路各写一遍迟早不一致。这里只负责「认出来、放对位置」。"""
+    say('─' * 52)
+    say('这是全站内容文件（导航 / 分享 / 文章 / 外观都在里面）')
+    say('→ 不当作单个文件传，改走「全端同步」：拷进 content/ → 构建 → 推 GitHub → 传镜像 → 核对')
+    say()
+
+    with open(path, encoding='utf-8') as fh:
+        data = json.load(fh)
+    nav = data.get('nav') or []
+    links = sum(len(c.get('links') or []) for c in nav if isinstance(c, dict))
+    say('  分类 %d · 链接 %d · 分享 %d · 文章 %d'
+        % (len(nav), links, len(data.get('feed') or []), len(data.get('posts') or [])))
+    say()
+
+    if dry:
+        say('（--dry 只看不干：这一步会覆盖 content/site.json 并跑一次全端同步）')
+        return 0
+
+    target = os.path.join(REPO, 'content', 'site.json')
+    if os.path.exists(target):
+        bak = os.path.join(tempfile.gettempdir(),
+                           'xy-site-before-%d.json' % int(time.time()))
+        shutil.copy2(target, bak)
+        say('旧的 content/site.json 已备份到 %s' % bak)
+    os.makedirs(os.path.dirname(target), exist_ok=True)
+    shutil.copy2(path, target)
+    say('✓ 已拷贝到 content/site.json')
+    say()
+
+    r = subprocess.run([sys.executable, os.path.join(REPO, 'tools', 'sync.py')],
+                       cwd=REPO)
+    say()
+    if r.returncode == 0:
+        say('全部完成 ✓ —— 网页 / App / 国内镜像都已经是新内容。')
+    else:
+        say('同步没走完（退出码 %d）。上面最后几行写着卡在哪；修好后双击'
+            '「壹号栈 · 一键同步」再跑一次就行（内容已经拷进去了）。' % r.returncode)
+    return r.returncode
+
+
 def main():
     args = [a for a in sys.argv[1:]]
     dry = '--dry' in args
@@ -205,6 +269,10 @@ def main():
             say('取消：%s' % (err or '没有选文件'))
             return 1
         say()
+
+    # 拖进来的是后台导出的「全站内容」→ 不按单文件传，转成全端同步
+    if len(args) == 1 and is_site_content(os.path.expanduser(args[0])):
+        return take_site_content(os.path.expanduser(args[0]), dry)
 
     ensure_cred()
 

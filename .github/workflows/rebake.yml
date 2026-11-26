@@ -1,10 +1,10 @@
 name: 重烘 App 数据
 
-# 为什么需要它：内容现在是仓库里的普通文件（content/），改完要烘两样东西才上线 ——
-#   1. content/ → assets/js/site-data.js（网站自己读的）
+# 为什么需要它：全站内容就是 content/site.json 一个文件，改完要烘两样东西才上线 ——
+#   1. content/site.json → assets/js/site-data.js（网站自己读的）
 #   2. → api/app.json（App 读的）+ feed.xml（RSS）
 # 在本机跑 tools/sync.py 时这些都烘好了；这个工作流管的是「在 GitHub 网页上直接改
-# content/feed.json」的情况 —— 手机、别人的电脑都能发一条分享，改完自动烘好并发布。
+# content/site.json」的情况 —— 手机、别人的电脑也能发一条分享，改完自动烘好并发布。
 #
 # 提交的是 site-data.js / app.json / feed.xml，都不在触发路径里，所以不会自己触自己。
 
@@ -41,7 +41,7 @@ jobs:
         with:
           node-version: '20'
 
-      - name: content/ → site-data.js
+      - name: content/site.json → site-data.js
         # 校验不过会直接失败（少个逗号之类），不会把坏数据发出去
         run: node tools/build-content.js
 
@@ -78,5 +78,5 @@ jobs:
             exit 0
           fi
           BUILD=$(python3 -c 'import json;print(json.load(open("api/app.json"))["build"])')
-          git commit -m "自动重烘：content/ → site-data.js、api/app.json（build $BUILD）与 feed.xml"
+          git commit -m "自动重烘：content/site.json → site-data.js、api/app.json（build $BUILD）与 feed.xml"
           git push

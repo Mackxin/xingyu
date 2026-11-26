@@ -145,8 +145,8 @@
 
   <header>
     <div class="kicker">YIHAOZHAN · 更新流程</div>
-    <h1>改个文件，双击一下就上线</h1>
-    <p class="lede">内容已经是仓库里的普通文件了 —— 不用开后台、不用导出。改完双击桌面那个图标，网页 / App / 国内镜像一起新。</p>
+    <h1>后台改完，导出这一个文件</h1>
+    <p class="lede">全站内容只有 <code>content/site.json</code> 一个文件：导航、分享、文章、外观都在里面。在后台改，导出它，拖到桌面那个图标 —— 网页 / App / 国内镜像一起新。</p>
     <div class="rule"></div>
   </header>
 
@@ -155,95 +155,91 @@
     <div class="card">
       <div class="model">
         <div class="box box--you">
-          <b>你负责：content/ 里的文件</b>
-          <span class="mono">content/feed.json　加分享</span>
-          <span class="mono">content/posts/*.md　写文章</span>
-          <span class="mono">content/nav.json　改导航</span>
+          <b>① 在后台改</b>
+          <span>导航 / 分享 / 文章 / 首页 / 主题，随便改。这时候只是<b>本机草稿</b>。</span>
         </div>
         <div class="arrow">→</div>
         <div class="box">
-          <b>电脑负责：其余全部</b>
-          <div class="gen">
-            <span class="mono"><b>site-data.js</b>　网页读的（产物）</span>
-            <span class="mono"><b>api/app.json</b>　App 读的（产物）</span>
-            <span class="mono"><b>app.json.gz / feed.xml</b>　产物</span>
-          </div>
+          <b>② 点「⬇ 导出 site.json」</b>
+          <span>下载到<b>一个文件</b>，全站内容都在里面，没有第二个文件要管。</span>
         </div>
       </div>
-      <p style="margin-top:14px; color:var(--dim); font-size:13px;">
-        以前那套「后台改 → 导出快照 → 覆盖文件」已经拆掉了。现在<b>内容只有一份</b>：
-        仓库里那几个文件。改了它们就是改了内容，同步脚本负责把它们烘成上面那些产物。
-      </p>
+      <div class="model" style="margin-top:14px">
+        <div class="box">
+          <b>③ 把 site.json 拖到桌面图标</b>
+          <span>「壹号栈 · 拖文件上传」。它拷进仓库、校验、构建、推送、传镜像、核对。</span>
+        </div>
+        <div class="arrow">→</div>
+        <div class="box box--you">
+          <b>④ 全端新了</b>
+          <span>网页 ⌘⇧R 强刷、App 切后台再回来。草稿在导出时就清掉了。</span>
+        </div>
+      </div>
+      <div class="note">
+        <b>「后台改了，网站没变」不是 bug。</b>后台保存的是草稿，前台永远读线上那份文件 ——
+        这是故意的：这样你才永远不会看到「本机一套、手机另一套」。要上线就走上面②③。
+      </div>
     </div>
   </section>
 
   <section>
-    <h2><span class="n">2</span>三步流程</h2>
+    <h2><span class="n">2</span>三步（第二次以后就是这三步）</h2>
     <div class="card">
       <ol class="steps">
         <li>
-          <h3>改 content/ 里的文件</h3>
-          <p>加一条分享改 <span class="mono">content/feed.json</span>；写文章在 <span class="mono">content/posts/</span> 新建一个 <span class="mono">.md</span>。保存就好 —— 不用开后台、不用导出。</p>
-          <p style="color:var(--dim); font-size:12.8px;">用任何编辑器都行（VS Code、记事本、手机上的 GitHub 网页）。加完就是几个字符的改动，<span class="mono">git diff</span> 一眼能看出改了哪一行。</p>
+          <h3>改</h3>
+          <p>页脚 <b>⚙︎ 后台管理</b>（口令 <code>xingyu</code>）→ 左边你要改的那一页。</p>
+          <p class="expect">面板顶上会写「草稿里还有没发布的改动：导航 2081 条 · 分享 677 条」。看到这句就是还没发。</p>
         </li>
         <li>
-          <h3>双击桌面的「壹号栈 · 一键同步」</h3>
-          <p>它先<b>校验</b>再构建：少个逗号、日期写错，会当场告诉你哪个文件第几行，<b>并且不发布</b> —— 线上还是上一版，不会白屏。</p>
-          <p class="mono" style="color:var(--dim);">构建 site-data.js → 烘 app.json / feed.xml / app.json.gz → 提交推送 → 传国内镜像 → 清 jsDelivr → 核对三端</p>
-          <p style="color:var(--dim); font-size:12.8px;"><b>桌面上找不到图标</b>：后台「发布上线」里有「📋 复制同步命令」，粘进终端回车，效果一样。</p>
+          <h3>导出</h3>
+          <p>点左边最下面 <b>💾 发布上线</b> → <b>⬇ 导出 site.json（全站内容）</b>。下载夹里多一个 <code>site.json</code>。</p>
+          <p class="expect">提示会念出来：<b>已导出：2081 条链接 · 677 条分享 · 5 篇</b>。</p>
         </li>
         <li>
-          <h3>看最后一句</h3>
-          <p>出现「全部完成 ✓」就是三端都新了。之后：</p>
-          <div class="expect">
-            <b>网页</b>　⌘⇧R 强刷一次（或下拉刷新）　·　<b>App</b>　切到后台再回来，或首页下拉
-          </div>
+          <h3>拖到桌面图标</h3>
+          <p>把下载夹里那个 <code>site.json</code> 拖到桌面 <b>「壹号栈 · 拖文件上传」</b> 上松手。</p>
+          <p class="expect">窗口最后一行是 <b>全部完成 ✓ —— 网页 / App / 国内镜像都已经是新内容</b>。</p>
         </li>
       </ol>
+      <div class="note">
+        不想拖也行：把 <code>site.json</code> 覆盖进仓库的 <code>content/site.json</code>，再双击桌面
+        <b>「壹号栈 · 一键同步」</b>。两条路做的是同一件事。
+      </div>
     </div>
   </section>
 
   <section>
-    <h2><span class="n">3</span>四个文件各管什么</h2>
+    <h2><span class="n">3</span>这一个文件里有什么</h2>
     <div class="card">
       <table>
-        <thead><tr><th>文件</th><th>管什么</th><th>怎么改</th></tr></thead>
+        <thead><tr><th style="width:110px">键</th><th>管什么</th></tr></thead>
         <tbody>
-          <tr><td><span class="mono">content/feed.json</span></td><td>「分享」页的时间线</td><td>一行一条，新的放最上面</td></tr>
-          <tr><td><span class="mono">content/posts/*.md</span></td><td>文章</td><td>一篇一个文件，开头几行写标题 / 日期</td></tr>
-          <tr><td><span class="mono">content/nav.json</span></td><td>导航分类 + 2081 个站点</td><td>一个分类一段，每条链接一行</td></tr>
-          <tr><td><span class="mono">content/site.json</span></td><td>站名、首页文案、主题、关于页</td><td>跟以前后台「站点信息 / 首页内容 / 主题」调的是同一批</td></tr>
+          <tr><td><code>site</code></td><td>站名、标语、配色、首页文案、今日精选、关于页、赞助位</td></tr>
+          <tr><td><code>nav</code></td><td>导航的分类与站点（50 个分类 / 2081 条链接）</td></tr>
+          <tr><td><code>feed</code></td><td>「分享」页的时间线，一条一个对象</td></tr>
+          <tr><td><code>posts</code></td><td>文章，一篇文章一个对象，<code>body</code> 是 Markdown 正文</td></tr>
+          <tr><td><code>entries</code></td><td>首页那四张快捷卡片</td></tr>
         </tbody>
       </table>
 
-      <div class="note">
-        <b>外观（站名 / 主题 / 首页文案）可以照旧在后台调</b> —— 调完只管本机预览。
-        满意了去「发布上线 → ⬇ 导出 site.json」，把下载到的文件覆盖进
-        <code>content/site.json</code>，再走第 2 步，就跟改别的文件一样。
-      </div>
-
       <div class="manual">
-        <h3>加一条分享</h3>
-        <p class="sub">打开 <span class="mono">content/feed.json</span>，在 <span class="mono">[</span> 后面粘一条。注意<b>最后一条不要逗号</b>，别的都要。</p>
-        <pre><code>  {"date": "2026-11-26", "icon": "🧩", "title": "标题",
-   "url": "https://example.com", "desc": "一句话说明", "tags": ["工具"]},</code></pre>
+        <h3>想手改也行：加一条分享</h3>
+        <p class="sub">粘在 <code>feed</code> 数组最前面，最后一条别忘了不加逗号。</p>
+        <pre><code>{
+  "date": "2026-11-26", "icon": "🧩", "title": "标题",
+  "url": "https://example.com", "desc": "一句话说明", "tags": ["工具"]
+},</code></pre>
       </div>
 
       <div class="manual">
         <h3>写一篇文章</h3>
-        <p class="sub">在 <span class="mono">content/posts/</span> 新建 <span class="mono">我的标题.md</span>。开头那几行（front-matter）写完，下面随便写 Markdown。</p>
-        <pre><code>---
-title: 我的标题
-date: 2026-11-26
-tags: [工具, 前端]
-excerpt: 列表页显示的一句话摘要
----
-
-正文从这里开始，## 标题、- 列表、**加粗**、` 代码 ` 都支持。</code></pre>
-        <div class="note">
-          <b><span class="mono">date</span> 必须是 2026-11-26 这种格式</b>（斜杠、月日不补零都会被拦下）。
-          <span class="mono">excerpt</span> 不写也行，会自动取正文第一段。
-        </div>
+        <p class="sub">往 <code>posts</code> 数组里加一个对象。<code>id</code> 决定网址（<code>#/post/&lt;id&gt;</code>），改了 id 等于换网址。</p>
+        <pre><code>{
+  "id": "my-post", "title": "我的标题", "date": "2026-11-26",
+  "tags": ["工具"], "excerpt": "列表页那句摘要",
+  "body": "正文 Markdown 随便写。\n\n## 小标题\n\n- 一\n- 二"
+},</code></pre>
       </div>
     </div>
   </section>
@@ -252,17 +248,16 @@ excerpt: 列表页显示的一句话摘要
     <h2><span class="n">4</span>谁读哪个文件</h2>
     <div class="card">
       <table>
-        <thead><tr><th>端</th><th>读的东西</th><th>什么时候变新</th></tr></thead>
+        <thead><tr><th style="width:240px">文件</th><th>谁在读</th><th style="width:110px">要手改吗</th></tr></thead>
         <tbody>
-          <tr><td>网页</td><td><span class="mono">assets/js/site-data.js</span>（从 content/ 烘出来的）</td><td>推送后 GitHub Pages 重建，约 20 秒 ~ 4 分钟</td></tr>
-          <tr><td>App</td><td><span class="mono">api/app.json</span> —— <b>配了镜像就只问镜像</b></td><td>镜像传完立刻生效（所以同步脚本那一步不能只做一半）</td></tr>
-          <tr><td>RSS 阅读器</td><td><span class="mono">feed.xml</span></td><td>同上，同步时自动重烘</td></tr>
-          <tr><td>App 安装包</td><td><span class="mono">api/app.apk</span> + <span class="mono">app-version.json</span></td><td>只有发新版才动，改内容不碰</td></tr>
+          <tr><td><code>content/site.json</code></td><td>源头。脚本拿它烘下面三样</td><td><b>只改这个</b></td></tr>
+          <tr><td><code>assets/js/site-data.js</code></td><td>网页（导航 / 分享 / 文章 / 搜索）</td><td>产物，别碰</td></tr>
+          <tr><td><code>api/app.json</code> + <code>.gz</code></td><td>安卓 App 拉的数据</td><td>产物，别碰</td></tr>
+          <tr><td><code>feed.xml</code></td><td>RSS 订阅器</td><td>产物，别碰</td></tr>
         </tbody>
       </table>
       <div class="note">
-        <b>容易踩的一点：</b>App 是「有镜像就只问镜像」。镜像上那份 <span class="mono">app.json</span> 旧了，
-        App 就一直读旧的，不会自动退回 Pages。<b>所以同步要跑完整。</b>
+        所以「同步」这件事你不用理解：你只交一个文件，其余三样脚本现烘。烘坏了会当场拒发，线上还是上一版。
       </div>
     </div>
   </section>
@@ -271,76 +266,48 @@ excerpt: 列表页显示的一句话摘要
     <h2><span class="n">5</span>出问题了看这张表</h2>
     <div class="card">
       <table>
-        <thead><tr><th>碰到的样子</th><th>意思 / 怎么办</th></tr></thead>
+        <thead><tr><th style="width:44%">看到的</th><th>意思 / 怎么办</th></tr></thead>
         <tbody>
-          <tr><td><span class="bad">✗ content/ 里有 N 处写得不对</span></td><td>它会点名文件和行号（少了逗号、多了逗号、日期格式不对）。改完重跑。<b>这次一个字都没发出去，线上没事。</b></td></tr>
-          <tr><td>最后一句不是「全部完成 ✓」</td><td>上面标 <b>✗</b> 的那行就是原因；按它写的重跑一次，已经做完的步骤不会重复做。</td></tr>
-          <tr><td><span class="bad">✗ 推送还是失败</span></td><td>网络没通。开代理后再跑一次。<b>这一步失败时镜像会整段跳过</b>，所以必须补跑，否则手机上还是旧内容。</td></tr>
-          <tr><td>网页新了、App 还是旧</td><td>先确认镜像地址写的是 <span class="mono">http://yihaozhan.xyz/</span>（<b>带 http://</b>），再切后台回来。</td></tr>
-          <tr><td>某个文件传失败 / 线上 404</td><td>FTP 连着传会被限流，<b>失败即删文件</b>。隔几分钟重试同一条命令通常一次就过；然后跑一次 <span class="mono">python3 tools/verify-ftp.py</span> 全量核对。</td></tr>
-          <tr><td>本机看着还是旧的</td><td>老浏览器里存着一份旧内容副本。后台「发布上线 → 其它」里有「🧹 清掉本机旧副本」，点一下再刷新。</td></tr>
-          <tr><td>只想让网页变、不动镜像</td><td>终端跑 <span class="mono">python3 tools/sync.py --no-ftp</span>。</td></tr>
+          <tr><td class="bad">✗ content/site.json 里有 N 处写得不对</td><td>会指出<b>第几行第几列</b>（多半是少了逗号）。改完重跑。<b>这次一个字都没发出去，线上没事。</b></td></tr>
+          <tr><td class="bad">✗ 推送还是失败</td><td>网络没通。开代理再跑一次 —— 这一步失败时镜像会整段跳过，不补跑手机上就是旧的。</td></tr>
+          <tr><td>后台改了，前台没变</td><td>正常。草稿还没导出、没同步。走第 2 节那三步。</td></tr>
+          <tr><td>App 还是旧内容</td><td>设置里镜像地址要写 <code>http://yihaozhan.xyz/</code>（<b>带 http://</b>），然后切后台再回来。</td></tr>
+          <tr><td>只想让网页变、不动镜像</td><td>终端跑 <code>python3 tools/sync.py --no-ftp</code>。</td></tr>
+          <tr><td>手机 / 别的电脑上加一条分享</td><td>GitHub 网页打开 <code>content/site.json</code>，改 <code>feed</code> 里那几条并提交，Action 会自动烘好并发布（几分钟）。</td></tr>
+          <tr><td>整站白屏 / 没样式</td><td>先跑 <code>python3 tools/verify-ftp.py</code> 看镜像有没有掉文件 —— 镜像偶尔会自己丢几个，跑它一眼看出来。</td></tr>
         </tbody>
       </table>
     </div>
   </section>
 
   <section>
-    <h2><span class="n">6</span>命令速查（要动参数时看）</h2>
+    <h2><span class="n">6</span>命令速查（要动参数时才看）</h2>
     <div class="card">
-      <dl class="kv">
-        <dt><span class="mono">python3 tools/sync.py</span></dt><dd>常规：构建 content/ → 一条龙推到全端</dd>
-        <dt><span class="mono">node tools/build-content.js</span></dt><dd>只构建（改了内容想先看对不对）；加 <span class="mono">--check</span> 只校验不写</dd>
-        <dt><span class="mono">… --dry</span></dt><dd>只说要做什么，不写文件、不提交、不上传</dd>
-        <dt><span class="mono">… --no-ftp</span></dt><dd>只推 GitHub，不动国内镜像</dd>
-        <dt><span class="mono">… --all</span></dt><dd>整站重传镜像（改了代码才用，慢且容易掉文件）</dd>
-        <dt><span class="mono">deploy-ftp.py --files a,b</span></dt><dd>只补传指定文件（一次别超过 3 个）</dd>
-        <dt><span class="mono">verify-ftp.py</span></dt><dd>走 HTTP 逐文件核对镜像，<b>全部 ✓ 才算完</b></dd>
-      </dl>
+      <table>
+        <thead><tr><th style="width:300px">命令</th><th>做什么</th></tr></thead>
+        <tbody>
+          <tr><td><code>python3 tools/sync.py</code></td><td>一条做完：校验 → 构建 → 推送 → 传镜像 → 核对</td></tr>
+          <tr><td><code>python3 tools/sync.py --no-ftp</code></td><td>只推 GitHub，不动镜像（出门在外用）</td></tr>
+          <tr><td><code>python3 tools/sync.py --dry</code></td><td>只说会做什么，什么都不动</td></tr>
+          <tr><td><code>node tools/build-content.js --check</code></td><td>只校验 site.json，不写文件</td></tr>
+          <tr><td><code>python3 tools/verify-ftp.py</code></td><td>逐文件核对镜像（32 个全 ✓ 才算好）</td></tr>
+          <tr><td><code>python3 tools/upload-files.py 某文件</code></td><td>补传单个文件（镜像掉了东西时用）</td></tr>
+        </tbody>
+      </table>
 
       <div class="manual">
-        <h3>全部自己手动（不跑一键脚本）</h3>
-        <p class="sub">一键脚本没有别的魔法，就是下面这几条串起来。想自己一条条跑，照这个顺序，别跳步。</p>
+        <h3>完全手动版（不靠桌面图标）</h3>
+        <p class="sub">两条。第一条把导出的文件放进去，第二条把整条链跑完。</p>
         <pre><code>cd "/Volumes/1T宝盘/workbuddy/星屿"
-
-# ① content/ → site-data.js（校验不过会停，不会写出坏文件）
-node tools/build-content.js
-
-# ② 重烘三份产物（产物不许手改，只能现烘）
-node tools/gen-app-json.js --plain
-node tools/gen-feed.js
-python3 - &lt;&lt;'PY'
-import gzip
-raw = open('api/app.json','rb').read()
-open('api/app.json.gz','wb').write(gzip.compress(raw, 9, mtime=0))
-PY
-
-# ③ 提交 + 推送（content/ 和产物一起）
-git add -A &amp;&amp; git commit -m "内容同步" &amp;&amp; git push
-
-# ④ 传国内镜像（只传变了的这几个）
-python3 tools/deploy-ftp.py --files assets/js/site-data.js,api/app.json,api/app.json.gz,feed.xml
-
-# ⑤ 让 jsDelivr 的兜底源立刻失效
-curl -s -o /dev/null -A "xingyu-sync" "https://purge.jsdelivr.net/gh/Mackxin/xingyu@main/api/app.json"
-
-# ⑥ 核对：全部 ✓ 才算完
-python3 tools/verify-ftp.py</code></pre>
-        <div class="note">
-          <b>手动比一键少的只有两样：</b>① 自动算出「该传哪些文件」；② 失败后的重试与补传。
-          其余一模一样。
-        </div>
-        <p class="sub" style="margin-top:12px">
-          最容易漏的三处：<b>忘了先跑 build-content</b>（改了 feed.json，网页还是旧的）、
-          <b>忘了压 app.json.gz</b>（网页是新的、App 还是旧的）、
-          <b>commit 了没 push</b>（本地全对、线上一字未变）。
-        </p>
+cp ~/Downloads/site.json content/site.json
+python3 tools/sync.py</code></pre>
       </div>
-      <div class="note">
-        <b>什么时候要发版（+1 版本号）：</b>只有<b>改代码</b>才需要 —— 动 <span class="mono">app.js</span> /
-        <span class="mono">style.css</span> / <span class="mono">sw.js</span> 这类文件时，把
-        <span class="mono">index.html</span> 的 <span class="mono">?v=NN</span> 和 <span class="mono">sw.js</span> 的
-        <span class="mono">VERSION</span> 一起 +1。<b>只改内容不用动版本号</b>。
+
+      <div class="manual">
+        <h3>连后台都不想开，直接改文件</h3>
+        <p class="sub">改完 <code>content/site.json</code>，同样只需要一条同步命令。</p>
+        <pre><code>node tools/build-content.js --check   # 先只看对不对（报第几行第几列）
+python3 tools/sync.py                 # 通过了再发</code></pre>
       </div>
     </div>
   </section>
@@ -350,17 +317,16 @@ python3 tools/verify-ftp.py</code></pre>
     <div class="card">
       <table>
         <tbody>
-          <tr><td>别手改 <span class="mono">assets/js/site-data.js</span></td><td>它是产物，下次构建就被覆盖。要改内容，改 <span class="mono">content/</span>。</td></tr>
-          <tr><td>别在后台改内容</td><td>「站点数据 / 分享 / 文章」三个面板已经下掉了 —— 后台只剩外观。内容在文件里。</td></tr>
-          <tr><td>别在公共 WiFi 跑 FTP</td><td>服务器不支持加密连接（TLS 被 534 拒绝），凭据是明文过网的。</td></tr>
+          <tr><td style="width:230px"><b>别手改 <code>site-data.js</code></b></td><td>它是产物，下次构建直接覆盖，白改。</td></tr>
+          <tr><td><b>别只传镜像不推 GitHub</b></td><td>网页读的是 GitHub Pages，只传镜像 = 手机新、电脑旧。用同步脚本，它两边一起。</td></tr>
+          <tr><td><b>别在 <code>content/site.json</code> 里删键</b></td><td>缺 <code>nav</code> 或 <code>posts</code> 会直接拒绝构建。要清空就给空数组 <code>[]</code>。</td></tr>
         </tbody>
       </table>
     </div>
   </section>
 
   <footer>
-    <span>壹号栈 · 更新流程（一页纸）</span>
-    <span>本文件：docs/更新流程.html　·　后台「发布上线」里也有一份同样内容的折叠版</span>
+    壹号栈 · 这一页也能在站内打开：<code>assets/guide/publish-flow.html</code>。打印出来贴在桌上更省事。
   </footer>
 
 </div>
