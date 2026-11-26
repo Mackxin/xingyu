@@ -20,7 +20,7 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SKIP_DIRS = {'.git', '.workbuddy', '.githooks', '.github',
              'node_modules', '__pycache__'}
 # 只跳过仓库根下这两个；assets/tools/ 是发布内容，必须核对（按名一刀切会把它漏掉）
-SKIP_ROOT_DIRS = {'tools', 'docs'}
+SKIP_ROOT_DIRS = {'tools', 'docs', 'content'}
 SKIP_FILES = {'README.md', '.gitignore', 'CNAME', 'web.config'}
 SKIP_SUFFIX = ('.pyc', '.command')   # .command 是本机双击入口，deploy 不传
 

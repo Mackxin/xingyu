@@ -9,34 +9,30 @@
   var Store = window.XYStore;
   var MD = window.XYMarkdown || null;
   var MAX = Store.MAX_LINKS;
+  /* v167：sites / feed / posts 三个内容编辑面板下掉了 —— 内容现在是仓库里的
+     普通文件（content/），后台改完也存不进去，留着只会让人白忙一次。
+     要改内容：content/feed.json、content/posts/*.md、content/nav.json。 */
   var TABS = [
-    { id: 'sites',    label: '站点数据', icon: '🗂', badge: 'adminTabSitesN',
-      hint: '「导航」页和全站搜索的数据源，改完前台立刻变' },
-    { id: 'feed',     label: '分享',     icon: '📰', badge: 'adminTabFeedN',
-      hint: '按日期发一条，前台「分享」页按时间线排' },
-    { id: 'posts',    label: '文章',     icon: '✍️', badge: 'adminTabPostsN',
-      hint: 'Markdown 写作 + 实时预览，也能批量导入 .md' },
+    { id: 'backup',   label: '发布上线', icon: '💾',
+      hint: '改 content/ 里的文件 → 双击桌面同步；这里也能核对线上' },
     { id: 'home',     label: '首页内容', icon: '🏠',
       hint: '标语、统计、入口卡、今日精选、关于页、赞助位' },
     { id: 'look',     label: '主题',     icon: '🎨',
       hint: '配色、极光强度、圆角、密度、正文字号行高' },
-    { id: 'links',    label: '自定义链接', icon: '🔗', badge: 'adminTabLinksN',
-      hint: '顶栏和页脚那种自己加的链接' },
     { id: 'site',     label: '站点信息', icon: '🌌',
       hint: '站名、标语、建站日期、Logo、分享卡片图' },
-    { id: 'backup',   label: '备份',       icon: '💾',
-      hint: '发布上线（导出 → 双击同步，两步搞定）、版本历史、本机备份' },
+    { id: 'links',    label: '自定义链接', icon: '🔗', badge: 'adminTabLinksN',
+      hint: '顶栏和页脚那种自己加的链接' },
     { id: 'security', label: '口令',       icon: '🔐',
       hint: '纯前端门禁，只防误入，不是真安全' },
     { id: 'guide',    label: '手册 / 参数', icon: '📖',
       hint: '怎么用、快捷键、后台每个面板管什么、技术参数' }
   ];
 
-  /* v142：10 个面板一排到底太长，按「内容 / 外观 / 系统」分组 ——
+  /* v142：面板一排到底太长，按「外观 / 系统」分组 ——
      分组按你找东西的思路分，不是按代码里的顺序。 */
   var TAB_GROUPS = [
-    { name: '内容', ids: ['sites', 'feed', 'posts', 'links'] },
-    { name: '外观', ids: ['home', 'look', 'site'] },
+    { name: '外观', ids: ['home', 'look', 'site', 'links'] },
     { name: '系统', ids: ['backup', 'security', 'guide'] }
   ];
   function tabMeta(id) {
@@ -44,7 +40,7 @@
     return TABS[0];
   }
 
-  var tab = 'sites';
+  var tab = 'backup';
   var openCats = {};        // 展开的分类（按 id 记）
   var firstRun = true;
   var siteQuery = '';       // 站点数据搜索词
@@ -3009,48 +3005,46 @@
   var LOCAL_REPO = '/Volumes/1T宝盘/workbuddy/星屿';
 
   function staticCard() {
-    var s = staticStat();
-    var errN = s.issues.filter(function (i) { return i.lv === 'err'; }).length;
-    var imgRow = '';
-    if (s.imgs.length) {
-      var names = s.imgs.map(function (im) { return im.name; }).join('、');
-      imgRow =
-        '<label class="sn-check">' +
-          '<input type="checkbox" id="snSplitImg"' + (splitImgs ? ' checked' : '') + ' />' +
-          '<span>把 ' + s.imgs.length + ' 张内嵌图片拆成独立文件（' + esc(fmtBytes(s.imgBytes)) + '）' +
-            '，<code>site-data.js</code> 会小很多</span>' +
-        '</label>' +
-        '<p class="admin-tip">拆出来的文件：<code>' + esc(names) + '</code>，' +
-          '需要放到网站的 <code>assets/img/</code> 目录里（点下载时会一起给你）。' +
-          '不勾也能用，只是 <code>site-data.js</code> 会大一大截。</p>';
-    }
+    /* v167：内容搬进仓库 content/ 之后，这张卡从「导出 → 同步两步」
+       变成「改文件 → 同步」。后台不再负责内容，只负责外观。 */
+    var rows = [
+      ['content/feed.json', '加一条分享', '一行一条，粘在数组最上面'],
+      ['content/posts/*.md', '写文章', '一篇一个文件，开头几行写标题 / 日期 / 标签'],
+      ['content/nav.json', '导航分类与站点', '一个分类一段，每条链接一行'],
+      ['content/site.json', '站点信息 / 首页文案 / 外观', '以前「站点信息」「首页内容」「主题」调的那堆都在这儿'],
+      ['content/entries.json', '首页快捷卡片', '首页那四张方块']
+    ];
+    var fileTable =
+      '<table class="pub-guide__faq"><thead><tr><th>改这个文件</th><th>管什么</th></tr></thead><tbody>' +
+      rows.map(function (r) {
+        return '<tr><td><code>' + esc(r[0]) + '</code></td><td><b>' + esc(r[1]) + '</b>' +
+          (r[2] ? '<br><span class="admin-tip">' + esc(r[2]) + '</span>' : '') + '</td></tr>';
+      }).join('') +
+      '</tbody></table>';
 
-    /* 「完整流程」一页纸：默认折叠，第一次走这个；之后只走第 1、2 步 */
     var guide =
       '<details class="admin-adv" id="pubGuide">' +
-        '<summary>🧭 完整流程 · 一页纸（第一次照着走，之后只走上面两步）</summary>' +
+        '<summary>🧭 完整流程 · 一页纸（第一次照着走）</summary>' +
         '<div class="admin-adv__body">' +
-          '<p class="admin-tip"><b>只有一句话要记：后台改完 → 导出 → 双击桌面那个图标。</b>' +
+          '<p class="admin-tip"><b>只有一句话要记：改 content/ 里的文件 → 双击桌面那个图标。</b>' +
               '<a href="assets/guide/publish-flow.html" target="_blank" rel="noopener">打开打印版一页纸 →</a></p>' +
           '<ol class="pub-guide__steps">' +
-            '<li><b>在后台改</b><span>站点 / 分享 / 文章，改完点保存。这些只存在你这台浏览器里，别人还看不到。</span></li>' +
-            '<li><b>点「⬇ 导出 site-data.js」</b><span>文件落进「下载」夹，名字别改。这一份 = 整站内容 + 后台设置 + 口令校验值。</span></li>' +
-            '<li><b>双击桌面「壹号栈 · 一键同步」</b><span>它自己从「下载」夹挑最新那份，不用你挪文件。' +
-              '窗口里逐条打 ✓ —— 收内容 → 烘 app.json / feed.xml / app.json.gz → 提交推送 → 传国内镜像 → 核对三端。</span></li>' +
-            '<li><b>看最后一句</b><span>出现「全部完成 ✓」就是三端都新了。网页 ⌘⇧R 强刷一次、App 切后台再回来，就能看到。</span></li>' +
+            '<li><b>改文件</b><span>加分享改 <code>content/feed.json</code>，写文章新建 <code>content/posts/标题.md</code>。' +
+              '保存就好 —— 不用开后台、不用导出。</span></li>' +
+            '<li><b>双击桌面「壹号栈 · 一键同步」</b><span>它先校验再构建：少个逗号会当场告诉你哪个文件第几行，' +
+              '并且<b>不发布</b>，线上还是上一版。</span></li>' +
+            '<li><b>它接着烘 app.json / feed.xml / app.json.gz</b><span>这三样都是从 content/ 现烘的产物，' +
+              '不用你管，也别手工改。</span></li>' +
+            '<li><b>看最后一句</b><span>出现「全部完成 ✓」就是三端都新了。网页 ⌘⇧R 强刷一次、App 切后台再回来就能看到。</span></li>' +
           '</ol>' +
-          '<p class="admin-tip"><b>你永远只产出一个文件。</b><code>api/app.json</code>（App 读的）、' +
-            '<code>api/app.json.gz</code>（镜像上那份压过的）、<code>feed.xml</code>（RSS）都是电脑从' +
-            '<code>site-data.js</code> 现烘的 —— <b>不用你管，也别手工改</b>。</p>' +
           '<table class="pub-guide__faq">' +
             '<thead><tr><th>碰到的样子</th><th>意思 / 怎么办</th></tr></thead><tbody>' +
-            '<tr><td>最后一句不是「全部完成 ✓」</td><td>上面标 <b>✗</b> 的那行就是原因，按它写的重跑一次；已经做完的步骤不会重复做。</td></tr>' +
-            '<tr><td><b>✗ 推送还是失败</b></td><td>网络没通。开代理再跑一次。<b>这一步失败时镜像会整段跳过</b>' +
-              '（第 4 步会打印「镜像那边没有要更新的文件」），所以必须补跑一次，否则手机上还是旧内容。</td></tr>' +
-            '<tr><td>导出被拦下「有 N 处错误」</td><td>空链接、站点没名字、文章没标题这类。改完再导；心里有数就点「仍然导出」。</td></tr>' +
+            '<tr><td><b>✗ content/ 里有 N 处写得不对</b></td><td>它会指出文件和行号（多半是少了逗号、多了逗号、date 写成了 2026/1/1）。改完重跑。<b>这次一个字都没发出去，线上没事。</b></td></tr>' +
+            '<tr><td><b>✗ 推送还是失败</b></td><td>网络没通，开代理再跑一次。这一步失败时镜像会整段跳过，必须补跑一次，否则手机上还是旧内容。</td></tr>' +
             '<tr><td>App 还是旧内容</td><td>设置里镜像地址要写 <code>http://yihaozhan.xyz/</code>（<b>带 http://</b>），然后切后台再回来。</td></tr>' +
             '<tr><td>只想让网页变、不动镜像</td><td>终端跑 <code>python3 tools/sync.py --no-ftp</code>。</td></tr>' +
-            '<tr><td>在外面、开不了终端</td><td>打开下面折叠里的「只推 GitHub」（要 token）。它不碰镜像，回家补一次第 2 步才齐。</td></tr>' +
+            '<tr><td>手机 / 别的电脑上加一条分享</td><td>GitHub 网页打开 <code>content/feed.json</code> 直接改，保存后 Action 会自动烘好并发布（几分钟）。</td></tr>' +
+            '<tr><td>本机看着还是旧的</td><td>老浏览器里存着一份旧内容的副本。下面「其它」里有「清掉本机旧副本」，点一下再刷新。</td></tr>' +
             '</tbody></table>' +
         '</div>' +
       '</details>';
@@ -3058,21 +3052,15 @@
     return '<div class="admin-card" id="pubCard">' +
         '<div class="admin-card__head">' +
           '<div><h2>发布上线</h2>' +
-            '<p>你只产出一个文件 —— <code>site-data.js</code>。App 那份、RSS 那份都由电脑现烘，你碰都不用碰。</p></div>' +
-          '<span class="admin-count ' + (s.never ? '' : s.dirty ? 'is-dirty' : 'is-ok') + '">' +
-            (s.never ? '还没导出过' : s.dirty ? '有改动没导出' : '已是最新') + '</span>' +
+            '<p>内容已经是仓库里的普通文件了：<b>改文件 = 改内容</b>，改完双击同步就上线，不用导出。</p></div>' +
         '</div>' +
 
         '<div class="pub-flow">' +
           '<div class="pub-step">' +
             '<span class="pub-step__n">1</span>' +
             '<div class="pub-step__body">' +
-              '<b>导出这份内容</b>' +
-              '<div class="admin-actions">' +
-                '<button class="btn btn--primary' + (errN ? ' is-blocked' : '') + '" type="button" id="snDownload"' +
-                  (errN ? ' data-errs="' + errN + '"' : '') + '>⬇ 导出 site-data.js</button>' +
-              '</div>' +
-              '<p class="admin-tip">落进「下载」夹，<b>不用改名、不用打开</b>。</p>' +
+              '<b>改 content/ 里的文件</b>' +
+              fileTable +
             '</div>' +
           '</div>' +
           '<div class="pub-step">' +
@@ -3082,17 +3070,13 @@
               '<div class="admin-actions">' +
                 '<button class="btn btn--ghost" type="button" id="snCopyCmd">📋 复制同步命令</button>' +
               '</div>' +
-              '<p class="admin-tip">它会自己从「下载」夹挑最新那份，<b>你不用挪文件、也不用改文件名</b>。' +
+              '<p class="admin-tip">它先校验 content/，通过了才构建，然后推 GitHub、传镜像、核对三端。' +
                 '窗口里逐条打 ✓，最后一句告诉你成了没有。</p>' +
             '</div>' +
           '</div>' +
         '</div>' +
 
-        '<p class="admin-tip pub-note">两步都走完，网页 / App / 镜像才会一起新。' +
-          '<b>只做第 1 步 = 线上一个字都没变。</b></p>' +
-
-        (s.issues.length ? healthHtml(s.issues) : '') +
-        '<p class="admin-tip">' + esc(s.summary) + '</p>' +
+        '<p class="admin-tip pub-note">网页 / App / 国内镜像是一起更新的 —— 同步这一下就全齐了。</p>' +
 
         guide +
 
@@ -3102,37 +3086,12 @@
             '<div class="admin-actions">' +
               '<button class="btn btn--ghost" type="button" id="snLive">🔍 核对线上</button>' +
               '<button class="btn btn--ghost" type="button" id="snFeed">⬇ 下载 feed.xml</button>' +
-              '<button class="btn btn--ghost' + (errN ? ' is-blocked' : '') + '" type="button" id="snCopy">复制内容</button>' +
+              '<button class="btn btn--ghost" type="button" id="snDropLegacy">🧹 清掉本机旧副本</button>' +
             '</div>' +
             '<p class="admin-tip" id="snLiveOut" hidden></p>' +
-            '<p class="admin-tip">「核对线上」= 拿这份内容和线上那份比一遍，告诉你差在哪、线上是哪次导的。' +
-              '<code>feed.xml</code> 是 RSS 订阅源，第 2 步会自动重烘并一起传，平时不用管。</p>' +
-            (s.at ? '<p class="admin-tip">上次导出：' + esc(s.at) + '</p>' : '') +
-            imgRow +
-
-            '<div class="sn-gh">' +
-              '<div class="sn-gh__head"><b>在外面、开不了终端时：只推 GitHub</b>' +
-                '<span class="admin-count" id="ghBadge"></span></div>' +
-              '<p class="admin-tip">点一下就把内容提交进仓库，Pages 几分钟后重建，App 数据由仓库里的 Action 顺手重烘。' +
-                '<br>⚠️ 这条路<b>不碰国内镜像</b> —— 手机上配过镜像的 App 还会读旧内容。回家补双击一次第 2 步就齐了。</p>' +
-              '<label class="admin-field"><span class="admin-field__label">GitHub Token' +
-                '<em>fine-grained token，只勾这个仓库的 Contents: Read and write</em></span>' +
-                '<input type="password" id="ghTok" placeholder="github_pat_… 或 ghp_…" autocomplete="off" spellcheck="false" />' +
-              '</label>' +
-              '<div class="admin-actions">' +
-                '<button class="btn btn--primary' + (errN ? ' is-blocked' : '') + '" type="button" id="ghPush"' +
-                  (errN ? ' data-errs="' + errN + '"' : '') + '>⬆ 只推 GitHub</button>' +
-                '<button class="btn btn--ghost" type="button" id="ghForget">清除令牌</button>' +
-              '</div>' +
-              '<p class="admin-tip" id="ghOut" hidden></p>' +
-              '<p class="admin-tip">令牌只存在这台浏览器的 <code>localStorage</code>，只发往 ' +
-                '<code>api.github.com</code>，不进 site-data.js。</p>' +
-            '</div>' +
-
-            (s.pass
-              ? '<p class="admin-tip">⚠️ 你设过访问口令，导出的文件里带着它的<b>校验值</b>（不是明文），' +
-                '线上也认同一个口令。这份文件等于你的钥匙，别往公开的地方放。</p>'
-              : '') +
+            '<p class="admin-tip">「核对线上」= 比一下线上那份 app.json 的 build 号和本地一不一样。' +
+              '<br>「清掉本机旧副本」= 老版本把内容存在这个浏览器里（<code>xingyu.data.v1</code> 那几个），' +
+              '现在不读了，清掉只回收空间。清完刷新一次。</p>' +
           '</div>' +
         '</details>' +
       '</div>';
@@ -3158,6 +3117,7 @@
     all:    { name: '整站快照' }
   };
   var HIST_LIVE = ['data', 'feed', 'posts', 'config'];
+
 
   function histAll() {
     try {
@@ -3767,7 +3727,7 @@
       ['🕓 稍后读', '先存下来回头看的链接 <code>#/later</code>：全部 / 未读 / 已读，顶栏时钟是入口，未读数挂在角标上'],
       ['🌿 足迹', '自己攒出来的统计 <code>#/insight</code>：年度回顾、灵感热力图、最常去、冷落的收藏、失效站点'],
       ['🏷 标签页', '一个标签一页 <code>#/tag/标签名</code>：分享 + 文章 + 灵感汇总，链接可以直接发给别人'],
-      ['🔐 后台', '就是这里：改完立刻生效，但只存在本机浏览器']
+      ['🔐 后台', '就是这里：调外观（存本机浏览器）；内容在仓库 <code>content/</code> 里，改完同步才上线']
     ].map(function (r) { return gRow(r[0], r[1]); }).join('');
 
     var keysRows = [
@@ -3783,22 +3743,24 @@
 
     /* 后台自己的快捷键（v142） */
     var adminKeysRows = [
-      ['<code>⌘S</code> / <code>Ctrl+S</code>', '保存正在编辑的这一条（分享 / 文章），不用去够那颗按钮'],
-      ['<code>Esc</code>', '取消编辑 / 关掉挑 emoji 的小面板（有改动会先问一句）'],
+      ['<code>⌘S</code> / <code>Ctrl+S</code>', '保存这一页正在调的外观设置（配色、首页文案、站点信息）'],
+      ['<code>Esc</code>', '关掉挑 emoji 或配色的小面板'],
       ['<code>⌘K</code>', '前台的搜索面板在后台也能用，找站点、找分享都行'],
-      ['地址栏', '每个面板都有自己的地址（<code>#/admin/feed</code>），刷新停在同一页，后退键当「上一个面板」用，也能把某一页直接发给别人']
+      ['地址栏', '每个面板都有自己的地址（<code>#/admin/look</code>），刷新停在同一页，后退键当「上一个面板」用']
     ].map(function (r) { return gRow(r[0], r[1]); }).join('');
 
     var adminRows = [
-      ['🗂 站点数据', '增删分类与站点、拖拽排序、改图标与描述。这是「导航」页和全站搜索的数据源'],
-      ['📰 分享', '发一条分享（日期 / 图标 / 标题 / 链接 / 标签 / 描述），列表里可搜索、可编辑、可就地展开。' +
-        '<b>链接可以留空</b> → 变成一条点了不跳的纯文字卡（发公告好用）；<b>描述里回车换行，前台照原样分段</b>'],
-      ['✍️ 文章', '写文章、导入 <code>.md</code>、存草稿、预览正文'],
+      ['💾 发布上线', '<b>改 content/ 里的文件 → 双击桌面「壹号栈 · 一键同步」</b>。' +
+        '内容（导航 / 分享 / 文章）是仓库里的普通文件，不再在后台编辑：' +
+        '<code>content/feed.json</code> 加分享、<code>content/posts/*.md</code> 写文章、' +
+        '<code>content/nav.json</code> 改导航。同步脚本会先校验再发布，写错不会推到线上'],
       ['🏠 首页内容', '改标语、统计数字、入口卡、今日精选（勾哪几条显示哪几条，最多 12 条）、关于页正文、赞助卡片（开关 + 文案 + 收款码图片）'],
       ['🎨 主题', '7 套配色 + 自己敲 <code>#ff1d55</code> 这类色值 + 「我的配色」存多套；还有极光强度、圆角、默认主题、卡片密度、正文字号行高'],
       ['🔗 自定义链接', '顶栏/页脚那种自己加的链接，最多 ' + MAX + ' 个'],
       ['🌌 站点信息', '站名、标语、建站日期、Logo、Favicon、分享卡片图'],
-      ['💾 备份', '<b>「发布上线」就在这一页最上面</b>：导出 <code>site-data.js</code> → 双击桌面的一键同步图标，网页 / App / 镜像一起新。导出前会先体检（标红的错误先拦一下），传完能「核对线上」；还有版本历史（改动前自动留底 + 手动打快照，误删能回退）、整站打包成 JSON、导入回来、恢复默认'],
+      ['💾 发布上线', '<b>「改文件 → 双击同步」两步</b>：内容在仓库 <code>content/</code> 里，' +
+        '同步脚本先校验（写错会指出文件和行号，不发布）再烘 <code>app.json</code> / <code>feed.xml</code>、' +
+        '推 GitHub、传国内镜像。还有「核对线上」「清掉本机旧副本」两个小工具'],
       ['🔐 口令', '改访问口令。注意这是纯前端门禁，只防误入，不是真安全'],
       ['📖 手册 / 参数', '就是这一页']
     ].map(function (r) { return gRow(r[0], r[1]); }).join('');
@@ -3890,21 +3852,19 @@
       ['<code>assets/js/admin.js</code>', '这一整套后台面板'],
       ['<code>assets/js/md.js</code>', 'Markdown 渲染 + 代码高亮'],
       ['<code>assets/js/bookmarks.js</code>', '收藏夹的原始数据（50 个分类 / 2000+ 链接）'],
-      ['<code>assets/js/site-data.js</code>', '空文件。后台「发布上线」导出的快照就覆盖它 —— 有内容时，整站数据以它为准'],
+      ['<code>content/</code>', '内容源文件：site.json / nav.json / feed.json / entries.json / posts/*.md。改内容只改这里'],
+      ['<code>assets/js/site-data.js</code>', '<b>产物，别手改</b>：由 <code>tools/build-content.js</code> 从 content/ 烘出来，站点运行时读的就是它'],
       ['<code>sw.js</code>', 'Service Worker；<code>VERSION</code> 要和 index.html 的 <code>?v=</code> 一起改'],
       ['<code>tools/gen-feed.js</code>', '生成 RSS <code>feed.xml</code> 的小脚本（可选）']
     ].map(function (r) { return gRow(r[0], r[1]); }).join('');
 
     var storeGrid = [
       kv('<code>xingyu.config.v1</code>', '整站设置：站名、首页文案、主题配色、阅读排版、显示项、口令'),
-      kv('<code>xingyu.data.v1</code>', '分类与站点（「导航」页的数据）'),
-      kv('<code>xingyu.feed.v1</code>', '分享条目；没改过就用 <code>data.js</code> 里的'),
-      kv('<code>xingyu.posts.v1</code>', '文章；没写过就用 <code>data.js</code> 里的'),
+      kv('<code>xingyu.data.v1</code> / <code>.feed.v1</code> / <code>.posts.v1</code>', '老版本存的内容副本。<b>v167 起不再读取</b>，内容以 content/ 为准；清掉只回收空间'),
       kv('<code>xingyu.fav.v1</code>', '收藏夹（星标过的站点网址）；和最近访问一起会进「云备份」'),
       kv('<code>xingyu.idea.v1</code>', '灵感随记的条目（正文 / 标签 / 时间）；会跟着「下载备份」和「云备份」一起走'),
       kv('<code>xingyu.idea.draft.v1</code>', '灵感随记里还没提交的草稿，切页不丢，保存后自动清掉'),
       kv('<code>xingyu.recent.v1</code>', '最近访问'),
-      kv('<code>xingyu.export.v1</code>', '上次「发布上线」导出的时间与签名，用来判断有没有没导出的改动'),
       kv('<code>xingyu.hist.v1</code>', '版本历史：改动前的旧版本 + 手动快照，最多 14 份 / 1.6 MB。手动快照不会被自动记录挤掉，最多留 5 份')
     ].join('');
 
@@ -4646,42 +4606,17 @@
     }
 
     /* 发布上线：下载 site-data.js（体检有标红错误时先拦一道） */
-    var snDownload = body.querySelector('#snDownload');
-    if (snDownload) snDownload.addEventListener('click', function () {
-      snapGate(function () {
-        var text = staticJs(splitImgs);
-        download('site-data.js', text, 'application/javascript');
-        snapSave({ at: nowText(), sig: snapSig(text) });
-
-        /* 勾了「拆图片」就把图片文件也一起给出去，隔 400ms 一个，
-           免得浏览器把连续下载当成弹窗拦掉 */
-        var imgs = splitImgs ? staticImageFiles(Store.get()) : [];
-        imgs.forEach(function (im, i) {
-          setTimeout(function () { saveImageFile(im); }, 400 * (i + 1));
-        });
-
-        /* 导完就把下一步递到眼前 —— 用户最常卡在「导出了，然后呢」 */
-        toast(imgs.length
-          ? '已导出（分享 ' + Store.feedAll().length + ' 条 · 文章 ' + Store.postsAll().length +
-            ' 篇）。下一步：双击桌面「壹号栈 · 一键同步」；有 ' + imgs.length +
-            ' 张图片要放 assets/img/'
-          : '已导出（分享 ' + Store.feedAll().length + ' 条 · 文章 ' + Store.postsAll().length +
-            ' 篇）。下一步：双击桌面「壹号栈 · 一键同步」');
-        refreshBody(root);
-      });
-    });
-
     /* 复制同步命令：不想去桌面找图标时，粘到终端里一样 */
     var snCmd = body.querySelector('#snCopyCmd');
     if (snCmd) snCmd.addEventListener('click', function () {
       copyText('cd "' + LOCAL_REPO + '" && python3 tools/sync.py');
     });
 
-    /* 拆图片开关：勾上后重新算一遍体积 */
-    var snSplit = body.querySelector('#snSplitImg');
-    if (snSplit) snSplit.addEventListener('change', function () {
-      splitImgs = !!snSplit.checked;
-      refreshBody(root);
+    /* 清掉老版本存在浏览器里的内容副本：v167 之后根本不读它们了，只占空间 */
+    var snDrop = body.querySelector('#snDropLegacy');
+    if (snDrop) snDrop.addEventListener('click', function () {
+      var gone = Store.dropLegacyContent();
+      toast(gone.length ? '已清掉：' + gone.join('、') + '，刷新一次就干净了' : '本来就是干净的');
     });
 
     /* 顺手生成 RSS */

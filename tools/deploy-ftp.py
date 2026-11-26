@@ -40,8 +40,9 @@ CONF = os.path.expanduser('~/.xy-ftp')
 # 这些是开发期的东西，传上去只会占空间、还可能被人翻到
 SKIP_DIRS = {'.git', '.workbuddy', '.githooks', '.github',
              'node_modules', '__pycache__'}
-# 只跳过仓库根下这两个（assets/tools/ 是要发布的，不受影响）
-SKIP_ROOT_DIRS = {'tools', 'docs'}
+# 只跳过仓库根下这几个（assets/tools/ 是要发布的，不受影响）
+# content/ 是内容源文件，本站运行时读的是烘出来的 assets/js/site-data.js
+SKIP_ROOT_DIRS = {'tools', 'docs', 'content'}
 SKIP_FILES = {'README.md', '.gitignore', 'CNAME', 'web.config'}   # web.config 单独处理（见 main 末尾）
 SKIP_PREFIX = ('.',)          # 隐藏文件 + macOS 的 ._xxx 资源分叉
 

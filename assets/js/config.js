@@ -1,14 +1,14 @@
 /* =========================================================================
    壹号栈 · 配置存储（后台管理的数据层）
    -------------------------------------------------------------------------
-   读取优先级（后者覆盖前者）：
+   配置（站点名、外观、首页文案…）的读取优先级，后者覆盖前者：
      1. DEFAULTS                       —— 本文件里的默认值
-     2. window.XY_CONFIG               —— 写死在 index.html 里的配置（对所有访客生效）
-     3. localStorage['xingyu.config.v1'] —— 在后台里改的配置（仅本机生效）
+     2. window.XY_CONFIG               —— content/site.json 烘出来的那份（对所有访客生效）
+     3. localStorage['xingyu.config.v1'] —— 在后台里调的外观（仅本机预览生效）
 
-   想让自己在后台改的内容对**所有访客**永久生效：
-     后台 →「数据」→ 导出 JSON → 复制 → 粘到 index.html 的
-     <script>window.XY_CONFIG = { ... };</script>（必须放在 config.js 之前）
+   想让自己在后台试的外观对所有访客生效：改 content/site.json，然后同一次同步。
+   内容（导航 / 分享 / 文章）不在这里 —— 它们在 content/ 里的普通文件，
+   由 tools/build-content.js 烘成 assets/js/site-data.js，只有一份，没有本机副本。
    ========================================================================= */
 (function () {
   'use strict';
@@ -725,91 +725,60 @@
       return true;
     },
 
-    /* ---------- 站点数据（分类 / 站点 —— 导航页与全站搜索的数据源） ---------- */
-    /* 后台用：始终返回独立副本 */
+    /* ---------- 站点数据（分类 / 站点 —— 导航页与全站搜索的数据源） ----------
+       v167 起内容只有一份：仓库里的 content/ 烘成 assets/js/site-data.js。
+       以前这里优先读 localStorage['xingyu.data.v1']，那层「本机影子」是
+       「改了文件本地看不到、线上一套本机一套」的根源，已经拆掉了。
+       老浏览器里存着的旧 key 不读也不写，留着不影响任何事。 ---------- */
     dataAll: function () {
-      var raw = null;
-      try { raw = localStorage.getItem(DATA_KEY); } catch (e) {}
-      if (raw) {
-        try { var v = JSON.parse(raw); if (Array.isArray(v)) return clone(v); } catch (e) {}
-      }
       return clone((window.SITE_DATA && window.SITE_DATA.categories) || []);
     },
-    /* 前台只读：没有本地覆盖时直接返回原数组引用，零开销 */
+    /* 清掉老版本存在浏览器里的内容副本（v167 之前才有）。现在根本不读它们，
+       留着只是占空间 —— 后台「数据」页有个按钮，也可以在这里手动调一次。 */
+    dropLegacyContent: function () {
+      var gone = [];
+      [DATA_KEY, POSTS_KEY, FEED_KEY].forEach(function (k) {
+        try {
+          if (localStorage.getItem(k)) { localStorage.removeItem(k); gone.push(k); }
+        } catch (e) {}
+      });
+      return gone;
+    },
+    /* 前台只读：直接返回原数组引用，零开销 */
     dataCategories: function () {
-      var raw = null;
-      try { raw = localStorage.getItem(DATA_KEY); } catch (e) {}
-      if (raw) {
-        try { var v = JSON.parse(raw); if (Array.isArray(v)) return v; } catch (e) {}
-      }
       return (window.SITE_DATA && window.SITE_DATA.categories) || [];
     },
-    dataIsCustom: function () {
-      try { return !!localStorage.getItem(DATA_KEY); } catch (e) { return false; }
-    },
+    dataIsCustom: function () { return false; },
     setData: function (cats) {
-      try { localStorage.setItem(DATA_KEY, JSON.stringify(cats)); } catch (e) {}
-      document.dispatchEvent(new CustomEvent('xy:data', { detail: cats }));
+      /* 内容不再存在浏览器里：改 content/nav.json，然后跑 tools/build-content.js */
+      console.warn('[壹号栈] 导航内容请改 content/nav.json —— 后台改的内容不再保存');
       return cats;
     },
     resetData: function () {
-      try { localStorage.removeItem(DATA_KEY); } catch (e) {}
       document.dispatchEvent(new CustomEvent('xy:data', {}));
     },
     exportDataJSON: function () { return JSON.stringify(Store.dataAll(), null, 2); },
-    importDataJSON: function (str) {
-      var v;
-      try { v = JSON.parse(str); } catch (e) { return false; }
-      if (!Array.isArray(v)) return false;
-      Store.setData(v);
-      return true;
-    },
+    importDataJSON: function () { return false; },
 
     /* ---------- 文章（Markdown） ---------- */
-    /* 后台用：始终返回独立副本 */
+    /* 一篇一个文件：content/posts/*.md */
     postsAll: function () {
-      var raw = null;
-      try { raw = localStorage.getItem(POSTS_KEY); } catch (e) {}
-      if (raw) {
-        try { var v = JSON.parse(raw); if (Array.isArray(v)) return clone(v); } catch (e) {}
-      }
       return clone((window.SITE_DATA && window.SITE_DATA.posts) || []);
     },
-    /* 前台只读：没有本地覆盖时直接返回原数组引用，零开销 */
+    /* 前台只读：直接返回原数组引用，零开销 */
     posts: function () {
-      var raw = null;
-      try { raw = localStorage.getItem(POSTS_KEY); } catch (e) {}
-      if (raw) {
-        try { var v = JSON.parse(raw); if (Array.isArray(v)) return v; } catch (e) {}
-      }
       return (window.SITE_DATA && window.SITE_DATA.posts) || [];
     },
-    postsIsCustom: function () {
-      try { return !!localStorage.getItem(POSTS_KEY); } catch (e) { return false; }
-    },
-    setPosts: function (list) {
-      var arr = (Array.isArray(list) ? list : []).map(normPost);
-      try { localStorage.setItem(POSTS_KEY, JSON.stringify(arr)); }
-      catch (e) {
-        /* 多半是 localStorage 满了（浏览器一般 5MB） */
-        Store.saveFailed = true;
-        return false;
-      }
-      Store.saveFailed = false;
-      document.dispatchEvent(new CustomEvent('xy:posts', { detail: arr }));
-      return arr;
+    postsIsCustom: function () { return false; },
+    setPosts: function () {
+      console.warn('[壹号栈] 文章请写 content/posts/*.md —— 后台改的文章不再保存');
+      return false;
     },
     resetPosts: function () {
-      try { localStorage.removeItem(POSTS_KEY); } catch (e) {}
       document.dispatchEvent(new CustomEvent('xy:posts', { detail: Store.posts() }));
     },
     exportPostsJSON: function () { return JSON.stringify(Store.postsAll(), null, 2); },
-    importPostsJSON: function (str) {
-      var v;
-      try { v = JSON.parse(str); } catch (e) { return false; }
-      if (!Array.isArray(v)) return false;
-      return Store.setPosts(v) !== false;
-    },
+    importPostsJSON: function () { return false; },
 
     /* ---------- 分享条目（#/share 时间线） ---------- */
     /* 一条分享的稳定标识：日期 + 标题。没有 id 字段，就用它当钥匙 ——
@@ -819,51 +788,24 @@
       return String(f.date == null ? '' : f.date) + '|' + String(f.title == null ? '' : f.title);
     },
 
-    /* 后台用：始终返回独立副本（已按日期倒序，和前台分组顺序一致） */
+    /* 一条一条写在 content/feed.json 里 */
     feedAll: function () {
-      var raw = null;
-      try { raw = localStorage.getItem(FEED_KEY); } catch (e) {}
-      if (raw) {
-        try { var v = JSON.parse(raw); if (Array.isArray(v)) return clone(v); } catch (e) {}
-      }
       return clone((window.SITE_DATA && window.SITE_DATA.feed) || []);
     },
-    /* 前台只读：没有本地覆盖时直接返回原数组引用，零开销 */
+    /* 前台只读：直接返回原数组引用，零开销 */
     feed: function () {
-      var raw = null;
-      try { raw = localStorage.getItem(FEED_KEY); } catch (e) {}
-      if (raw) {
-        try { var v = JSON.parse(raw); if (Array.isArray(v)) return v; } catch (e) {}
-      }
       return (window.SITE_DATA && window.SITE_DATA.feed) || [];
     },
-    feedIsCustom: function () {
-      try { return !!localStorage.getItem(FEED_KEY); } catch (e) { return false; }
-    },
-    setFeed: function (list) {
-      var arr = (Array.isArray(list) ? list : []).map(normFeed);
-      /* 存的时候就排好：日期倒序、同一天保持你排的顺序（Array.sort 是稳定排序） */
-      arr.sort(function (a, b) { return String(b.date || '').localeCompare(String(a.date || '')); });
-      try { localStorage.setItem(FEED_KEY, JSON.stringify(arr)); }
-      catch (e) {
-        Store.saveFailed = true;
-        return false;
-      }
-      Store.saveFailed = false;
-      document.dispatchEvent(new CustomEvent('xy:feed', { detail: arr }));
-      return arr;
+    feedIsCustom: function () { return false; },
+    setFeed: function () {
+      console.warn('[壹号栈] 分享请加在 content/feed.json —— 后台改的分享不再保存');
+      return false;
     },
     resetFeed: function () {
-      try { localStorage.removeItem(FEED_KEY); } catch (e) {}
       document.dispatchEvent(new CustomEvent('xy:feed', { detail: Store.feed() }));
     },
     exportFeedJSON: function () { return JSON.stringify(Store.feedAll(), null, 2); },
-    importFeedJSON: function (str) {
-      var v;
-      try { v = JSON.parse(str); } catch (e) { return false; }
-      if (!Array.isArray(v)) return false;
-      return Store.setFeed(v) !== false;
-    },
+    importFeedJSON: function () { return false; },
 
     /* ---------- 口令 ---------- */
     /* 优先级：本机设的 > site-data.js 里带来的（后台导出时打包）> 默认口令。

@@ -1,33 +1,29 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""一条命令，把「后台改的内容」推到全端。
+"""一条命令，把「content/ 里改的内容」推到全端。
 
-为什么要它 —— 一次内容更新原本要手动走五步，漏一步就有一端还是旧的：
-    1. 后台「备份 → 下载 site-data.js」
-    2. 把文件挪进仓库 assets/js/site-data.js
-    3. node tools/gen-app-json.js（重烘给 App 的 api/app.json）
-    4. git commit + push（GitHub Pages）
-    5. python3 tools/deploy-ftp.py --only api + purge jsDelivr（国内镜像）
-第 5 步最容易漏：App 的数据源是「有镜像就只问镜像」，镜像上那份 app.json
-旧了，App 就一直读旧的，不会自动退回 Pages。
+内容全在 content/ 这几个文件里，改完跑这条就行：
+    content/feed.json      加一条分享（一行一条）
+    content/posts/*.md     写文章（一篇一个文件）
+    content/nav.json       导航分类与站点
+    content/site.json      站点名 / 首页文案 / 外观
+    content/entries.json   首页快捷卡片
+
+它做的事（按顺序）：
+    构建 site-data.js（先校验，写错就停）→ 重烘 app.json / feed.xml / app.json.gz
+    → 提交推送 → 把这次变了的文件传镜像 → purge jsDelivr → 核对三端
 
 用法：
-    python3 tools/sync.py                 # 常规：自动找「下载」里最新的 site-data.js
-    python3 tools/sync.py 路径/site-data.js  # 文件不在下载目录时
+    python3 tools/sync.py                 # 常规：改了 content/ 或代码
     python3 tools/sync.py --all           # 改了代码，整站重传镜像（默认只传变了的）
     python3 tools/sync.py --no-ftp        # 只推 GitHub，不动镜像（出门在外用）
     python3 tools/sync.py --dry           # 只说要做什么，不动任何东西
-
-它做的事（按顺序）：
-    收内容 → 重烘 app.json / feed.xml / app.json.gz → 提交推送
-    → 把这次变了的文件传镜像 → purge jsDelivr → 核对三端 build 号
+    python3 tools/sync.py --msg "…"       # 自定义提交说明
 """
 
-import glob
 import gzip
 import json
 import os
-import re
 import shutil
 import subprocess
 import sys
@@ -59,15 +55,9 @@ def _conf_value(key):
 MIRROR = (_conf_value('url') or 'http://yihaozhan.xyz').rstrip('/')
 PAGES = 'https://mackxin.github.io/xingyu'
 
-# 「导出于 2026-11-20 23:40」—— 后台导出时写在文件头那行
-STAMP_RE = re.compile(r'导出于\s*(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2})')
-# 有内容才算快照：出厂那个空模板的注释里也写着 window.SITE_DATA，
-# 只搜单词会把空文件误当成新版本
-BODY_RE = re.compile(r'window\.(SITE_DATA|XY_CONFIG)\s*=')
-
 # 这些是本机才用得上的东西，传上去只会占地方
 SKIP_REL = {'README.md', '.gitignore', 'CNAME', 'web.config'}
-SKIP_DIRS = ('tools/', 'docs/', 'node_modules/', '__pycache/')
+SKIP_DIRS = ('tools/', 'docs/', 'content/', 'node_modules/', '__pycache/')
 
 
 # ---------------------------------------------------------------- 小工具
@@ -102,15 +92,6 @@ def sh(cmd, cwd=REPO, env=None, quiet=False):
 def git(*args, **kw):
     # core.quotepath=false：中文文件名原样输出，不然隐私守卫会报到一串八进制码
     return sh(['git', '-c', 'core.quotepath=false', *args], quiet=kw.get('quiet', False))
-
-
-def stamp_of(path):
-    try:
-        with open(path, encoding='utf-8', errors='replace') as fh:
-            m = STAMP_RE.search(fh.read())
-        return m.group(1) if m else ''
-    except OSError:
-        return ''
 
 
 def read(path):
@@ -165,75 +146,54 @@ def fetch_json(url, timeout=25):
     return json.loads(data.decode('utf-8'))
 
 
-# ---------------------------------------------------------------- 1 收内容
+# ---------------------------------------------------------------- 1 构建内容
 
-def find_export(explicit):
-    """找到后台导出的 site-data.js：显式路径 > 下载目录里最新的一个。"""
-    if explicit:
-        cands = [explicit]
-    else:
-        cands = []
-        for pat in ('~/Downloads/site-data*.js', '~/Desktop/site-data*.js',
-                    '~/下载/site-data*.js', '~/桌面/site-data*.js'):
-            cands += glob.glob(os.path.expanduser(pat))
-    cands = [c for c in cands if os.path.isfile(c)]
-    good = []
-    for c in cands:
-        txt = read(c)
-        if BODY_RE.search(txt):
-            good.append((os.path.getmtime(c), c, txt))
-    good.sort(key=lambda t: t[0], reverse=True)
-    if explicit and not good:
-        sys.exit(f'这个文件里没有 window.SITE_DATA（是出厂的空模板？）：{explicit}')
-    return good[0] if good else None
+def build_content(dry):
+    """content/ 里的文件 → assets/js/site-data.js。
 
+    内容是普通文件了：改 content/feed.json 加一条分享、往 content/posts/
+    丢一篇 .md，然后跑这条命令。构建器会先校验，写错了（少个逗号）当场
+    报文件名和行号并退出 —— 不会把一份坏数据推上线。
+    """
+    step(1, '构建内容（content/ → assets/js/site-data.js）')
+    node = shutil.which('node')
+    if not node:
+        sys.exit('找不到 node，先装 Node.js（brew install node）')
+    script = os.path.join(REPO, 'tools/build-content.js')
+    if not os.path.exists(script):
+        sys.exit('tools/build-content.js 不见了 —— 没有它就没法从 content/ 生成站点数据')
 
-def take_content(explicit, dry):
-    step(1, '收内容')
-    snap = find_export(explicit)
-    if not snap:
-        info('没找到新的 site-data.js —— 跳过，本次只同步代码/产物')
-        info('（想更新内容：后台「备份 → 发布上线」点「⬇ 导出 site-data.js」，然后重跑这条命令）')
+    before = read(SITE_DATA)
+    if dry:
+        good, out = sh([node, script, '--check'], quiet=True)
+        if not good:
+            bad('content/ 里有写得不对的地方：')
+            for line in out.splitlines():
+                print('      ' + line)
+            sys.exit(1)
+        info('（--dry：会重新构建 site-data.js）')
         return False
 
-    _, path, txt = snap
-    new_stamp = stamp_of(path)
-    old_txt = read(SITE_DATA)
-    old_stamp = stamp_of(SITE_DATA)
-
-    if BODY_RE.search(old_txt) and txt.strip() == old_txt.strip():
-        ok(f'仓库里已经是这一版（导出于 {new_stamp or "未知"}），不用重复导')
-        return False
-
-    # 护栏：下载夹里那份可能是很久以前导出的。无脑覆盖会把手改过的仓库版本顶回去
-    # （2026-11-25 就踩过：站点内容已经手改过，跑一次 sync 被 06:38 的旧导出整份盖掉）
-    force = os.environ.get('XY_FORCE_CONTENT') == '1'
-    if not force and new_stamp and old_stamp:
-        if new_stamp < old_stamp:
-            ok(f'「下载」里那份导出于 {new_stamp}，比仓库里的 {old_stamp} 旧 —— 跳过，不覆盖')
-            info('确实要用这一份：XY_FORCE_CONTENT=1 重跑；或先把仓库里那份挪走。')
-            return False
-        if new_stamp == old_stamp:
-            ok(f'两边都是 {new_stamp} 那次导出，内容却不一样 —— 保留仓库里的（多半手改过）')
-            info('在后台重新导出一次，时间戳会变新，那时才会正常覆盖。')
-            return False
-
-    info(f'来源：{path}')
-    info(f'导出于：{new_stamp or "文件头没写时间"}'
-         + (f'  →  仓库里原来那份导出于 {old_stamp}' if old_stamp else '  →  仓库里原来没有内容'))
-    sz = len(txt.encode('utf-8'))
-    info(f'体积：{sz / 1024:.0f} KB')
-    if sz > 6 * 1024 * 1024:
-        bad('超过 6 MB，可能是把图片内嵌进去了 —— 导出时勾上「拆成独立文件」再试')
+    good, out = sh([node, script], quiet=True)
+    if not good:
+        bad('content/ 里有写得不对的地方，先改好再同步：')
+        for line in out.splitlines():
+            print('      ' + line)
         sys.exit(1)
 
-    if dry:
-        info('（--dry：不写入）')
-        return True
-    with open(SITE_DATA, 'w', encoding='utf-8') as fh:
-        fh.write(txt)
-    ok('已写入 assets/js/site-data.js')
-    return True
+    after = read(SITE_DATA)
+    changed = before != after
+    for line in out.splitlines():
+        line = line.strip()
+        if line.startswith('✓'):
+            ok(line[1:].strip())
+        elif line.startswith('·'):
+            info(line[1:].strip())
+    if changed:
+        ok('site-data.js 变了，这次要一起发出去')
+    else:
+        info('内容没变化，跟上次一致')
+    return changed
 
 
 # ---------------------------------------------------------------- 2 重烘
@@ -335,7 +295,6 @@ def guard_private(files):
 
 def commit_push(content_changed, dry, custom_msg=''):
     step(3, '提交并推送到 GitHub')
-    stamp = stamp_of(SITE_DATA)
     build = ''
     if os.path.exists(APP_JSON):
         try:
@@ -367,8 +326,7 @@ def commit_push(content_changed, dry, custom_msg=''):
         if custom_msg:
             msg = custom_msg
         elif content_changed:
-            msg = (f'内容同步：site-data.js 导出于 {stamp or "未知时间"}'
-                   f'；重烘 api/app.json（build {build}）与 feed.xml')
+            msg = f'内容同步（content/）：重烘 site-data.js、api/app.json（build {build}）与 feed.xml'
         elif hand:
             head = '、'.join(hand[:3]) + (f' 等 {len(hand)} 个文件' if len(hand) > 3 else '')
             msg = f'全端同步：{head}；重烘 api/app.json（build {build}）'
@@ -555,11 +513,16 @@ def main():
     print('=' * 46)
     if dry:
         print('（--dry 演练模式：不写文件、不提交、不上传）')
+    if explicit:
+        sys.exit(f'内容现在写在 content/ 目录里，不用再传文件了。\n'
+                 f'  改完 content/feed.json（或 content/posts/*.md）直接重跑：\n'
+                 f'      python3 tools/sync.py\n'
+                 f'  （刚才多传的参数：{explicit}）')
 
     if not os.path.isdir(os.path.join(REPO, '.git')):
         sys.exit('这个目录不是 git 仓库')
 
-    content_changed = take_content(explicit, dry)
+    content_changed = build_content(dry)
     rebake(dry)
     before, changed = commit_push(content_changed, dry, custom_msg)
 
