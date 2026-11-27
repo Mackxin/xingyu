@@ -221,14 +221,26 @@
     /* 这一句始终在场 —— 「改的东西还在本机」是后台最容易忘的一件事。
        内容面板改的是草稿（前台完全不变），外观面板是实时生效但只在这台机器。 */
     var inPreview = !!(Store.previewOrigin && Store.previewOrigin());
-    var note = isContent
-      ? (inPreview
-          ? '这里改的存成<b>草稿</b>。你现在是<b>在本地预览里</b>打开的，所以切到前台<b>立刻能看见</b>；' +
-            '要上线 → 导出 <code>site.json</code> → 拖到桌面「壹号栈 · 拖文件上传」。'
-          : '这里改的存成<b>草稿</b>：前台和线上都还是旧的。要上线 → 导出 <code>site.json</code> → ' +
-            '拖到桌面「壹号栈 · 拖文件上传」。')
-      : '这里的改动<b>实时生效</b>，但只存在这台设备的浏览器里；要让所有人看到，' +
-        '同样得导出 <code>site.json</code> 再同步。';
+    var note;
+    if (tab === 'backup') {
+      note = inPreview
+        ? '全站内容就一个文件，改完回这里点 <b>🚀 确认内容，直接发布到线上</b> —— ' +
+          '它校验、烘、推 GitHub、传镜像、核对，一次做完，日志就在按钮下面。'
+        : '你现在开的是线上地址，没有本机的发布通道。要走老办法：' +
+          '<b>⬇ 导出 site.json</b> → 拖到桌面「壹号栈 · 拖文件上传」。';
+    } else if (isContent) {
+      note = inPreview
+        ? '这里改的存成<b>草稿</b>。你现在是<b>在本地预览里</b>打开的，所以切到前台<b>立刻能看见</b>；' +
+          '满意了到「发布上线」点 <b>🚀 确认内容，直接发布到线上</b>，就推全端。'
+        : '这里改的存成<b>草稿</b>：前台和线上都还是旧的。要上线 → 导出 <code>site.json</code> → ' +
+          '拖到桌面「壹号栈 · 拖文件上传」。';
+    } else {
+      note = inPreview
+        ? '这里的改动<b>实时生效</b>（只在这台设备的浏览器里）。满意了到「发布上线」点 ' +
+          '<b>🚀 确认内容，直接发布到线上</b>，网页 / App / 镜像一起新。'
+        : '这里的改动<b>实时生效</b>，但只存在这台设备的浏览器里；要让所有人看到，' +
+          '同样得导出 <code>site.json</code> 再同步。';
+    }
     var bar = draft.any
       ? '<div class="admin-head__draft"><b>草稿里还有没发布的改动：' + esc(draft.text) + '</b>' +
         '<button class="btn btn--ghost" type="button" data-export-site>⬇ 导出 site.json</button></div>'
@@ -3067,6 +3079,11 @@
     var box = pubLogBox();
     if (!box) return;
     box.hidden = false;
+    if (!kind) {
+      /* 不带标记的行按行首符号上色，扫一眼就知道哪几行是关键 */
+      if (/^\s*(✗|❌)/.test(line)) kind = 'bad';
+      else if (/^\s*(✅|✓)/.test(line)) kind = 'good';
+    }
     var span = document.createElement('span');
     if (kind) span.className = 'pub-log__' + kind;
     span.textContent = line + '\n';
@@ -3097,7 +3114,7 @@
     if (dry) {
       if (!confirm('试跑一遍？\n\n' + brief + '\n\n只校验 + 烘产物，不提交、不推远端。')) return;
     } else if (!confirm('把这一版发到线上？\n\n' + brief + '\n\n' +
-                        '会推 GitHub 和国内镜像，网页和 App 一起更新，大概 1–3 分钟。\n' +
+                        '会推 GitHub 和国内镜像，网页和 App 一起更新。传镜像慢，一般 3–5 分钟。\n' +
                         '中途别关预览窗口。')) {
       return;
     }
@@ -3171,7 +3188,7 @@
            'good');
     pubLog('   网页 ⌘⇧R 强刷一次；App 切到后台再回来。这一页按 ⌘R 重载就是线上那一版。', 'good');
     /* 不重绘面板：一重绘日志框就空了。只把那条「草稿没发布」的提醒换掉。 */
-    var bar = document.querySelector('.pub-draft');
+    var bar = document.querySelector('.admin-head__draft') || document.querySelector('.pub-draft');
     if (bar) {
       bar.innerHTML = '<b>✅ 这一版已经发到线上了。</b>按 ⌘R 重载这一页，看到的就是线上内容。';
     }
@@ -3229,7 +3246,8 @@
       '</tbody></table>';
 
     var draft = Store.draftInfo();
-    var draftBar = draft.any
+    /* 预览域不重复：顶部那条黄条已经写了「草稿里有改动」，这里再写一遍就是啰嗦 */
+    var draftBar = (draft.any && !Store.previewOrigin())
       ? '<p class="admin-tip pub-draft"><b>草稿里还有没发布的改动：' + esc(draft.text) + '</b>' +
         ' —— ' + (Store.previewOrigin()
             ? '点下面的「🚀 确认内容，直接发布到线上」，就推到全端了。'
@@ -3243,7 +3261,7 @@
           '<b>🚀 这台电脑上，改完点一下就能上线</b>' +
           '<p class="admin-tip">不用导出、不用拖图标。点下面那个按钮，它替你' +
             '<b>校验 → 烘产物 → 推 GitHub → 传国内镜像 → 逐项核对</b>，' +
-            '日志就在按钮底下滚。大约 1–3 分钟，这期间别关预览窗口。</p>' +
+            '日志就在按钮底下滚。传镜像慢，一般 3–5 分钟，这期间别关预览窗口。</p>' +
           '<p class="admin-tip">内容写错了也不会发出去 —— 校验不过会当场停下并还原上一版，线上一个字都不会动。</p>' +
           '<div class="admin-actions">' +
             '<button class="btn btn--primary" type="button" data-publish="now">🚀 确认内容，直接发布到线上</button>' +
@@ -3297,7 +3315,7 @@
         '<div class="admin-card__head">' +
           '<div><h2>发布上线</h2>' +
             '<p>全站内容只有一个文件：<code>content/site.json</code>。' +
-            '<b>后台改 → 导出这一个文件 → 同步</b>，网页 / App / 镜像一起新。</p></div>' +
+            '<b>本机预览里点一下按钮就推全端</b>；不在那台电脑上，就导出这一个文件再同步。</p></div>' +
         '</div>' +
 
         draftBar +
@@ -3307,7 +3325,7 @@
           '<div class="pub-step">' +
             '<span class="pub-step__n">1</span>' +
             '<div class="pub-step__body">' +
-              '<b>改完，导出这一个文件</b>' +
+              '<b>改完，全站内容都在这个后台里</b>' +
               fileTable +
               '<p class="admin-tip" style="margin-top:12px">' +
                 '导出的 <code>site.json</code> 就是仓库里 <code>content/site.json</code> 那一份。' +
@@ -3319,20 +3337,6 @@
           '</div>' +
           '<div class="pub-step">' +
             '<span class="pub-step__n">2</span>' +
-            '<div class="pub-step__body">' +
-              '<b>（可选）先在本机看一眼，再决定发不发</b>' +
-              '<p class="admin-tip">把导出的 <code>site.json</code> 拖到桌面「壹号栈 · 本地预览」——' +
-                '它只做三件事：校验 → 烘产物 → 在本机开个页面给你看。<b>完全不碰远端</b>，' +
-                '不提交、不推送、不传镜像。看完不满意就接着改。</p>' +
-              '<p class="admin-tip">已经覆盖进 <code>content/site.json</code> 了？双击「本地预览」就行，' +
-                '不用再拖一次。</p>' +
-              '<p class="admin-tip"><b>更省事的办法：在本地预览那个地址（127.0.0.1）上打开这一页后台改。</b>' +
-                '预览环境里前台直接读草稿 —— 你在这边改，切过去就是最新的，<b>连导出都不用</b>，' +
-                '顶上会挂一条「草稿预览」提醒你「这还不是线上」。看着满意了，再回来点导出、拖去上传。</p>' +
-            '</div>' +
-          '</div>' +
-          '<div class="pub-step">' +
-            '<span class="pub-step__n">3</span>' +
             '<div class="pub-step__body">' +
               '<b>老办法（不在那台电脑上，或者就想手动一把）</b>' +
               '<p class="admin-tip">把导出的 <code>site.json</code> 拖到桌面「壹号栈 · 拖文件上传」：' +

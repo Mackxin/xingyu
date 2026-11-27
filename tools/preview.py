@@ -259,7 +259,7 @@ def publish_worker(job, data, msg, dry):
             emit('    · ' + counts())
             if bak:
                 emit('    · 上一版已备份 → %s' % bak)
-            extra = dirty_extras()
+            extra = [] if dry else dirty_extras()
             if extra:
                 warn_n = len(extra)
                 emit('    ⚠ 工作区还有 %d 个没提交的改动，这次会一起提交：' % warn_n)
