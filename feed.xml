@@ -5,9 +5,20 @@
     <link>https://mackxin.github.io/xingyu/</link>
     <description>壹号为栈，随处可归 —— 每天一小条，记录遇见的工具、灵感与小发现，也写点长一点的文章。</description>
     <language>zh-cn</language>
-    <lastBuildDate>Fri, 27 Nov 2026 09:00:00 GMT</lastBuildDate>
+    <lastBuildDate>Sat, 28 Nov 2026 09:00:00 GMT</lastBuildDate>
     <generator>YIHAOZHAN gen-feed</generator>
     <atom:link href="https://mackxin.github.io/xingyu/feed.xml" rel="self" type="application/rss+xml" />
+  <item>
+    <title>洛雪TV</title>
+    <link>https://tv.lxyy.club/</link>
+    <guid isPermaLink="true">https://tv.lxyy.club/</guid>
+    <pubDate>Sat, 28 Nov 2026 09:00:00 GMT</pubDate>
+    <description>在线影视播放站，涵盖电影、剧集、动漫等内容，支持按推荐榜单和 TMDB 热度趋势发现影片
+并自动匹配播放线路，内置多个影视解析接口，支持 4K、HDR 等画质，还整合夸克、百度、迅雷、115 等网盘资源
+以及央视和卫视频道直播（需要安装浏览器扩展），免费观看，无需注册
+这个我强烈推荐，清晰度不少都是 4K 的，加载速度也特别快，体验非常非常棒</description>
+    <category>影视</category>
+  </item>
   <item>
     <title>最全API中转站导航</title>
     <link>https://www.zuiquanapi.com/</link>
@@ -166,13 +177,6 @@ Video DownloadHelper 和 4K Video Downloader 的开源替代品
     <guid isPermaLink="true">https://math.pansgo.com/</guid>
     <pubDate>Sat, 14 Nov 2026 09:00:00 GMT</pubDate>
     <description>数学（小学到高中）、英语（三年级到高中）、初中物理的知识图谱 · 1644 个知识点、2403 条先修边、6723 道题，对齐课标，附自适应前置诊断</description>
-  </item>
-  <item>
-    <title>DTCStack</title>
-    <link>https://www.dtcstackhq.com/zh/</link>
-    <guid isPermaLink="true">https://www.dtcstackhq.com/zh/</guid>
-    <pubDate>Fri, 06 Nov 2026 09:00:00 GMT</pubDate>
-    <description>一个面向电商创业者、独立站卖家和运营团队的免费在线工具平台 · 围绕日常经营中的定价、利润、广告、退货、物流、库存和商品 SEO 等关键问题，提供一系列实用计算器与数据检查工具 · 无需连接店铺，也无需注册账号，即可在浏览器中使用，让每一次经营决策都有更清晰的数据参考</description>
   </item>
   </channel>
 </rss>
