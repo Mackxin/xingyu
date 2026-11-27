@@ -451,6 +451,33 @@ def purge(changed, dry):
         bad(f'purge 没成功（不影响 GitHub 和镜像，只是 App 的 jsDelivr 兜底源会晚一点生效）：{e}')
 
 
+def verify_mirror(dry, no_ftp):
+    """逐个文件真发一次请求核对镜像，不信 FTP 的「✓ 传好了」。
+
+    为什么非要这一步：`STOR` 返回成功只代表字节传到了磁盘上，不代表 web 服务器肯给。
+    这台主机（IIS 10）缺 MIME 映射时文件好端端躺着、HTTP 却是 404.3；
+    `api/` 整个目录还会莫名消失。2026-11-27 就是这样「同步全部成功」，
+    而 api/app.apk、manifest.webmanifest、data/help.md 在线上 404 了好几天没人发现。
+    """
+    step(7, '镜像逐文件实访（真发请求，不信 FTP 的成功回执）')
+    if dry:
+        info('（--dry：不联网）')
+        return
+    if no_ftp:
+        info('（--no-ftp：没动镜像，跳过）')
+        return
+    r = subprocess.run([sys.executable, 'tools/verify-ftp.py'],
+                       cwd=REPO, capture_output=True, text=True)
+    lines = [l for l in (r.stdout or '').strip().splitlines() if l.strip()]
+    for line in lines[-14:]:
+        print('   ' + line)
+    if r.returncode != 0:
+        print('\n   ⚠ 镜像有文件访问不到 —— 上面那行 `--files ...` 拿去补传，再跑一次核对：')
+        print('     python3 tools/verify-ftp.py')
+    elif r.stderr.strip():
+        info(r.stderr.strip()[-300:])
+
+
 def verify(dry):
     step(6, '核对三端到底同步了没')
     local = ''
@@ -529,6 +556,7 @@ def main():
 
     purge(changed, dry)
     verify(dry)
+    verify_mirror(dry, no_ftp)
 
     print('\n' + '=' * 46)
     print('做完。手机 / App 上看到旧内容的话：')

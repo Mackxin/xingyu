@@ -41,12 +41,30 @@ def collect(base):
 
 
 def head(url):
-    req = urllib.request.Request(url, method='HEAD')
+    """用 GET + Range 取首字节，而不是 HEAD。
+
+    为什么不用 HEAD：这个主机（IIS 10）对 HEAD 和 GET 的 MIME 判断不一致 ——
+    缺 MIME 映射的文件 HEAD 回 200、GET 回 404.3。2026-11-27 因此漏掉了
+    `api/app.apk` / `manifest.webmanifest` / `data/help.md` 三个 404，
+    「33/33 全 ✓」是假的。Range 只讨 1 字节，代价很小。
+    """
+    req = urllib.request.Request(url)
+    req.add_header('Range', 'bytes=0-1')
     req.add_header('Cache-Control', 'no-cache')
     opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
     try:
         with opener.open(req, timeout=25) as r:
-            return r.status, int(r.headers.get('Content-Length') or -1)
+            total = -1
+            cr = r.headers.get('Content-Range') or ''      # bytes 0-1/1686289
+            if '/' in cr:
+                tail = cr.rsplit('/', 1)[-1].strip()
+                if tail.isdigit():
+                    total = int(tail)
+            if total == -1:
+                cl = r.headers.get('Content-Length')
+                total = int(cl) if cl else -1
+            r.read(4)                                      # 让连接干净收尾
+            return r.status, total
     except urllib.error.HTTPError as e:
         return e.code, -1
     except Exception as e:
@@ -133,11 +151,11 @@ if __name__ == '__main__':
                 bad.append((rel, note))
             continue
         code, remote = head(base + rel)
-        same = code == 200 and remote == local
+        same = code in (200, 206) and remote == local
         if same:
             print(f'  ✓ {rel:38} {local / 1024:8.0f} KB')
         else:
-            if code != 200:
+            if code not in (200, 206):
                 tag = f'HTTP {code}'
             elif remote == -1:
                 tag = '无 Content-Length'
