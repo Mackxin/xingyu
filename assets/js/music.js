@@ -756,7 +756,16 @@ window.XYMusic = (function () {
         '<span class="mu-mini__cover"><span data-mini-ch>♪</span></span>' +
         '<span class="mu-mini__txt"><b data-mini-name>本地音乐</b><em data-mini-sub>正在播放</em></span>' +
       '</button>' +
+      /* 切歌：不用回音乐页也能换下一首。只有一首时这两个键会自己收起来 */
+      '<button class="mu-mini__skip" type="button" data-mini-prev aria-label="上一首" title="上一首">' +
+        '<svg viewBox="0 0 24 24"><path d="M19 5v14c0 .8-.9 1.3-1.6.9l-9-5.6a1 1 0 0 1 0-1.7l9-5.6c.7-.4 1.6.1 1.6.9z"/>' +
+          '<rect x="5.2" y="4.6" width="2.4" height="14.8" rx="1.2"/></svg>' +
+      '</button>' +
       '<button class="mu-mini__btn" type="button" data-mini-play aria-label="暂停"></button>' +
+      '<button class="mu-mini__skip" type="button" data-mini-next aria-label="下一首" title="下一首">' +
+        '<svg viewBox="0 0 24 24"><path d="M5 5v14c0 .8.9 1.3 1.6.9l9-5.6a1 1 0 0 0 0-1.7l-9-5.6A1 1 0 0 0 5 5z"/>' +
+          '<rect x="16.4" y="4.6" width="2.4" height="14.8" rx="1.2"/></svg>' +
+      '</button>' +
       '<button class="mu-mini__x" type="button" data-mini-close aria-label="停止播放">×</button>';
     document.body.appendChild(mini);
     miniEls = {
@@ -764,6 +773,8 @@ window.XYMusic = (function () {
       name: $('[data-mini-name]', mini),
       sub: $('[data-mini-sub]', mini),
       play: $('[data-mini-play]', mini),
+      prev: $('[data-mini-prev]', mini),
+      next: $('[data-mini-next]', mini),
       cover: $('.mu-mini__cover', mini)
     };
     $('[data-mini-home]', mini).addEventListener('click', function () {
@@ -773,6 +784,8 @@ window.XYMusic = (function () {
       var a = ensureAudio();
       if (a.paused) a.play().catch(function () {}); else a.pause();
     });
+    miniEls.prev.addEventListener('click', function () { prev(); });
+    miniEls.next.addEventListener('click', function () { next(); });
     $('[data-mini-close]', mini).addEventListener('click', function () {
       if (audio) audio.pause();
       hideMini();
@@ -789,6 +802,8 @@ window.XYMusic = (function () {
     e.sub.textContent = (t && t.artist) ? t.artist : (audio.paused ? '已暂停 · 点一下回去' : '正在播放');
     e.ch.textContent = t ? (String(t.name).trim()[0] || '♪') : '♪';
     e.cover.style.setProperty('--mu-hue', t ? hueOf(t) : '0deg');
+    /* 只有一首歌时，上一首 / 下一首都是原地打转，收起来免得按了没反应 */
+    mini.classList.toggle('is-single', tracks.length < 2);
     mini.classList.add('is-on');
     paintMiniPlay(!audio.paused);
   }

@@ -4313,7 +4313,7 @@ html[data-theme="light"] .mu-track b{ background:var(--ink-a1); }
   right:calc(22px + env(safe-area-inset-right, 0px));
   bottom:calc(22px + env(safe-area-inset-bottom, 0px));
   display:flex; align-items:center; gap:8px;
-  width:min(320px, calc(100vw - 32px));
+  width:min(356px, calc(100vw - 32px));
   padding:7px 8px 7px 7px; border-radius:99px;
   background:color-mix(in srgb, var(--bg-soft) 90%, transparent);
   backdrop-filter:blur(22px) saturate(160%);
@@ -4356,6 +4356,17 @@ body.no-scroll .mu-mini{ opacity:0; visibility:hidden; }
   background:var(--glass-hi); color:var(--text);
 }
 .mu-mini__btn svg{ width:14px; height:14px; fill:currentColor; }
+/* 切歌键：比播放键轻一档，只做图标不做底，别跟播放键抢焦点 */
+.mu-mini__skip{
+  flex:0 0 auto; width:26px; height:26px; border-radius:50%;
+  display:grid; place-items:center; border:0; cursor:pointer;
+  background:none; color:var(--text-mute);
+  transition:color .18s var(--ease), background .18s var(--ease);
+}
+.mu-mini__skip svg{ width:13px; height:13px; fill:currentColor; }
+.mu-mini__skip:hover{ color:var(--text); background:var(--glass-hi); }
+.mu-mini__skip:active{ transform:scale(.92); }
+.mu-mini.is-single .mu-mini__skip{ display:none; }
 .mu-mini__x{
   flex:0 0 auto; width:26px; height:26px; border-radius:50%;
   display:grid; place-items:center; border:0; cursor:pointer;
