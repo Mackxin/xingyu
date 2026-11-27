@@ -109,7 +109,7 @@
           "icon": "🌌",
           "title": "关于星屿",
           "desc": "一座以星为图、以屿为家的个人数字花园，慢慢生长。",
-          "route": "#/home",
+          "route": "#/about",
           "spark": false,
           "wide": false
         }
