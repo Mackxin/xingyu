@@ -21,7 +21,7 @@
     { id: 'posts',    label: '文章',     icon: '✍️', badge: 'adminTabPostsN',
       hint: 'Markdown 写作 + 实时预览，也能批量导入 .md' },
     { id: 'backup',   label: '发布上线', icon: '💾',
-      hint: '导出 site.json（全站内容就这一个文件）→ 双击桌面同步' },
+      hint: '本机预览里点一下就能上线；别处用导出 site.json 再同步' },
     { id: 'home',     label: '首页内容', icon: '🏠',
       hint: '标语、统计、入口卡、今日精选、关于页、赞助位' },
     { id: 'look',     label: '主题',     icon: '🎨',
@@ -3055,6 +3055,129 @@
       (data.posts || []).length + ' 篇。下一步：拖到桌面「壹号栈 · 拖文件上传」');
     if (app().rerender) app().rerender();
   }
+  /* ============ 一键发布（v174）：后台点一下，本机服务替你把全端推完 ============
+     链路：这一页（127.0.0.1）POST /__publish → tools/preview.py 收下草稿 → 烘 →
+     tools/sync.py 提交推送 + 传镜像 + 核对 → 逐行日志再拉回来显示。
+     线上域名没有这条通道（预览服务只在本机跑），所以那边只给老办法。 */
+  var PUB_STATE = { id: '', timer: 0, from: 0, dry: false };
+
+  function pubLogBox() { return document.getElementById('pubLog'); }
+
+  function pubLog(line, kind) {
+    var box = pubLogBox();
+    if (!box) return;
+    box.hidden = false;
+    var span = document.createElement('span');
+    if (kind) span.className = 'pub-log__' + kind;
+    span.textContent = line + '\n';
+    box.appendChild(span);
+    box.scrollTop = box.scrollHeight;
+  }
+
+  function pubBtns(off) {
+    var btns = document.querySelectorAll('[data-publish]');
+    for (var i = 0; i < btns.length; i++) btns[i].disabled = !!off;
+  }
+
+  function publishNow(dry) {
+    if (PUB_STATE.timer) { toast('上一次还在跑，等它滚完再点'); return; }
+    var info = Store.draftInfo();
+    if (!dry && info.stale && info.stale.length) {
+      var what = info.stale.map(function (s) { return s.n + ' ' + s.unit; }).join('、');
+      if (!confirm('这份草稿比你开始改的时候旧了：线上后来又多了 ' + what + '。\n\n' +
+                   '直接发布会用草稿里的旧内容盖掉这些新增。\n' +
+                   '建议先点「丢弃草稿，载入线上最新」，重新改一遍。\n\n' +
+                   '确定还是要发布吗？')) return;
+    }
+    var data = Store.exportSite();
+    var links = (data.nav || []).reduce(function (n, c) {
+      return n + ((c && c.links) ? c.links.length : 0); }, 0);
+    var brief = links + ' 条链接 / ' + (data.feed || []).length + ' 条分享 / ' +
+                (data.posts || []).length + ' 篇文章';
+    if (dry) {
+      if (!confirm('试跑一遍？\n\n' + brief + '\n\n只校验 + 烘产物，不提交、不推远端。')) return;
+    } else if (!confirm('把这一版发到线上？\n\n' + brief + '\n\n' +
+                        '会推 GitHub 和国内镜像，网页和 App 一起更新，大概 1–3 分钟。\n' +
+                        '中途别关预览窗口。')) {
+      return;
+    }
+    var box = pubLogBox();
+    if (box) { box.textContent = ''; box.hidden = false; }
+    pubBtns(true);
+    pubLog('· 正在交给本机发布服务…');
+    fetch('/__publish', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ site: data, msg: '后台一键发布：' + brief, dry: !!dry })
+    }).then(function (r) {
+      return r.json().then(function (j) { return { ok: r.ok, status: r.status, j: j || {} }; });
+    }).then(function (res) {
+      if (!res.ok || res.j.error) {
+        throw new Error(res.j.error || ('HTTP ' + res.status));
+      }
+      PUB_STATE.id = res.j.id;
+      PUB_STATE.from = 0;
+      PUB_STATE.dry = !!dry;
+      pollPublish();
+    }).catch(function (e) {
+      pubBtns(false);
+      pubLog('✗ ' + ((e && e.message) || '连不上本机发布服务'), 'bad');
+      pubLog('  这一页得开在「本地预览」给的 127.0.0.1 地址上，而且那个窗口要开着。', 'bad');
+    });
+  }
+
+  function pollPublish() {
+    fetch('/__publish?id=' + encodeURIComponent(PUB_STATE.id) + '&from=' + PUB_STATE.from,
+          { cache: 'no-store' })
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        if (j.error) throw new Error(j.error);
+        (j.lines || []).forEach(function (l) { pubLog(l); });
+        PUB_STATE.from = j.from;
+        if (j.state === 'running') {
+          PUB_STATE.timer = setTimeout(pollPublish, 700);
+          return;
+        }
+        finishPublish(j);
+      })
+      .catch(function (e) {
+        PUB_STATE.timer = 0;
+        pubBtns(false);
+        pubLog('✗ 日志拉断了：' + ((e && e.message) || ''), 'bad');
+        pubLog('  去预览那个窗口看最后几行 —— 那边也一直在滚。', 'bad');
+      });
+  }
+
+  function finishPublish(j) {
+    PUB_STATE.timer = 0;
+    var dry = PUB_STATE.dry;
+    PUB_STATE.id = '';
+    pubBtns(false);
+    if (!j.ok) {
+      pubLog('');
+      pubLog('✗ 没发出去 —— 原因在上面。' + (dry ? '' : '草稿还在，不用重改。'), 'bad');
+      toast('发布没走完，看日志');
+      return;
+    }
+    if (dry) {
+      pubLog('');
+      pubLog('✓ 试跑通过。真要发就点「🚀 确认内容，直接发布到线上」。', 'good');
+      toast('试跑通过，远端没动');
+      return;
+    }
+    Store.draftClear();
+    pubLog('');
+    pubLog('✅ 上线完成' + (j.warn ? '（' + j.warn + ' 处待补，见上面 ✗ 那几行）' : '，核对全过。'),
+           'good');
+    pubLog('   网页 ⌘⇧R 强刷一次；App 切到后台再回来。这一页按 ⌘R 重载就是线上那一版。', 'good');
+    /* 不重绘面板：一重绘日志框就空了。只把那条「草稿没发布」的提醒换掉。 */
+    var bar = document.querySelector('.pub-draft');
+    if (bar) {
+      bar.innerHTML = '<b>✅ 这一版已经发到线上了。</b>按 ⌘R 重载这一页，看到的就是线上内容。';
+    }
+    toast(j.warn ? '已上线，' + j.warn + ' 处待补' : '已上线，核对全过');
+  }
+
   /* 面板会反复重绘，委托只挂一次 */
   function bindExportDelegates() {
     if (bindExportDelegates.done) return;
@@ -3074,6 +3197,12 @@
         Store.draftClear();
         toast('草稿已清空，现在是线上最新内容。');
         if (app().rerender) app().rerender();
+        return;
+      }
+      var p = e.target.closest('[data-publish]');
+      if (p) {
+        e.preventDefault();
+        publishNow(p.getAttribute('data-publish') === 'dry');
       }
     });
   }
@@ -3102,27 +3231,55 @@
     var draft = Store.draftInfo();
     var draftBar = draft.any
       ? '<p class="admin-tip pub-draft"><b>草稿里还有没发布的改动：' + esc(draft.text) + '</b>' +
-        ' —— 点下面的「⬇ 导出 site.json」，再同步一次就上线。</p>'
+        ' —— ' + (Store.previewOrigin()
+            ? '点下面的「🚀 确认内容，直接发布到线上」，就推到全端了。'
+            : '点「⬇ 导出 site.json」，再把它拖到桌面「壹号栈 · 拖文件上传」。') +
+        '</p>'
       : '';
+
+    /* 一键发布：只在本机预览域给按钮；线上域名老实说「这儿推不了」 */
+    var liveCard = Store.previewOrigin()
+      ? '<div class="pub-live" id="pubLive">' +
+          '<b>🚀 这台电脑上，改完点一下就能上线</b>' +
+          '<p class="admin-tip">不用导出、不用拖图标。点下面那个按钮，它替你' +
+            '<b>校验 → 烘产物 → 推 GitHub → 传国内镜像 → 逐项核对</b>，' +
+            '日志就在按钮底下滚。大约 1–3 分钟，这期间别关预览窗口。</p>' +
+          '<p class="admin-tip">内容写错了也不会发出去 —— 校验不过会当场停下并还原上一版，线上一个字都不会动。</p>' +
+          '<div class="admin-actions">' +
+            '<button class="btn btn--primary" type="button" data-publish="now">🚀 确认内容，直接发布到线上</button>' +
+            '<button class="btn btn--ghost" type="button" data-publish="dry">🧪 先试跑（不推远端）</button>' +
+          '</div>' +
+          '<pre class="pub-log" id="pubLog" hidden></pre>' +
+        '</div>'
+      : '<div class="pub-live pub-live--off">' +
+          '<b>🚀 一键发布（在这台电脑上可用）</b>' +
+          '<p class="admin-tip">你现在开的是线上地址，它没有本机的发布通道，所以这里不推。' +
+            '想「点一下就上线」：双击桌面「壹号栈 · 本地预览」，用它给的 <code>127.0.0.1</code> ' +
+            '地址重开这一页后台。<br>不在这台电脑上？就用下面的老办法：' +
+            '导出 site.json → 拖到桌面「壹号栈 · 拖文件上传」。</p>' +
+        '</div>';
 
     var guide =
       '<details class="admin-adv" id="pubGuide">' +
         '<summary>🧭 完整流程 · 一页纸（第一次照着走）</summary>' +
         '<div class="admin-adv__body">' +
-          '<p class="admin-tip"><b>只有一句话要记：在后台改 → 导出 site.json → 同步。</b>' +
+          '<p class="admin-tip"><b>只有一句话要记：在后台改 → 发布。</b>' +
+              '本机预览里点一下按钮就发；不在这台电脑上，就导出 site.json 再同步。' +
               '<a href="assets/guide/publish-flow.html" target="_blank" rel="noopener">打开打印版一页纸 →</a></p>' +
           '<ol class="pub-guide__steps">' +
             '<li><b>在左边改</b><span>导航、分享、文章、首页文案、主题 —— 都在这个后台里。' +
               '改完是本机<b>草稿</b>，前台和线上都还没变。</span></li>' +
-            '<li><b>点「⬇ 导出 site.json」</b><span>下载到<b>一个文件</b>，里面是全站内容' +
-              '（导航 + 分享 + 文章 + 外观），没有别的文件要管。</span></li>' +
-            '<li><b>（可选）先拖到桌面「壹号栈 · 本地预览」看一眼</b><span>它只校验、只烘、只在' +
-              '本机开个页面，<b>不推远端</b>。看完满意再往下走，不满意就接着改。</span></li>' +
-            '<li><b>把这份 site.json 拖到桌面「壹号栈 · 拖文件上传」</b><span>' +
-              '它自动拷进 <code>content/site.json</code>、烘好网页和 App 的数据、传到 GitHub 和国内镜像，' +
-              '最后逐项核对。整个全端就一起新了。</span></li>' +
-            '<li><b>看最后一句</b><span>出现「全部完成 ✓」就好了。网页 ⌘⇧R 强刷一次、App 切后台再回来就能看到。' +
-              '草稿会在导出时自动清掉。</span></li>' +
+            '<li><b>想先看看：双击桌面「壹号栈 · 本地预览」</b><span>用它给的 <code>127.0.0.1</code> 地址' +
+              '重开这一页后台 —— 这个地址下前台直接读草稿，改完切过去就是最新的，' +
+              '<b>不用导出、不用烘</b>。看完不满意接着改。</span></li>' +
+            '<li><b>满意了，回到「发布上线」点「🚀 确认内容，直接发布到线上」</b><span>' +
+              '只在本地预览那个地址上有这个按钮。它替你走完：校验 → 烘 → 提交推送 → 传国内镜像 → 逐项核对，' +
+              '日志就在按钮下面滚。<b>内容写错会当场停手并还原，线上一个字都不动。</b></span></li>' +
+            '<li><b>不在那台电脑上？老办法还能用</b><span>点「⬇ 导出 site.json」，把这份文件拖到桌面' +
+              '「壹号栈 · 拖文件上传」，效果一样。手机 / 别人的电脑上，就改 GitHub 上的 ' +
+              '<code>content/site.json</code>，Action 会自动烘好发布。</span></li>' +
+            '<li><b>看最后一句</b><span>出现「✅ 上线完成」就好了。网页 ⌘⇧R 强刷一次、App 切后台再回来就能看到。' +
+              '草稿会在发布成功后自动清掉。</span></li>' +
           '</ol>' +
           '<table class="pub-guide__faq">' +
             '<thead><tr><th>碰到的样子</th><th>意思 / 怎么办</th></tr></thead><tbody>' +
@@ -3144,6 +3301,7 @@
         '</div>' +
 
         draftBar +
+        liveCard +
 
         '<div class="pub-flow">' +
           '<div class="pub-step">' +
@@ -3176,9 +3334,10 @@
           '<div class="pub-step">' +
             '<span class="pub-step__n">3</span>' +
             '<div class="pub-step__body">' +
-              '<b>满意了，把 site.json 拖到桌面「壹号栈 · 拖文件上传」</b>' +
-              '<p class="admin-tip">它会自己走完：拷进 <code>content/</code> → 构建 → 推送 → 传镜像 → 核对。' +
-                '不想拖也行：把它覆盖进 <code>content/site.json</code>，再双击「壹号栈 · 一键同步」。</p>' +
+              '<b>老办法（不在那台电脑上，或者就想手动一把）</b>' +
+              '<p class="admin-tip">把导出的 <code>site.json</code> 拖到桌面「壹号栈 · 拖文件上传」：' +
+                '它会自己走完 拷进 <code>content/</code> → 构建 → 推送 → 传镜像 → 核对。' +
+                '不想拖也行：覆盖进 <code>content/site.json</code>，再双击「壹号栈 · 一键同步」。</p>' +
               '<div class="admin-actions">' +
                 '<button class="btn btn--ghost" type="button" id="snCopyCmd">📋 复制同步命令</button>' +
               '</div>' +

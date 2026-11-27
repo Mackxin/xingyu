@@ -2222,6 +2222,31 @@ body.is-dragging-row, body.is-dragging-row *{ cursor:grabbing !important; }
   color:var(--text); font-size:12.6px; line-height:1.7;
 }
 
+/* 一键发布（v174）—— 本机预览域才有按钮 */
+.pub-live{
+  margin:14px 0 0; padding:15px 16px 13px; border-radius:18px;
+  background:color-mix(in srgb, var(--a1) 9%, transparent);
+  border:1px solid color-mix(in srgb, var(--a1) 26%, transparent);
+}
+.pub-live > b{ display:block; font-size:13.5px; letter-spacing:.01em; }
+.pub-live .admin-tip{ margin:8px 0 0; }
+.pub-live .admin-actions{ margin:12px 0 0; }
+.pub-live--off{
+  background:var(--glass);
+  border:1px dashed color-mix(in srgb, var(--text-mute) 30%, transparent);
+}
+.pub-live--off > b{ font-size:13px; color:var(--text-dim); }
+/* 发布日志：等宽、深底、自己滚 */
+.pub-log{
+  margin:13px 0 0; padding:12px 14px; max-height:290px; overflow:auto;
+  border-radius:14px; background:#0f1218; color:#cfd6e4;
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:11.6px; line-height:1.75; white-space:pre-wrap; word-break:break-word;
+  overscroll-behavior:contain;
+}
+.pub-log__good{ color:#7ee0a8; }
+.pub-log__bad{ color:#ff9a9a; }
+
 /* 「完整流程」一页纸（后台 → 备份 → 发布上线 → 折叠区） */
 .pub-guide__steps{
   margin:14px 0 6px; padding:0; list-style:none; counter-reset:pubstep;
