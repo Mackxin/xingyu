@@ -136,9 +136,20 @@ function main() {
     return String((b && b.date) || '').localeCompare(String((a && a.date) || ''));
   });
 
-  /* ---------- 首页卡片 ---------- */
+  /* ---------- 首页卡片 ----------
+     前台真正读的是 site.home.entries（window.XY_CONFIG.home.entries），
+     顶层 entries 只是老格式的备份。两份写得不一样时，过去是静默各写各的 ——
+     结果就是「后台改了卡片、页面上没变」，或者点了卡片不跳。这里点出来。 */
   const entries = Array.isArray(root.entries) ? root.entries : [];
   if (root.entries && !Array.isArray(root.entries)) fail('entries', '要是数组');
+  const homeEntries = (root.site && root.site.home && Array.isArray(root.site.home.entries))
+    ? root.site.home.entries : null;
+  if (homeEntries && JSON.stringify(homeEntries) !== JSON.stringify(entries)) {
+    console.log('· 首页卡片有两份，写得不一样：');
+    console.log('    顶层 entries                 ' + entries.length + ' 张  ← 产物里这份前台不用');
+    console.log('    site.home.entries            ' + homeEntries.length + ' 张  ← 前台读这份，后台「首页内容」改的也是它');
+    console.log('  要不要对齐自己决定，但记住：看页面效果永远以 site.home.entries 为准。');
+  }
 
   /* ---------- 文章 ---------- */
   const posts = Array.isArray(root.posts) ? root.posts : [];
