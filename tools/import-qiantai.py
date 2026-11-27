@@ -1,20 +1,27 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""把「壹号讯息」时间线（http://yihaozhan.xyz/qiantai.html）搬进分享页。
+"""把「壹号讯息」时间线（qiantai.html 的「时光轨迹」）搬进分享页。
 
-⚠️ 2026-11-24：qiantai.html 已从服务器上删掉（旧站退场），这个脚本的线上数据源
-   没了。716 条内容早已导进 assets/js/feed-import.js，站点本身不依赖它。
-   只有在你还留着本地副本（备份在 ../xingyu-ftp-backup/root-before/qiantai.html）时
-   才跑得动，且必须用 --src 指过去：
-       python3 tools/import-qiantai.py --src ~/备份/qiantai.html
-   想再增量导入，得先把那份 html 放回服务器，或者改写数据源。
+两种去处，默认走第一种：
 
-产出 assets/js/feed-import.js，data.js 会把它拼在自带 feed 后面。
-只读 + 只写这一个文件；拿不准就先 --dry 看一眼统计。
+  --to-site   （v169 之后的正确用法）
+      把站点「分享」页还缺的条目补进 content/site.json 的 feed 段 ——
+      全站内容就这一个文件，feed 也在里面。补完再 build + 同步。
+      判重两把尺子：① 链接（去尾斜杠）② 日期 + 标题 ——
+      源站常把同一个东西换条链接重发，只比链接会重复加一条。
+
+  不带 --to-site（旧行为）
+      产出 assets/js/feed-import.js。那是 v167 之前的兜底文件
+      （site-data 为空才用），现在只剩归档意义。
+
+⚠️ 源站 qiantai.html 2026-11-24 已从服务器上删掉，联网下载那条路已经不通，
+   必须用 --src 指本地副本：
+
+       python3 tools/import-qiantai.py --to-site --dry --src ~/Desktop/…/qiantai.html
+       python3 tools/import-qiantai.py --to-site --src ~/Desktop/…/qiantai.html
 
     python3 tools/import-qiantai.py --dry          # 只看统计，不落盘
-    python3 tools/import-qiantai.py                # 下载 → 解析 → 写文件
-    python3 tools/import-qiantai.py --src /tmp/qiantai.html   # 用本地已下载的副本
+    python3 tools/import-qiantai.py --src /tmp/qiantai.html   # 旧行为：写 feed-import.js
 
 几条固定口径（和第一批导入保持一致）：
   · 置顶推荐 / 广告位 两组、以及 timeline-card-ad* 卡片一律跳过（那是推广位，不是分享）。
@@ -34,7 +41,11 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / 'assets' / 'js' / 'feed-import.js'
+SITE = ROOT / 'content' / 'site.json'
 SRC_URL = 'http://yihaozhan.xyz/qiantai.html'
+
+# 源文件里偶尔有卡片标题只放了个点（正文才是真正内容），这种不当成一条分享
+EMPTY_TITLES = {'', '.', '。', '-', '·', '…', '...'}
 
 # 这些分组不是内容，是推广位
 SKIP_DATES = {'置顶推荐', 'AD · 广告位'}
@@ -301,6 +312,73 @@ def render(rows):
     return ',\n'.join(blocks)
 
 
+def merge_into_site(rows, dry):
+    """把站点「分享」页还缺的条目补进 content/site.json 的 feed 段。
+
+    v169 起全站内容只有 site.json 一个文件，feed 就是它里面的一段 ——
+    往 assets/js/feed-import.js 写已经没人读了。
+
+    两把判重尺子：
+      · 链接（去尾斜杠）—— 主判据。
+      · 日期 + 标题      —— 同一个东西换了链接时靠它认出来。源站里常见：
+                            「出生日期年龄计算器」那边挂相对路径、站点挂绝对地址；
+                            「GKD」那边链到镜像里的订阅文件、站点链官网。只比链接会重复加。
+    站点已有的条目一个字段都不动：icon / tags 大多是后台手工调过的，重洗一遍就白改了。
+    """
+    site = json.loads(SITE.read_text(encoding='utf-8'))
+    feed = site.get('feed') or []
+    have_url = {key_of(x.get('url') or '', '') for x in feed if x.get('url')}
+    have_pair = {(x.get('date') or '', (x.get('title') or '').strip()) for x in feed}
+
+    add, no_title = [], []
+    for r in rows:
+        title = (r.get('title') or '').strip()
+        if title in EMPTY_TITLES:
+            no_title.append(r)
+            continue
+        if r.get('url') and key_of(r['url'], '') in have_url:
+            continue
+        if (r['date'], title) in have_pair:
+            continue
+        if r.get('url'):
+            have_url.add(key_of(r['url'], ''))
+        have_pair.add((r['date'], title))
+        add.append({
+            'date': r['date'],
+            'icon': guess_icon(r.get('url') or ''),
+            'title': title,
+            'url': r.get('url') or '',
+            'desc': r.get('desc') or '',
+            'tags': guess_tags(title, r.get('desc') or ''),
+        })
+
+    print('\n=== 和分享页对比（%s） ===' % SITE.relative_to(ROOT))
+    print('站点现有 %d 条，这次补 %d 条' % (len(feed), len(add)))
+    for r in add:
+        print('  + %s  %s  <%s>' % (r['date'], r['title'], r['url'] or '纯文字'))
+    if no_title:
+        print('  ⚠️ 源文件里 %d 条标题是空的，已跳过（那些卡片正文在、标题只有一个点）：' % len(no_title))
+        for r in no_title:
+            print('     - %s  <%s>' % (r['date'], r.get('url') or '纯文字'))
+
+    if dry:
+        print('\n--dry：没有写文件')
+        return 0
+    if not add:
+        print('\n没有要补的，site.json 没动')
+        return 0
+
+    merged = feed + add
+    # 稳定排序：同一天里原有顺序不变（后台是按日期倒序看的，别打乱）
+    merged.sort(key=lambda x: x.get('date') or '', reverse=True)
+    site['feed'] = merged
+    SITE.write_text(json.dumps(site, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+    print('\n✓ 已写 %s：%d → %d 条' % (SITE.relative_to(ROOT), len(feed), len(merged)))
+    print('  下一步：node tools/build-content.js --check')
+    print('          python3 tools/preview.py    （先本机看一眼）')
+    return 0
+
+
 HEADER = """/* =========================================================================
    壹号栈 · 从「壹号讯息」导入的分享条目
    -------------------------------------------------------------------------
@@ -332,6 +410,8 @@ def main():
     ap.add_argument('--src', default='', help='本地 qiantai.html 副本，不给就联网下载')
     ap.add_argument('--url', default=SRC_URL)
     ap.add_argument('--dry', action='store_true', help='只打印统计，不写文件')
+    ap.add_argument('--to-site', action='store_true',
+                    help='把缺的条目补进 content/site.json 的 feed（v169 之后用这个）')
     ap.add_argument('--drop-gone', action='store_true',
                     help='源站删掉的条目也跟着删（默认保留，归档不丢东西）')
     ap.add_argument('--retag-empty', action='store_true',
@@ -357,6 +437,10 @@ def main():
             merged[k] = r
     rows = sorted(merged.values(), key=lambda r: (r['date'], r['url']), reverse=True)
     print('去掉重复链接后 %d 条' % len(rows))
+
+    # --to-site：直接对着 content/site.json 做增量补录（新架构）
+    if args.to_site:
+        return merge_into_site(rows, args.dry)
 
     old = load_old(OUT)
     new_keys = {key_of(r['url'], r['title']) for r in rows}

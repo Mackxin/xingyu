@@ -19,163 +19,159 @@ Video DownloadHelper 和 4K Video Downloader 的开源替代品
 中断的下载会从停下的地方继续，每个完成的文件都会用从磁盘读回的 SHA-256 摘要做校验</description>
   </item>
   <item>
-    <title>ComfyUI 无限画布</title>
-    <link>https://canvas.imihoo.com/</link>
-    <guid isPermaLink="true">https://canvas.imihoo.com/</guid>
-    <pubDate>Thu, 22 Oct 2026 09:00:00 GMT</pubDate>
-    <description>一个无限画布创作工具 · 在无限画布中生成、连接和重组图片、文字与图形，让创作从单次生成变成连续推演
-
-1111111</description>
-    <category>AI</category>
+    <title>史前动物博物馆</title>
+    <link>https://leon-made-this.work/museum/zh-CN/</link>
+    <guid isPermaLink="true">https://leon-made-this.work/museum/zh-CN/</guid>
+    <pubDate>Tue, 24 Nov 2026 09:00:00 GMT</pubDate>
+    <description>一个专为低幼儿童与家长打造的、零门槛且无广告的开源双语3D史前动物虚拟博物馆 · 自带“家长指南”手册，罗列了化石发现地、生存纪元、体型、食性与学术考据，孩子随口发问时家长不用手忙脚乱当场谷歌搜资料</description>
+    <category>开发</category>
+  </item>
+  <item>
+    <title>StitchCraft刺绣模拟</title>
+    <link>https://stitchcraft.wasmer.app/</link>
+    <guid isPermaLink="true">https://stitchcraft.wasmer.app/</guid>
+    <pubDate>Mon, 23 Nov 2026 09:00:00 GMT</pubDate>
+    <description>一个在浏览器里直接模拟刺绣/十字绣针法的画板工具 · 数字刺绣打样与图纸预演：动真针前先在网页上画一画，快速验证配色与线条走势 · 低保真像素/复古风创意绘制：不用打开笨重的设计软件，随手涂鸦制作具有织物缝线质感的视觉小元素 · 新手针法学习与认知：在屏幕上直观对比不同针迹的物理呈现效果</description>
     <category>设计</category>
   </item>
   <item>
-    <title>pdoomvideo</title>
-    <link>https://pdoomvideo.com/zh/</link>
-    <guid isPermaLink="true">https://pdoomvideo.com/zh/</guid>
-    <pubDate>Thu, 22 Oct 2026 09:00:00 GMT</pubDate>
-    <description>10步用Claude Code做出自己的Opus 5.5视频，附可复制提示词、精选二创和歌词解读</description>
+    <title>拼音注音小助手</title>
+    <link>https://pinyin-annotator.tjsky.net/mini</link>
+    <guid isPermaLink="true">https://pinyin-annotator.tjsky.net/mini</guid>
+    <pubDate>Mon, 23 Nov 2026 09:00:00 GMT</pubDate>
+    <description>给文章加上拼音或注音 · 粘贴或导入文章→一键注音→翻页阅读→打印或导出PDF</description>
+    <category>阅读</category>
+  </item>
+  <item>
+    <title>鸽子下载</title>
+    <link>https://github.com/huaotem-bot/GeZi-downloader</link>
+    <guid isPermaLink="true">https://github.com/huaotem-bot/GeZi-downloader</guid>
+    <pubDate>Mon, 23 Nov 2026 09:00:00 GMT</pubDate>
+    <description>一个Windows桌面端的四网盘下载器 · 夸克/UC/阿里云盘/迅雷云盘，分享链接解析、免转存直链、高并发多连接下载、边下边播、多账号管理、深色模式</description>
+  </item>
+  <item>
+    <title>Oh My PPT</title>
+    <link>https://www.ohmyppt.cc/</link>
+    <guid isPermaLink="true">https://www.ohmyppt.cc/</guid>
+    <pubDate>Sun, 22 Nov 2026 09:00:00 GMT</pubDate>
+    <description>基于AI的PPT创作与编辑工具，输入主题或导入TXT、Markdown、CSV、DOCX文档，即可生成演示大纲、页面布局和配图 · 支持导入现有PPTX模板继续编辑，并导出可编辑PPTX、PDF、PNG、长图、MP4或独立HTML，需自行配置模型服务，免费开源，适用于Windows和macOS系统</description>
+    <category>AI</category>
+    <category>开发</category>
+  </item>
+  <item>
+    <title>Win顺</title>
+    <link>https://github.com/LingCore/WinShun</link>
+    <guid isPermaLink="true">https://github.com/LingCore/WinShun</guid>
+    <pubDate>Sun, 22 Nov 2026 09:00:00 GMT</pubDate>
+    <description>双击Ctrl，搜遍整台电脑 · 免费开源的Windows文件搜索和快速启动器</description>
+    <category>开发</category>
+  </item>
+  <item>
+    <title>小浣熊阅读</title>
+    <link>https://github.com/Aminark/legado-ios</link>
+    <guid isPermaLink="true">https://github.com/Aminark/legado-ios</guid>
+    <pubDate>Sun, 22 Nov 2026 09:00:00 GMT</pubDate>
+    <description>一款优先兼容阅读书源的iOS阅读器 · 特点是兼容Android开源阅读的书源规则，支持JSON、文件、网址、二维码及legado://链接导入书源</description>
+    <category>开发</category>
+    <category>阅读</category>
+  </item>
+  <item>
+    <title>信创PDF工具箱（XCPDF）</title>
+    <link>https://www.xcpdf.com/</link>
+    <guid isPermaLink="true">https://www.xcpdf.com/</guid>
+    <pubDate>Sat, 21 Nov 2026 09:00:00 GMT</pubDate>
+    <description>国产电脑上非常好用的离线PDF助手，纯前端、离线运行的PDF工具箱 · 44项功能集成于一个HTML文件，文件绝不上传服务器，国产信创系统与内网环境下安全处理PDF的首选</description>
+  </item>
+  <item>
+    <title>寻旧书库</title>
+    <link>https://www.huaijiushuku.win/</link>
+    <guid isPermaLink="true">https://www.huaijiushuku.win/</guid>
+    <pubDate>Sat, 21 Nov 2026 09:00:00 GMT</pubDate>
+    <description>祭奠过去那些阅读的美好时光，支持通过书名或作者搜索，还可浏览豆瓣高分作品和站内热门书籍 · 下载方式是自建服务器直链，无需跳转网盘，所以整体体验确实还不错，需要的可以收藏一下，完全免费，无需注册</description>
+    <category>阅读</category>
+  </item>
+  <item>
+    <title>懂片帝</title>
+    <link>https://dongpian.ai/</link>
+    <guid isPermaLink="true">https://dongpian.ai/</guid>
+    <pubDate>Sat, 21 Nov 2026 09:00:00 GMT</pubDate>
+    <description>AI智能搜索电影视动漫综艺资源平台</description>
     <category>AI</category>
     <category>视频</category>
   </item>
   <item>
-    <title>玄印写作</title>
-    <link>https://shake.ink/</link>
-    <guid isPermaLink="true">https://shake.ink/</guid>
-    <pubDate>Thu, 22 Oct 2026 09:00:00 GMT</pubDate>
-    <description>让灵感成章，让故事生长 · 把人物、世界、灵感与 AI，放进同一间书房 · 一款陪你从第一句，写到最后一章的本地创作工作台</description>
+    <title>不忙脚本盒子</title>
+    <link>https://www.bm-box.cn/</link>
+    <guid isPermaLink="true">https://www.bm-box.cn/</guid>
+    <pubDate>Sun, 15 Nov 2026 09:00:00 GMT</pubDate>
+    <description>脚本管理与启动工具，支持Python、Node.js、PowerShell、BAT、AutoHotkey、HTML、EXE七种脚本形态，可自动配置运行环境与依赖 · 并通过图形界面一键安装、启动和更新脚本，内置脚本社区，支持全局快捷键、系统右键启动、剪贴板传参、定时任务及脚本间调用 · 还可通过TOML声明将命令行脚本自动转换为图形界面，免费开源，支持 Windows 10/11系统</description>
+    <category>开发</category>
+    <category>效率</category>
+  </item>
+  <item>
+    <title>大湾区AI活动与赛事日历</title>
+    <link>https://wqai.ltd/</link>
+    <guid isPermaLink="true">https://wqai.ltd/</guid>
+    <pubDate>Sun, 15 Nov 2026 09:00:00 GMT</pubDate>
+    <description>覆盖深圳、广州、香港、东莞地区的沙龙、论坛、展会、黑客松、大赛等，现已收录96场活动和79项赛事，每天08:00核对更新 · 含主办方、时间、地点与官方报名入口，可一键订阅到日历，关注这方面的朋友可以看一下，免费使用，无需注册</description>
     <category>AI</category>
+    <category>阅读</category>
+  </item>
+  <item>
+    <title>QuietMd</title>
+    <link>https://quiet.md/</link>
+    <guid isPermaLink="true">https://quiet.md/</guid>
+    <pubDate>Sun, 15 Nov 2026 09:00:00 GMT</pubDate>
+    <description>本地笔记应用，支持标题、列表、待办、代码高亮、LaTeX公式、合并单元格表格、分栏、图片及附件，兼容飞书DocxXML格式，支持导入Markdown和飞书文档 · 内置Craft、飞书、Notion、Obsidian四套主题，笔记以XML文件保存在本地，无需账号和云服务，免费开源，支持Windows及Apple芯片Mac</description>
+    <category>开发</category>
     <category>写作</category>
   </item>
   <item>
-    <title>OpenFilm</title>
-    <link>https://github.com/openfilm/openfilm/blob/main/README.zh-CN.md</link>
-    <guid isPermaLink="true">https://github.com/openfilm/openfilm/blob/main/README.zh-CN.md</guid>
-    <pubDate>Wed, 21 Oct 2026 09:00:00 GMT</pubDate>
-    <description>开源的AI视频智能体 · 一个HTML文件，一个函数，一个真正的剪辑器 · 让你的编程智能体来做视频，也让你亲手修改</description>
-    <category>AI</category>
+    <title>CleanYourTV</title>
+    <link>https://cleanyour.tv/</link>
+    <guid isPermaLink="true">https://cleanyour.tv/</guid>
+    <pubDate>Sun, 15 Nov 2026 09:00:00 GMT</pubDate>
+    <description>电视TV系统清理工具，通过Wi-Fi使用ADB连接电视，无需Root、无需连接数据线，即可禁用厂商预装广告、遥测服务、内容推荐及不需要的系统应用 · 并替换为Apple TV风格的简洁桌面，新桌面支持应用Dock栏、应用网格、主题切换、壁纸轮播、时钟屏保及HDMI输入管理 · 免费开源，支持Android TV和Google TV，Fire TV仅支持部分精简功能 · 需要电脑配合ADB操作，部分电视型号存在兼容性限制，操作前自动备份应用列表和系统设置，被禁用的应用不会被卸载，可通过恢复脚本还原</description>
     <category>开发</category>
   </item>
   <item>
-    <title>bilibili-douyin-notes</title>
-    <link>https://github.com/lucky-Luor/bilibili-douyin-notes</link>
-    <guid isPermaLink="true">https://github.com/lucky-Luor/bilibili-douyin-notes</guid>
-    <pubDate>Wed, 21 Oct 2026 09:00:00 GMT</pubDate>
-    <description>把B站/抖音/YouTube/小红书视频一键整理成Markdown课堂笔记的AI Agent Skill · 四平台视频 · 字幕抓取 · 本地语音识别 · 重点截图 · 笔记模板 · 免登录可用，不调任何付费API</description>
+    <title>求原图</title>
+    <link>https://ynvan.com/</link>
+    <guid isPermaLink="true">https://ynvan.com/</guid>
+    <pubDate>Sat, 14 Nov 2026 09:00:00 GMT</pubDate>
+    <description>把视频定格成 GIF、实况与原图 · 抖音、小红书、快手、YouTube、X里复制的整段分享文字直接贴进来就行 · 视频没有水印，图片是原图</description>
+    <category>视频</category>
+  </item>
+  <item>
+    <title>中小学·高中知识图谱</title>
+    <link>https://math.pansgo.com/</link>
+    <guid isPermaLink="true">https://math.pansgo.com/</guid>
+    <pubDate>Sat, 14 Nov 2026 09:00:00 GMT</pubDate>
+    <description>数学（小学到高中）、英语（三年级到高中）、初中物理的知识图谱 · 1644 个知识点、2403 条先修边、6723 道题，对齐课标，附自适应前置诊断</description>
+  </item>
+  <item>
+    <title>DTCStack</title>
+    <link>https://www.dtcstackhq.com/zh/</link>
+    <guid isPermaLink="true">https://www.dtcstackhq.com/zh/</guid>
+    <pubDate>Fri, 06 Nov 2026 09:00:00 GMT</pubDate>
+    <description>一个面向电商创业者、独立站卖家和运营团队的免费在线工具平台 · 围绕日常经营中的定价、利润、广告、退货、物流、库存和商品 SEO 等关键问题，提供一系列实用计算器与数据检查工具 · 无需连接店铺，也无需注册账号，即可在浏览器中使用，让每一次经营决策都有更清晰的数据参考</description>
+  </item>
+  <item>
+    <title>特斯拉车衣生成器</title>
+    <link>https://teslawrapgenerator.com/zh</link>
+    <guid isPermaLink="true">https://teslawrapgenerator.com/zh</guid>
+    <pubDate>Fri, 06 Nov 2026 09:00:00 GMT</pubDate>
+    <description>一款专为特斯拉车主打造的在线AI车衣设计工具，无需掌握专业设计软件 · 只需输入一段文字描述或上传一张喜欢的图片，就能快速生成专属车衣图案 · 并通过3D车身预览查看实际呈现效果，让创意轻松变成数字座驾的新装扮</description>
     <category>AI</category>
-    <category>开发</category>
-  </item>
-  <item>
-    <title>ChineseBQB</title>
-    <link>https://zhaoolee.com/ChineseBQB/</link>
-    <guid isPermaLink="true">https://zhaoolee.com/ChineseBQB/</guid>
-    <pubDate>Wed, 21 Oct 2026 09:00:00 GMT</pubDate>
-    <description>中国人的表情包 · 按分类找图，搜索、预览、保存，随时接住每一种情绪</description>
-  </item>
-  <item>
-    <title>晨笙阅读</title>
-    <link>https://read.cearl.cc/</link>
-    <guid isPermaLink="true">https://read.cearl.cc/</guid>
-    <pubDate>Tue, 20 Oct 2026 09:00:00 GMT</pubDate>
-    <description>通过单本书籍解读与跨书主题阅读，帮助你在阅读前判断是否值得精读，在阅读后复盘核心框架 · 并围绕真实问题建立阅读路径。内容由AI辅助整理，并经过人工校审</description>
-    <category>AI</category>
-    <category>开发</category>
-  </item>
-  <item>
-    <title>LinkSwift</title>
-    <link>https://github.com/hmjz100/LinkSwift</link>
-    <guid isPermaLink="true">https://github.com/hmjz100/LinkSwift</guid>
-    <pubDate>Tue, 20 Oct 2026 09:00:00 GMT</pubDate>
-    <description>一个基于JavaScript的网盘文件下载地址获取工具 · 基于【网盘直链下载助手】修改，支持百度网盘/阿里云盘/中国移动云盘/天翼云盘/迅雷云盘/夸克网盘/UC网盘/123云盘八大网盘</description>
-  </item>
-  <item>
-    <title>📝 从这里开始写第一篇</title>
-    <link>https://mackxin.github.io/xingyu/#/post/hello-xingyu</link>
-    <guid isPermaLink="true">https://mackxin.github.io/xingyu/#/post/hello-xingyu</guid>
-    <pubDate>Tue, 20 Oct 2026 09:00:00 GMT</pubDate>
-    <description>文章页怎么用、Markdown 支持哪些写法，都写在这一篇里。</description>
-    <category>随笔</category>
-    <category>建站</category>
-  </item>
-  <item>
-    <title>Thaw</title>
-    <link>https://www.getthaw.app/</link>
-    <guid isPermaLink="true">https://www.getthaw.app/</guid>
-    <pubDate>Mon, 19 Oct 2026 09:00:00 GMT</pubDate>
-    <description>让Mac菜单栏告别杂乱，打造清爽高效的桌面体验 · 能帮你隐藏不常用的菜单栏图标、自由调整排列方式，并在需要时快速调出，让桌面更整洁，日常操作更高效</description>
     <category>设计</category>
   </item>
   <item>
-    <title>KulmanLab</title>
-    <link>https://kulmanlab.com/zh/</link>
-    <guid isPermaLink="true">https://kulmanlab.com/zh/</guid>
-    <pubDate>Mon, 19 Oct 2026 09:00:00 GMT</pubDate>
-    <description>免费在线DXF2D编辑器在您的浏览器中运行，可以打开DXF文件、绘制几何图形、添加标注并导出PDF · 无需安装任何软件。桌面CAD的免费替代品，在任何现代浏览器中均可运行</description>
-  </item>
-  <item>
-    <title>Tendedero</title>
-    <link>https://tendedero.app/</link>
-    <guid isPermaLink="true">https://tendedero.app/</guid>
-    <pubDate>Mon, 19 Oct 2026 09:00:00 GMT</pubDate>
-    <description>你每截一张图，它都会挂到屏幕顶上的一根绳上。 把指针停在菜单栏，绳子就滑下来；移开，它就收起</description>
-  </item>
-  <item>
-    <title>携程酒店对比助手</title>
-    <link>https://github.com/greenzorro/hotel-comparer</link>
-    <guid isPermaLink="true">https://github.com/greenzorro/hotel-comparer</guid>
-    <pubDate>Sun, 18 Oct 2026 09:00:00 GMT</pubDate>
-    <description>携程多酒店房型参数横向对比工具，可从酒店详情页提取酒店名称、评分、评论数、差评率，以及房间名称、面积、窗户、床型、吸烟信息等数据 · 支持同时对比多家酒店，并一键导出 Excel 表格，适合经常出差和旅行的用户，免费开源，提供油猴脚本和浏览器插件两种方式使用</description>
-    <category>开发</category>
-  </item>
-  <item>
-    <title>红果短剧电脑版</title>
-    <link>https://channel-ai-practice-wj.waligoraamodio288.chatgpt.site/</link>
-    <guid isPermaLink="true">https://channel-ai-practice-wj.waligoraamodio288.chatgpt.site/</guid>
-    <pubDate>Sun, 18 Oct 2026 09:00:00 GMT</pubDate>
-    <description>第三方红果短剧Windows客户端，无需安卓模拟器，打开后可直接浏览分类或搜索剧名进行播放 · 支持搜索、收藏、本机观看进度、选集、倍速、自动连播以及老板键等功能，界面简约美观，上班摸鱼看短剧非常方便，免费使用，适用于Windows10/11系统</description>
-  </item>
-  <item>
-    <title>OpenTheRank</title>
-    <link>https://opentherank.com/zh/</link>
-    <guid isPermaLink="true">https://opentherank.com/zh/</guid>
-    <pubDate>Sun, 18 Oct 2026 09:00:00 GMT</pubDate>
-    <description>监测AI、流媒体、游戏与Apple硬件的全球定价，提供实时的区域价格排名 · 同一个产品，换一个国家，价格天差地别</description>
-    <category>AI</category>
-  </item>
-  <item>
-    <title>壹号栈导航 · 新版上线</title>
-    <link>https://mackxin.github.io/xingyu/#/nav</link>
-    <guid isPermaLink="true">https://mackxin.github.io/xingyu/#/nav</guid>
-    <pubDate>Sat, 17 Oct 2026 09:00:00 GMT</pubDate>
-    <description>把散落在浏览器书签栏里的网址重新收拢成 50 个主题分类，支持拼音与关键词即时搜索、收藏置顶，以及 ⌘K 一键盘点所有站点。
-1111111</description>
-    <category>本站</category>
-    <category>导航</category>
-  </item>
-  <item>
-    <title>暗色玻璃拟态设计规范</title>
-    <link>https://glassmorphism.com</link>
-    <guid isPermaLink="true">https://glassmorphism.com</guid>
-    <pubDate>Sat, 17 Oct 2026 09:00:00 GMT</pubDate>
-    <description>一层柔和的极光渐变，叠上半透明玻璃卡片与 1px 高光描边，就是这套界面的全部秘密。核心只有三件事：模糊、透明度、克制的发光。</description>
-    <category>设计</category>
-    <category>CSS</category>
-  </item>
-  <item>
-    <title>高速实时路况查询</title>
-    <link>https://guoqiangai.com/</link>
-    <guid isPermaLink="true">https://guoqiangai.com/</guid>
-    <pubDate>Sat, 17 Oct 2026 09:00:00 GMT</pubDate>
-    <description>全国高速交通信息查询工具，支持按高速编号（如G4）、道路名称（如京昆高速）以及收费站和服务区名称精准检索 · 还可分别查看各省高速和国家高速，路况汇总呈现近期的道路事故、施工、拥堵及交通管制信息，经常开车出行的小伙伴可以收藏一下，免费使用，无需注册</description>
-  </item>
-  <item>
-    <title>ShiftBar</title>
-    <link>https://shiftbar.0x01.build/</link>
-    <guid isPermaLink="true">https://shiftbar.0x01.build/</guid>
-    <pubDate>Sat, 17 Oct 2026 09:00:00 GMT</pubDate>
-    <description>macOS27菜单栏图标折叠与隐藏工具，补充系统原生折叠仅在空间挤满时触发的局限，支持用户主动设置隐藏范围并一键展开或收起 · 图标隐藏后后台应用仍正常运行，无Dock占用与账号限制，支持外接显示器配置防护，免费开源</description>
-    <category>设计</category>
-    <category>开发</category>
+    <title>高性价比人生指南</title>
+    <link>https://renshengzhinan.co/</link>
+    <guid isPermaLink="true">https://renshengzhinan.co/</guid>
+    <pubDate>Fri, 06 Nov 2026 09:00:00 GMT</pubDate>
+    <description>一部可以免费在线阅读的中文人生实用指南，围绕日常生活中真正重要的问题 · 将健康、安全、金钱、工作、家庭与人生决策等内容整理成系统化的知识库 · 全站提供约 650 条建议，划分为 34 个章节，帮助你在面对各种人生难题时，快速找到有参考价值的解决思路</description>
+    <category>阅读</category>
   </item>
   </channel>
 </rss>
