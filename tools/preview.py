@@ -189,6 +189,19 @@ def dirty_extras():
     return res
 
 
+def entry_hints(data):
+    """首页卡片链接写成 #/home（首页自己）→ 点了原地不动，看着像「打不开」。
+    2026-11-27 真实踩过。发之前先念一句，别等上线了才发现。"""
+    home = ((data.get('site') or {}).get('home') or {})
+    ents = home.get('entries') if isinstance(home.get('entries'), list) else data.get('entries')
+    out = []
+    for e in (ents or []):
+        if isinstance(e, dict) and str(e.get('route') or '') == '#/home':
+            out.append('首页卡片「%s」的链接是 #/home（首页自己），点了不会跳走'
+                       % (e.get('title') or '没名字'))
+    return out
+
+
 def job_new():
     jid = 'p%d' % int(time.time() * 1000)
     with JOBS_LOCK:
@@ -259,6 +272,8 @@ def publish_worker(job, data, msg, dry):
             emit('    · ' + counts())
             if bak:
                 emit('    · 上一版已备份 → %s' % bak)
+            for hint in entry_hints(data):
+                emit('    ⚠ ' + hint + ' —— 想去关于页就写 #/about。')
             extra = [] if dry else dirty_extras()
             if extra:
                 warn_n = len(extra)

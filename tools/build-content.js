@@ -150,6 +150,15 @@ function main() {
     console.log('    site.home.entries            ' + homeEntries.length + ' 张  ← 前台读这份，后台「首页内容」改的也是它');
     console.log('  要不要对齐自己决定，但记住：看页面效果永远以 site.home.entries 为准。');
   }
+  /* 卡片链接写成 #/home 就是首页自己 —— 点了原地不动，看着像「打不开」。
+     2026-11-27 真实踩过：「关于星屿」那张这么写，用户点了以为坏了。 */
+  (homeEntries || entries).forEach(function (e) {
+    if (!e || typeof e !== 'object') return;
+    if (String(e.route || '') === '#/home') {
+      console.log('· 首页卡片「' + (e.title || '(没名字)') + '」的链接写成了 #/home（就是首页自己），点了不会跳走。');
+      console.log('    想去关于页就写 #/about，想去导航页写 #/nav。');
+    }
+  });
 
   /* ---------- 文章 ---------- */
   const posts = Array.isArray(root.posts) ? root.posts : [];
