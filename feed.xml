@@ -5,9 +5,27 @@
     <link>https://mackxin.github.io/xingyu/</link>
     <description>壹号为栈，随处可归 —— 每天一小条，记录遇见的工具、灵感与小发现，也写点长一点的文章。</description>
     <language>zh-cn</language>
-    <lastBuildDate>Thu, 26 Nov 2026 09:00:00 GMT</lastBuildDate>
+    <lastBuildDate>Fri, 27 Nov 2026 09:00:00 GMT</lastBuildDate>
     <generator>YIHAOZHAN gen-feed</generator>
     <atom:link href="https://mackxin.github.io/xingyu/feed.xml" rel="self" type="application/rss+xml" />
+  <item>
+    <title>最全API中转站导航</title>
+    <link>https://www.zuiquanapi.com/</link>
+    <guid isPermaLink="true">https://www.zuiquanapi.com/</guid>
+    <pubDate>Fri, 27 Nov 2026 09:00:00 GMT</pubDate>
+    <description>不求最专业，但求最全
+可以让你用上各种各样的模型，包括国外的顶尖模型</description>
+  </item>
+  <item>
+    <title>Filee</title>
+    <link>https://filee.sh/zh-cn/</link>
+    <guid isPermaLink="true">https://filee.sh/zh-cn/</guid>
+    <pubDate>Fri, 27 Nov 2026 09:00:00 GMT</pubDate>
+    <description>图片、PDF、Word/Excel/PowerPoint、视频、音乐、电子书、压缩包……都能直接在你的电脑上转换
+按住一个键拖动文件，放到想要的格式上即可
+适用于 Windows、macOS、Linux 的免费文件转换器
+无需上传、无需注册，免费开源</description>
+  </item>
   <item>
     <title>OpenDownloader</title>
     <link>https://opendownloader.app/zh-Hans</link>
@@ -155,23 +173,6 @@ Video DownloadHelper 和 4K Video Downloader 的开源替代品
     <guid isPermaLink="true">https://www.dtcstackhq.com/zh/</guid>
     <pubDate>Fri, 06 Nov 2026 09:00:00 GMT</pubDate>
     <description>一个面向电商创业者、独立站卖家和运营团队的免费在线工具平台 · 围绕日常经营中的定价、利润、广告、退货、物流、库存和商品 SEO 等关键问题，提供一系列实用计算器与数据检查工具 · 无需连接店铺，也无需注册账号，即可在浏览器中使用，让每一次经营决策都有更清晰的数据参考</description>
-  </item>
-  <item>
-    <title>特斯拉车衣生成器</title>
-    <link>https://teslawrapgenerator.com/zh</link>
-    <guid isPermaLink="true">https://teslawrapgenerator.com/zh</guid>
-    <pubDate>Fri, 06 Nov 2026 09:00:00 GMT</pubDate>
-    <description>一款专为特斯拉车主打造的在线AI车衣设计工具，无需掌握专业设计软件 · 只需输入一段文字描述或上传一张喜欢的图片，就能快速生成专属车衣图案 · 并通过3D车身预览查看实际呈现效果，让创意轻松变成数字座驾的新装扮</description>
-    <category>AI</category>
-    <category>设计</category>
-  </item>
-  <item>
-    <title>高性价比人生指南</title>
-    <link>https://renshengzhinan.co/</link>
-    <guid isPermaLink="true">https://renshengzhinan.co/</guid>
-    <pubDate>Fri, 06 Nov 2026 09:00:00 GMT</pubDate>
-    <description>一部可以免费在线阅读的中文人生实用指南，围绕日常生活中真正重要的问题 · 将健康、安全、金钱、工作、家庭与人生决策等内容整理成系统化的知识库 · 全站提供约 650 条建议，划分为 34 个章节，帮助你在面对各种人生难题时，快速找到有参考价值的解决思路</description>
-    <category>阅读</category>
   </item>
   </channel>
 </rss>
