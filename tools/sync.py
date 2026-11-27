@@ -451,6 +451,21 @@ def purge(changed, dry):
         bad(f'purge 没成功（不影响 GitHub 和镜像，只是 App 的 jsDelivr 兜底源会晚一点生效）：{e}')
 
 
+def _verify_mirror_once():
+    """跑一遍 verify-ftp.py，返回 (returncode, 输出, 不一致文件列表)。
+
+    不一致清单在输出最后一行：`--files a,b,c` —— 这是 verify-ftp.py 专门
+    留给「拿去补传」用的，这里直接拿来，人不用再复制粘贴。"""
+    r = subprocess.run([sys.executable, 'tools/verify-ftp.py'],
+                       cwd=REPO, capture_output=True, text=True)
+    out = (r.stdout or '').strip()
+    files = []
+    for line in out.splitlines():
+        if line.strip().startswith('--files'):
+            files = [x.strip() for x in line.split('--files', 1)[1].split(',') if x.strip()]
+    return r.returncode, out, files
+
+
 def verify_mirror(dry, no_ftp):
     """逐个文件真发一次请求核对镜像，不信 FTP 的「✓ 传好了」。
 
@@ -458,6 +473,10 @@ def verify_mirror(dry, no_ftp):
     这台主机（IIS 10）缺 MIME 映射时文件好端端躺着、HTTP 却是 404.3；
     `api/` 整个目录还会莫名消失。2026-11-27 就是这样「同步全部成功」，
     而 api/app.apk、manifest.webmanifest、data/help.md 在线上 404 了好几天没人发现。
+
+    2026-11-28 起：核对不齐就**自动补传**，最多两轮、每批不超过 3 个。
+    以前只把 `--files …` 打出来让人自己复制，结果就是「本地好好的、远端没变」
+    —— 用户看到的可能就是首页大图 / 分享列表停在上一版。
     """
     step(7, '镜像逐文件实访（真发请求，不信 FTP 的成功回执）')
     if dry:
@@ -466,16 +485,30 @@ def verify_mirror(dry, no_ftp):
     if no_ftp:
         info('（--no-ftp：没动镜像，跳过）')
         return
-    r = subprocess.run([sys.executable, 'tools/verify-ftp.py'],
-                       cwd=REPO, capture_output=True, text=True)
-    lines = [l for l in (r.stdout or '').strip().splitlines() if l.strip()]
-    for line in lines[-14:]:
+
+    code, out, files = _verify_mirror_once()
+    for line in out.splitlines()[-14:]:
         print('   ' + line)
-    if r.returncode != 0:
-        print('\n   ⚠ 镜像有文件访问不到 —— 上面那行 `--files ...` 拿去补传，再跑一次核对：')
-        print('     python3 tools/verify-ftp.py')
-    elif r.stderr.strip():
-        info(r.stderr.strip()[-300:])
+
+    tries = 0
+    while code != 0 and files and tries < 2:
+        tries += 1
+        print('\n   ↻ 有 %d 个文件没对上，自动补传第 %d 轮（每批不超过 3 个）' % (len(files), tries))
+        for i in range(0, len(files), 3):
+            batch = files[i:i + 3]
+            print('      · ' + ', '.join(batch))
+            sh([sys.executable, 'tools/deploy-ftp.py', '--files', ','.join(batch)])
+            time.sleep(3)
+        code, out, files = _verify_mirror_once()
+        for line in out.splitlines()[-6:]:
+            print('   ' + line)
+
+    if code == 0:
+        ok('镜像逐文件核对全过')
+        return
+    bad('补传 %d 轮还有 %d 个文件对不上：%s' % (tries, len(files), ', '.join(files)))
+    print('   再跑一次 `python3 tools/sync.py --no-ftp=false` 或单独 `python3 tools/verify-ftp.py` 看看；')
+    print('   一直是同一个文件的话，多半是主机那边的文件锁没松（等一分钟再补一次就好）。')
 
 
 def verify(dry):

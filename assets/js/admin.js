@@ -256,10 +256,20 @@
           '<button class="btn btn--ghost" type="button" data-drop-draft>丢弃草稿，载入线上最新</button>' +
         '</div>'
       : '';
+    /* 本机设置和线上不一样：站名 / 关于页 / 首页大图这些整份存在本机，
+       线上改过之后不会自动同步，下次发布会拿旧的盖回去。 */
+    var drift = siteDrift()
+      ? '<div class="admin-head__stale admin-head__drift">' +
+          '<b>⚠ 本机的站点设置跟线上不一样</b>' +
+          '<span>站名、关于页、首页大图与卡片，这台浏览器存着自己的一份；' +
+            '发布会用<b>本机这份覆盖线上</b>。想以线上为准就点右边那颗。</span>' +
+          '<button class="btn btn--ghost" type="button" data-sync-cfg>⟲ 用线上设置覆盖本机</button>' +
+        '</div>'
+      : '';
     return '<span class="eyebrow">Admin · 后台</span>' +
       '<h1>' + esc(meta.icon) + ' ' + esc(meta.label) + '</h1>' +
       '<p>' + esc(meta.hint || '') + '</p>' +
-      '<p class="admin-head__note">' + note + '</p>' + stale + bar;
+      '<p class="admin-head__note">' + note + '</p>' + stale + drift + bar;
   }
 
   /* 左侧导航栏（v142：按「内容 / 外观 / 系统」分组，10 项一排到底太长了） */
@@ -3126,8 +3136,28 @@
     return out.join('\u0001');
   }
 
-  /* 名字列表：前 3 个 + 「等 N 个」，全空的给个兜底，免得出现空括号 */
-  function nameList(names, cap) {
+  /* ============ 本机那份站点设置，和线上差在哪 ============
+     为什么要管这件事：`site`（站名 / 关于页 / 首页大图 / 首页卡片 / 外观）是**整份
+     存在这台浏览器的 localStorage 里**的。线上后来改过（哪怕是我直接改
+     content/site.json 再发），这台浏览器不会自动重新载入 —— 下次点发布，
+     就用手上这份旧的把线上的新改动盖回去。
+     2026-11-28 一晚上就这样丢了两次「关于页」（退回「关于壹号栈」）。
+     这里只做两件事：顶部黄条提醒 + 一颗「⟲ 用线上设置覆盖本机」。 */
+  function siteAllPaths() {
+    var out = [];
+    PUB_SITE_GROUPS.forEach(function (g) { out = out.concat(g[1]); });
+    return out.concat(['home.entries', 'home.featuredPicks', 'home.featuredCount']);
+  }
+
+  function siteDrift() {
+    var live = window.XY_CONFIG;
+    if (!live) return false;
+    try {
+      return digSig(Store.get(), siteAllPaths()) !== digSig(live, siteAllPaths());
+    } catch (e) { return false; }
+  }
+
+  /* 名字列表：前 3 个 + 「等 N 个」，全空的给个兜底，免得出现空括号 */  function nameList(names, cap) {
     cap = cap || 3;
     var clean = (names || []).filter(Boolean);
     if (!clean.length) return '';
@@ -3512,6 +3542,17 @@
     /* 和线上一版逐块比一次 —— 确认框里「本次改动」那几行就是它的结果 */
     var diff = [];
     try { diff = pubDiff(data); } catch (e) { diff = []; }
+    /* 「站点设置」那几块（站名 / 关于页 / 首页大图与卡片 / 外观）整份存在这台浏览器里，
+       线上改过之后不会自己同步。发布时要是连它们也一起变了，多半不是你要改的，
+       而是本机那份旧副本在盖线上 —— 单独提一句，并指路那颗「⟲ 用线上设置覆盖本机」。 */
+    var SITE_TAGS = ['站名标语', '首页文案', '首页大图', '首页卡片', '关于页',
+                     '外观配色', '阅读设置', '自定义链接', '统计与日期'];
+    var siteTouched = diff.filter(function (r) { return SITE_TAGS.indexOf(r.tag) > -1; })
+                          .map(function (r) { return r.tag; });
+    var siteTip = siteTouched.length
+      ? '这次连 <b>' + esc(siteTouched.join('、')) + '</b> 也一起变了 —— 不是你刚改的话，' +
+        '先点「再看看」，回顶部按<b>⟲ 用线上设置覆盖本机</b>，别把线上那份盖回旧的'
+      : '';
     var go2 = await xydConfirm(dry ? {
       icon: '🧪',
       title: '先试跑一遍？',
@@ -3529,9 +3570,11 @@
       diff: diff,
       note: '它会连着推 GitHub 和国内镜像，网页和 App 一起更新。',
       tips: [
-        '传镜像慢，一般 <b>3–5 分钟</b>，中途别关预览窗口',
-        '内容写错会当场停手并还原上一版，<b>线上一个字都不会动</b>'
-      ],
+        (siteTip ? siteTip : '传镜像慢，一般 <b>3–5 分钟</b>，中途别关预览窗口'),
+        (siteTip ? '传镜像慢，一般 <b>3–5 分钟</b>，中途别关预览窗口'
+                 : '内容写错会当场停手并还原上一版，<b>线上一个字都不会动</b>'),
+        (siteTip ? '内容写错会当场停手并还原上一版，<b>线上一个字都不会动</b>' : '')
+      ].filter(Boolean),
       okText: '确定发布',
       cancelText: '再看看'
     });
@@ -3668,6 +3711,30 @@
       if (p) {
         e.preventDefault();
         publishNow(p.getAttribute('data-publish') === 'dry');
+        return;
+      }
+      var s = e.target.closest('[data-sync-cfg]');
+      if (s) {
+        e.preventDefault();
+        xydConfirm({
+          icon: '⟲',
+          title: '用线上的设置覆盖本机？',
+          sub: '站名、关于页、首页大图与卡片都以线上为准',
+          note: '这台浏览器存着一份自己的站点设置。它和线上不一样时，<b>发布会用本机的把线上盖回去</b> ——' +
+                '2026-11-28 就这样把关于页改回了旧文案。<br>' +
+                '点确认之后，本机这份立刻变成线上那一份；导航和分享的草稿<b>不动</b>。',
+          okText: '按线上的来',
+          cancelText: '先不动'
+        }).then(function (ok) {
+          if (!ok) return;
+          if (Store.importJSON(JSON.stringify(window.XY_CONFIG || {}))) {
+            toast('已按线上设置覆盖本机 ✦ 两边现在一致了');
+            if (app().rerender) app().rerender();
+          } else {
+            toast('没读线上那份设置，换个网络再试');
+          }
+        });
+        return;
       }
     });
   }

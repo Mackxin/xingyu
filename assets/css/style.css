@@ -1082,6 +1082,9 @@ html[data-cat-icon="off"] #headerCatEmoji{ display:none; }
 }
 .empty__emoji{ font-size:40px; }
 .empty h3{ margin:0; font-size:17px; }
+/* 空状态也可以当页面的主标题用（比如「这篇找不到了」整页只有这一句） */
+.empty__title{ margin:0; font-size:17px; font-weight:700; letter-spacing:0; }
+.empty__acts{ display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-top:4px; }
 .empty p{ margin:0; color:var(--text-mute); font-size:13.5px; }
 
 /* 本机存着旧副本时的说明块

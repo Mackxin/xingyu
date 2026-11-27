@@ -2584,8 +2584,12 @@
         '<a class="post-back" href="#/post">' + I.arrow + '<span>全部文章</span></a>' +
         '<div class="empty">' +
           '<span class="empty__emoji">🌫</span>' +
-          '<h3>这篇找不到了</h3>' +
-          '<p>可能是删掉了，或者链接少了一个字符。</p>' +
+          '<h1 class="empty__title">这篇找不到了</h1>' +
+          '<p>可能是删掉了，或者链接少了一个字符。下面两条路都能带你回去。</p>' +
+          '<div class="empty__acts">' +
+            '<a class="btn btn--primary" href="#/posts">去看全部文章</a>' +
+            '<a class="btn btn--ghost" href="#/home">回首页</a>' +
+          '</div>' +
           fix +
         '</div>' +
         '</section>';
@@ -3161,13 +3165,65 @@
     state.postId = bak;
     return html;
   }
+  /* ---------- 后台脚本按需载入 ----------
+     admin.js 有 290 KB，可除了自己没人会打开 #/admin —— 一开始就下载，
+     等于每个访客替他付这份流量（镜像那边带宽还慢）。
+     所以进后台时才拉，拉之前先给一块占位，别让人对着白屏猜。
+     版本号从 app.js 自己的 ?v= 里抄，省得再多一处「升版本忘了改」。 */
+  var adminLoad = { busy: false, failed: false };
+
+  function adminScriptUrl() {
+    var s = document.querySelector('script[src*="assets/js/app.js?v="]');
+    var m = s && /[?&]v=[\w.]+/.exec(s.getAttribute('src') || '');
+    return 'assets/js/admin.js' + (m ? m[0] : '');
+  }
+
+  function loadAdmin() {
+    if (window.XY_ADMIN || adminLoad.busy) return;
+    adminLoad.busy = true;
+    var el = document.createElement('script');
+    el.src = adminScriptUrl();
+    el.onload = function () {
+      adminLoad.busy = false;
+      adminLoad.failed = false;
+      if (window.XY_ADMIN) {
+        try { window.XY_ADMIN.bind(app()); } catch (e) {}
+      }
+      softRender();
+    };
+    el.onerror = function () {
+      adminLoad.busy = false;
+      adminLoad.failed = true;
+      softRender();
+    };
+    document.head.appendChild(el);
+  }
+
+  function adminLoadingHtml() {
+    var bad = adminLoad.failed;
+    return '<section class="page">' +
+      '<div class="empty">' +
+        '<span class="empty__emoji">' + (bad ? '📡' : '⏳') + '</span>' +
+        '<h1 class="empty__title">' + (bad ? '后台没载进来' : '正在载入后台…') + '</h1>' +
+        '<p>' + (bad
+          ? '网络断了，或者本地预览那个窗口被关掉了。刷新一下再来。'
+          : '后台那 290 KB 只在打开这一页时才下载，稍等一下就好。') + '</p>' +
+        (bad
+          ? '<div class="empty__acts">' +
+              '<button class="btn btn--primary" type="button" onclick="location.reload()">刷新重试</button>' +
+              '<a class="btn btn--ghost" href="#/home">回首页</a></div>'
+          : '') +
+      '</div>' +
+      '</section>';
+  }
+
   /* 只算某个路由的页面 HTML：不碰 DOM、不跑副作用。
      左右滑动时用它先把"邻页"备好，手指慢慢划就能看到下一页的内容了。
      postId 显式传 null 表示"文章列表"（邻页不可能是正在读的那一篇）。 */
   function routeHtml(route, postId) {
     var pid = postId === undefined ? state.postId : postId;
     return route === 'admin'
-         ? (window.XY_ADMIN ? window.XY_ADMIN.render() : renderHome())
+         ? (window.XY_ADMIN ? window.XY_ADMIN.render() : adminLoadingHtml())
          : route === 'nav' ? renderNavCached()
          : route === 'share' ? renderShare()
          : route === 'post' ? (pid ? postHtmlById(pid) : renderPosts())
@@ -3221,6 +3277,7 @@
     if (state.route === 'note' && window.XYNote) window.XYNote.bind(app);
     if (state.route === 'todo' && window.XYTodo) window.XYTodo.bind(app);
     if (state.route === 'admin' && window.XY_ADMIN) window.XY_ADMIN.bind(app);
+    if (state.route === 'admin' && !window.XY_ADMIN) loadAdmin();
     paintDraftBar();
     if (resetScroll) scrollTop(false);
   }

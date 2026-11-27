@@ -57,9 +57,11 @@
 
 <!-- ===== 分享卡片（微信 / 微博 / Slack / iMessage 等抓取这一组） =====
      og:image 必须是**完整网址**才能被大多数平台抓到，所以这里写死了线上地址。
-     换成自己的域名后，把下面两处 https://mackxin.github.io/xingyu 一并替换掉即可。 -->
+     用 GitHub Pages 的 https 地址：国内镜像没有证书，http 图有些平台不肯抓。
+     换域名时只改 og:url / canonical 这两处。 -->
 <meta property="og:type" content="website" />
-<meta property="og:url" content="https://mackxin.github.io/xingyu/" />
+<meta property="og:url" content="http://yihaozhan.xyz/" />
+<link rel="canonical" href="http://yihaozhan.xyz/" />
 <meta property="og:site_name" content="星屿 XINGYU" />
 <meta property="og:title" content="星屿 · 以星为图，以屿为家" />
 <meta property="og:description" content="一个收着链接、灵感与文章的数字花园：精选导航、灵感分享与每日新发现。" />
@@ -90,7 +92,7 @@
 <meta name="mobile-web-app-capable" content="yes" />
 <!-- 订阅源：分享页的更新 -->
 <link rel="alternate" type="application/rss+xml" title="星屿 · 灵感与文章" href="feed.xml" />
-<link rel="stylesheet" href="assets/css/style.css?v=178" />
+<link rel="stylesheet" href="assets/css/style.css?v=179" />
 </head>
 <body>
 
@@ -262,19 +264,20 @@
      别手改这个文件 —— 内容在后台改，导出 site.json 再同步（拖动桌面图标就一条链）。
      故意不带 ?v= 版本号 —— 换内容只换这一个文件，不想因为版本号没改被浏览器缓存住。 -->
 <script src="assets/js/site-data.js"></script>
-<script src="assets/js/config.js?v=178"></script>
-<script src="assets/js/bookmarks.js?v=178"></script>
+<script src="assets/js/config.js?v=179"></script>
+<script src="assets/js/bookmarks.js?v=179"></script>
 <!-- 下面几行是 site-data.js 为空时的兜底（出厂状态），平时不生效；别改它们 -->
-<script src="assets/js/feed-import.js?v=178"></script>
-<script src="assets/js/data.js?v=178"></script>
-<script src="assets/js/md.js?v=178"></script>
+<script src="assets/js/feed-import.js?v=179"></script>
+<script src="assets/js/data.js?v=179"></script>
+<script src="assets/js/md.js?v=179"></script>
 <!-- 本地音乐页（#/music）：必须在 app.js 之前，routeHtml 里要用 window.XYMusic -->
-<script src="assets/js/music.js?v=178"></script>
+<script src="assets/js/music.js?v=179"></script>
 <!-- 随手记：#/note 里挂一个铺满的 iframe，本体在 assets/note/index.html（换肤版） -->
-<script src="assets/js/note.js?v=178"></script>
+<script src="assets/js/note.js?v=179"></script>
 <!-- 待办清单（#/todo）：同 music/note 的规矩，必须在 app.js 之前 -->
-<script src="assets/js/todo.js?v=178"></script>
-<script src="assets/js/app.js?v=178"></script>
-<script src="assets/js/admin.js?v=178"></script>
+<script src="assets/js/todo.js?v=179"></script>
+<script src="assets/js/app.js?v=179"></script>
+<!-- 后台（admin.js，290 KB）不在这里加载：它由 app.js 在进入 #/admin 时才按需拉，
+     省掉每个访客的这份流量。版本号它自己从 app.js 的 ?v= 里抄，不用在这里同步。 -->
 </body>
 </html>
