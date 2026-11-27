@@ -11,7 +11,7 @@
 
    ⚠️ 发布新版本时，把 VERSION 和 index.html 里的 ?v= 一起改。
    ========================================================================= */
-var VERSION = 'v176';
+var VERSION = 'v177';
 
 /* 本地预览（127.0.0.1 / localhost）不该有缓存。预览要的是「刚改完的那份」，
    可要是以前在同一个端口注册过 SW，刷新拿到的会是旧文件 —— 那就成了假的「没生效」。
@@ -111,7 +111,7 @@ self.addEventListener('fetch', function (e) {
       }).catch(function () {
         return caches.match('./index.html').then(function (hit) {
           return hit || caches.match('./') || new Response(
-            '<h1>壹号栈暂时离线</h1><p>请连上网络后再试。</p>',
+            '<h1>星屿暂时离线</h1><p>请连上网络后再试。</p>',
             { headers: { 'Content-Type': 'text/html; charset=utf-8' } }
           );
         });
