@@ -227,6 +227,21 @@ def publish_worker(job, data, msg, dry):
             emit('壹号栈 · 后台一键发布' + ('（演练：不会推远端）' if dry else ''))
             emit('=' * 46)
 
+            # 内容跟仓库里那份一模一样、又没别的改动 → 不用白跑一趟
+            if not dry:
+                same = False
+                try:
+                    with open(SITE, encoding='utf-8') as fh:
+                        same = (json.dumps(json.load(fh), sort_keys=True, ensure_ascii=False)
+                                == json.dumps(data, sort_keys=True, ensure_ascii=False))
+                except Exception:                       # noqa: BLE001
+                    same = False
+                if same and not dirty_extras():
+                    emit('· 收到的内容和仓库里那一份完全一样，也没别的改动。')
+                    emit('  没有东西可发 —— 这一趟不用跑，线上本来就是这一版。')
+                    job.update(state='done', ok=True, summary='没有改动，跳过')
+                    return
+
             bak = None
             keep = None
             if dry:
