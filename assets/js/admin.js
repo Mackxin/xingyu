@@ -3048,15 +3048,22 @@
   /* ============ 导出整站内容（后台所有「导出 site.json」都走这里） ============
      一个文件装全部内容：{ _note, site, nav, feed, entries, posts }。
      导出即交棒：草稿当场清掉，免得下次改动跟这一份混在一起分不清。 */
-  function exportSiteFile() {
+  async function exportSiteFile() {
     /* 草稿基于旧内容时先拦一下：草稿存的是整份数组，导出会把线上后来补的那批盖掉 */
     var info = Store.draftInfo();
     if (info.stale && info.stale.length) {
       var what = info.stale.map(function (s) { return s.n + ' ' + s.unit; }).join('、');
-      if (!confirm('这份草稿比你开始改的时候旧了：线上后来又多了 ' + what + '。\n\n' +
-                   '继续导出会用草稿里的旧内容覆盖掉这些新增。\n' +
-                   '建议先点「丢弃草稿，载入线上最新」，重新改一遍。\n\n' +
-                   '确定还是要导出吗？')) return;
+      var go = await xydConfirm({
+        icon: '⚠️',
+        danger: true,
+        title: '这份草稿比线上旧',
+        sub: '线上后来又多了 ' + what,
+        note: '继续导出，就会用草稿里的旧内容<b>盖掉</b>这些新增。' +
+              '更稳的做法是先「丢弃草稿，载入线上最新」，再重新改一遍。',
+        okText: '我知道，仍然导出',
+        cancelText: '先不导出'
+      });
+      if (!go) return;
     }
     var data = Store.exportSite();
     var links = (data.nav || []).reduce(function (n, c) {
@@ -3071,7 +3078,221 @@
      链路：这一页（127.0.0.1）POST /__publish → tools/preview.py 收下草稿 → 烘 →
      tools/sync.py 提交推送 + 传镜像 + 核对 → 逐行日志再拉回来显示。
      线上域名没有这条通道（预览服务只在本机跑），所以那边只给老办法。 */
-  var PUB_STATE = { id: '', timer: 0, from: 0, dry: false };
+  /* ---------- 自绘确认框 / 发布进度（v176） ----------
+     原来用 window.confirm：又灰又小，字号改不了，还看不清「点了确定之后到底在干嘛」。
+     换成自己画的一张卡：条数分成三格、按钮分主次、发布时原地变成进度条 + 阶段 + 计时。 */
+  var XYD = { el: null, resolve: null, t0: 0, timer: 0 };
+
+  function xydMount(html) {
+    xydTeardown();
+    var wrap = document.createElement('div');
+    wrap.className = 'xyd';
+    wrap.id = 'xyd';
+    wrap.setAttribute('role', 'dialog');
+    wrap.setAttribute('aria-modal', 'true');
+    wrap.innerHTML = '<div class="xyd__veil"></div>' + html;
+    document.body.appendChild(wrap);
+    XYD.el = wrap;
+    /* 两帧后再加 .is-in，让卡片从下方 12px 淡入，不然和挂载撞在一起没有动画 */
+    requestAnimationFrame(function () { requestAnimationFrame(function () { wrap.classList.add('is-in'); }); });
+    return wrap;
+  }
+
+  function xydTeardown() {
+    if (XYD.timer) { clearInterval(XYD.timer); XYD.timer = 0; }
+    if (XYD.keyFn) { document.removeEventListener('keydown', XYD.keyFn, true); XYD.keyFn = null; }
+    var el = XYD.el || document.getElementById('xyd');
+    if (el && el.parentNode) el.parentNode.removeChild(el);
+    XYD.el = null;
+    XYD.resolve = null;
+  }
+
+  function xydStats(list) {
+    if (!list || !list.length) return '';
+    return '<div class="xyd__stats">' + list.map(function (s) {
+      return '<div class="xyd__stat"><b>' + esc(String(s.n).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')) +
+        '</b><span>' + esc(s.unit) + '</span></div>';
+    }).join('') + '</div>';
+  }
+
+  /* 确认框：返回 Promise<boolean>，跟 confirm 一个用法，只是 await 一下 */
+  function xydConfirm(o) {
+    o = o || {};
+    var danger = !!o.danger;
+    var html =
+      '<div class="xyd__card' + (danger ? ' xyd__card--danger' : '') + '">' +
+        '<div class="xyd__top">' +
+          '<span class="xyd__ico' + (danger ? ' xyd__ico--danger' : '') + '">' + (o.icon || '🚀') + '</span>' +
+          '<div class="xyd__ttl">' +
+            '<h3>' + esc(o.title || '确定吗？') + '</h3>' +
+            (o.sub ? '<p>' + esc(o.sub) + '</p>' : '') +
+          '</div>' +
+        '</div>' +
+        xydStats(o.stats) +
+        (o.note ? '<p class="xyd__note">' + o.note + '</p>' : '') +
+        (o.tips && o.tips.length
+          ? '<ul class="xyd__tips">' + o.tips.map(function (t) { return '<li>' + t + '</li>'; }).join('') + '</ul>'
+          : '') +
+        '<div class="xyd__acts">' +
+          '<button class="xyd__btn" type="button" data-xyd="cancel">' + esc(o.cancelText || '取消') + '</button>' +
+          '<button class="xyd__btn xyd__btn--go' + (danger ? ' xyd__btn--danger' : '') +
+            '" type="button" data-xyd="ok">' + esc(o.okText || '确定') + '</button>' +
+        '</div>' +
+      '</div>';
+
+    return new Promise(function (resolve) {
+      var wrap = xydMount(html);
+      XYD.resolve = resolve;
+      var ok = wrap.querySelector('[data-xyd="ok"]');
+      if (ok) ok.focus();
+
+      function finish(v) {
+        var r = XYD.resolve;
+        xydTeardown();
+        if (r) r(v);
+      }
+      function onKey(e) {
+        if (e.key === 'Escape') { e.preventDefault(); finish(false); }
+        else if (e.key === 'Enter') { e.preventDefault(); finish(true); }
+      }
+      XYD.keyFn = onKey;
+      document.addEventListener('keydown', onKey, true);
+      wrap.addEventListener('click', function (e) {
+        var t = e.target;
+        if (!t || !t.closest) return;
+        if (t.closest('[data-xyd="ok"]')) { finish(true); return; }
+        if (t.closest('[data-xyd="cancel"]') || t.classList.contains('xyd__veil')) finish(false);
+      });
+    });
+  }
+
+  /* 进度面板：发布一开始就把确认框原地换成这个，别让用户对着一动不动的按钮猜 */
+  function xydRun(title, sub) {
+    var html =
+      '<div class="xyd__card xyd__card--run">' +
+        '<div class="xyd__top">' +
+          '<span class="xyd__ico xyd__ico--run">🚀</span>' +
+          '<div class="xyd__ttl">' +
+            '<h3 id="xydTitle">' + esc(title || '正在发布…') + '</h3>' +
+            '<p id="xydSub">' + esc(sub || '') + '</p>' +
+          '</div>' +
+          '<span class="xyd__pct" id="xydPct">0%</span>' +
+        '</div>' +
+        '<div class="xyd__bar"><i id="xydBar"></i></div>' +
+        '<p class="xyd__stage" id="xydStage">准备中…</p>' +
+        '<pre class="xyd__log" id="xydLog"></pre>' +
+        '<div class="xyd__acts">' +
+          '<button class="xyd__btn" type="button" data-xyd="hide">收起来（后台继续跑）</button>' +
+        '</div>' +
+      '</div>';
+    var wrap = xydMount(html);
+    XYD.t0 = Date.now();
+    XYD.timer = setInterval(function () {
+      var el = document.getElementById('xydSub');
+      if (!el || wrap.classList.contains('is-done')) return;
+      var s = Math.floor((Date.now() - XYD.t0) / 1000);
+      el.textContent = '已用 ' + String(Math.floor(s / 60)).padStart(2, '0') + ':' +
+        String(s % 60).padStart(2, '0') + ' · 传镜像慢，一般 3–5 分钟';
+    }, 1000);
+    wrap.addEventListener('click', function (e) {
+      var t = e.target;
+      if (t && t.closest && t.closest('[data-xyd="hide"]')) {
+        var running = !wrap.classList.contains('is-done');
+        xydTeardown();
+        if (running) toast('还在跑 —— 进度和日志在这一页下面');
+      }
+    });
+    return wrap;
+  }
+
+  function xydProgress(pct, stage) {
+    var el = XYD.el;
+    if (!el) return;
+    var bar = el.querySelector('#xydBar');
+    var num = el.querySelector('#xydPct');
+    var st = el.querySelector('#xydStage');
+    var p = Math.max(0, Math.min(100, Math.round(pct)));
+    if (bar) bar.style.width = p + '%';
+    if (num) num.textContent = p + '%';
+    if (st && stage) st.textContent = stage;
+  }
+
+  function xydRunDone(ok, title, sub, log) {
+    var el = XYD.el;
+    if (!el) return;
+    if (XYD.timer) { clearInterval(XYD.timer); XYD.timer = 0; }
+    el.classList.add('is-done');
+    el.classList.toggle('is-bad', !ok);
+    var card = el.querySelector('.xyd__card');
+    if (card) card.classList.add(ok ? 'xyd__card--ok' : 'xyd__card--bad');
+    xydProgress(ok ? 100 : 100, '');
+    var ico = el.querySelector('.xyd__ico');
+    if (ico) ico.textContent = ok ? '✅' : '⚠️';
+    var h = el.querySelector('#xydTitle');
+    var s = el.querySelector('#xydSub');
+    if (h) h.textContent = title || (ok ? '上线完成' : '没发出去');
+    if (s) s.textContent = sub || '';
+    var stage = el.querySelector('#xydStage');
+    if (stage) stage.hidden = true;
+    var acts = el.querySelector('.xyd__acts');
+    if (acts) {
+      acts.innerHTML = '<button class="xyd__btn xyd__btn--go" type="button" data-xyd="hide">' +
+        (ok ? '好了' : '知道了') + '</button>';
+    }
+    if (log) {
+      var box = el.querySelector('#xydLog');
+      if (box) { box.textContent = log; box.scrollTop = box.scrollHeight; }
+    }
+  }
+
+  /* 日志 → 进度：抓阶段关键词（两侧 [n] 编号会重复，不能按编号算） */
+  var PUB_STEPS = [
+    [/收下后台内容/, 6, '收下后台内容'],
+    [/校验内容并烘产物/, 12, '校验内容'],
+    [/构建内容（/, 16, '生成网页数据'],
+    [/重烘 App 的数据/, 22, '生成 App 数据'],
+    [/提交并推送到 GitHub/, 30, '推送到 GitHub'],
+    [/已推送，GitHub Pages/, 38, 'Pages 正在重建'],
+    [/同步到国内虚拟主机/, 46, '传国内镜像'],
+    [/让 jsDelivr/, 68, '清缓存'],
+    [/镜像逐文件实访/, 76, '逐项核对镜像'],
+    [/核对三端到底同步了没/, 90, '核对三端'],
+    [/全端已上线|上线完成/, 100, '完成']
+  ];
+
+  function pubCalc(lines) {
+    var pct = 3, stage = '准备中…';
+    for (var i = 0; i < lines.length; i++) {
+      var l = lines[i];
+      for (var j = 0; j < PUB_STEPS.length; j++) {
+        if (PUB_STEPS[j][0].test(l)) { pct = PUB_STEPS[j][1]; stage = PUB_STEPS[j][2]; }
+      }
+      /* 传镜像是一根长尾（常常 200 秒），用 [ 2/3] 这种计数把这一段也画出来 */
+      if (pct >= 46 && pct < 68) {
+        var m = /\[\s*(\d+)\s*\/\s*(\d+)\s*\]/.exec(l);
+        if (m) {
+          var done = parseInt(m[1], 10), total = Math.max(1, parseInt(m[2], 10));
+          pct = 46 + Math.min(1, done / total) * 20;
+          stage = '传国内镜像 ' + done + '/' + total;
+        }
+      }
+    }
+    return { pct: pct, stage: stage };
+  }
+
+  function xydFeed(lines) {
+    if (!XYD.el || !lines || !lines.length) return;
+    var r = pubCalc(lines);
+    xydProgress(r.pct, r.stage);
+    var box = XYD.el.querySelector('#xydLog');
+    if (box) {
+      var tail = lines.slice(-60).join('\n');
+      box.textContent = tail;
+      box.scrollTop = box.scrollHeight;
+    }
+  }
+
+  var PUB_STATE = { id: '', timer: 0, from: 0, dry: false, all: [] };
 
   function pubLogBox() { return document.getElementById('pubLog'); }
 
@@ -3096,32 +3317,62 @@
     for (var i = 0; i < btns.length; i++) btns[i].disabled = !!off;
   }
 
-  function publishNow(dry) {
+  async function publishNow(dry) {
     if (PUB_STATE.timer) { toast('上一次还在跑，等它滚完再点'); return; }
     var info = Store.draftInfo();
     if (!dry && info.stale && info.stale.length) {
       var what = info.stale.map(function (s) { return s.n + ' ' + s.unit; }).join('、');
-      if (!confirm('这份草稿比你开始改的时候旧了：线上后来又多了 ' + what + '。\n\n' +
-                   '直接发布会用草稿里的旧内容盖掉这些新增。\n' +
-                   '建议先点「丢弃草稿，载入线上最新」，重新改一遍。\n\n' +
-                   '确定还是要发布吗？')) return;
+      var go = await xydConfirm({
+        icon: '⚠️',
+        danger: true,
+        title: '这份草稿比线上旧',
+        sub: '线上后来又多了 ' + what,
+        note: '一旦发布，就会用这份草稿里的旧内容<b>盖掉</b>那些新增。' +
+              '更稳的做法是先「丢弃草稿，载入线上最新」，再重新改一遍。',
+        okText: '我知道，仍然发布',
+        cancelText: '先不发了'
+      });
+      if (!go) return;
     }
     var data = Store.exportSite();
     var links = (data.nav || []).reduce(function (n, c) {
       return n + ((c && c.links) ? c.links.length : 0); }, 0);
     var brief = links + ' 条链接 / ' + (data.feed || []).length + ' 条分享 / ' +
                 (data.posts || []).length + ' 篇文章';
-    if (dry) {
-      if (!confirm('试跑一遍？\n\n' + brief + '\n\n只校验 + 烘产物，不提交、不推远端。')) return;
-    } else if (!confirm('把这一版发到线上？\n\n' + brief + '\n\n' +
-                        '会推 GitHub 和国内镜像，网页和 App 一起更新。传镜像慢，一般 3–5 分钟。\n' +
-                        '中途别关预览窗口。')) {
-      return;
-    }
+    var stats = [
+      { n: links, unit: '条链接' },
+      { n: (data.feed || []).length, unit: '条分享' },
+      { n: (data.posts || []).length, unit: '篇文章' }
+    ];
+    var go2 = await xydConfirm(dry ? {
+      icon: '🧪',
+      title: '先试跑一遍？',
+      sub: '只校验，不碰远端',
+      stats: stats,
+      note: '它会校验内容、烘好产物，然后<b>把仓库里的文件原样还原</b> —— 不提交、不推送、不传镜像。',
+      okText: '开始试跑',
+      cancelText: '不用了'
+    } : {
+      icon: '🚀',
+      title: '把这一版发到线上？',
+      sub: '只在这台电脑上能发',
+      stats: stats,
+      note: '它会连着推 GitHub 和国内镜像，网页和 App 一起更新。',
+      tips: [
+        '传镜像慢，一般 <b>3–5 分钟</b>，中途别关预览窗口',
+        '内容写错会当场停手并还原上一版，<b>线上一个字都不会动</b>'
+      ],
+      okText: '确定发布',
+      cancelText: '再看看'
+    });
+    if (!go2) return;
+
     var box = pubLogBox();
     if (box) { box.textContent = ''; box.hidden = false; }
     pubBtns(true);
+    PUB_STATE.all = [];
     pubLog('· 正在交给本机发布服务…');
+    xydRun(dry ? '正在试跑…' : '正在发布…', '刚起步，先等它接上本机服务');
     fetch('/__publish', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -3140,6 +3391,8 @@
       pubBtns(false);
       pubLog('✗ ' + ((e && e.message) || '连不上本机发布服务'), 'bad');
       pubLog('  这一页得开在「本地预览」给的 127.0.0.1 地址上，而且那个窗口要开着。', 'bad');
+      xydRunDone(false, '连不上本机服务',
+        '这一页得开在本地预览给的 127.0.0.1 地址上，而且那个终端窗口要一直开着。');
     });
   }
 
@@ -3150,6 +3403,8 @@
       .then(function (j) {
         if (j.error) throw new Error(j.error);
         (j.lines || []).forEach(function (l) { pubLog(l); });
+        PUB_STATE.all = (PUB_STATE.all || []).concat(j.lines || []);
+        xydFeed(PUB_STATE.all);
         PUB_STATE.from = j.from;
         if (j.state === 'running') {
           PUB_STATE.timer = setTimeout(pollPublish, 700);
@@ -3170,16 +3425,24 @@
     var dry = PUB_STATE.dry;
     PUB_STATE.id = '';
     pubBtns(false);
+    var secs = XYD.t0 ? Math.round((Date.now() - XYD.t0) / 1000) : 0;
+    var used = String(Math.floor(secs / 60)).padStart(2, '0') + ':' + String(secs % 60).padStart(2, '0');
     if (!j.ok) {
       pubLog('');
       pubLog('✗ 没发出去 —— 原因在上面。' + (dry ? '' : '草稿还在，不用重改。'), 'bad');
       toast('发布没走完，看日志');
+      xydRunDone(false, dry ? '试跑没通过' : '没发出去',
+        '原因在日志里（带 ✗ 的那行）。' + (dry ? '' : '草稿还在，改完再点一次就行。'),
+        (PUB_STATE.all || []).slice(-40).join('\n'));
       return;
     }
     if (dry) {
       pubLog('');
       pubLog('✓ 试跑通过。真要发就点「🚀 确认内容，直接发布到线上」。', 'good');
       toast('试跑通过，远端没动');
+      xydRunDone(true, '试跑通过',
+        '内容没问题，仓库里的文件已还原成原样，远端一个字都没动。',
+        (PUB_STATE.all || []).slice(-40).join('\n'));
       return;
     }
     Store.draftClear();
@@ -3193,6 +3456,10 @@
       bar.innerHTML = '<b>✅ 这一版已经发到线上了。</b>按 ⌘R 重载这一页，看到的就是线上内容。';
     }
     toast(j.warn ? '已上线，' + j.warn + ' 处待补' : '已上线，核对全过');
+    xydRunDone(true, '上线完成',
+      '用时 ' + used + ' · ' + (j.warn ? j.warn + ' 处待补（见日志 ✗ 那几行）' : '逐项核对全过') +
+      ' · 网页 ⌘⇧R、App 切后台再回来',
+      (PUB_STATE.all || []).slice(-40).join('\n'));
   }
 
   /* 面板会反复重绘，委托只挂一次 */
@@ -3210,10 +3477,21 @@
       var d = e.target.closest('[data-drop-draft]');
       if (d) {
         e.preventDefault();
-        if (!confirm('丢掉这份草稿？后台里还没发布的改动会全部消失，内容回到线上最新那一版。')) return;
-        Store.draftClear();
-        toast('草稿已清空，现在是线上最新内容。');
-        if (app().rerender) app().rerender();
+        xydConfirm({
+          icon: '🧹',
+          danger: true,
+          title: '丢掉这份草稿？',
+          sub: '后台里还没发布的改动会全部消失',
+          note: '内容会回到线上最新那一版。这一步不可撤销 —— 但线上从来没被这份草稿碰过，' +
+                '丢掉的只是还没发出去的本机改动。',
+          okText: '丢弃草稿',
+          cancelText: '留着'
+        }).then(function (ok) {
+          if (!ok) return;
+          Store.draftClear();
+          toast('草稿已清空，现在是线上最新内容。');
+          if (app().rerender) app().rerender();
+        });
         return;
       }
       var p = e.target.closest('[data-publish]');
