@@ -8685,8 +8685,7 @@
         },
         {
           "n": "库库AI",
-          "u": "https://kuku.baidu.com/",
-          "d": ""
+          "u": "https://kuku.baidu.com/"
         }
       ]
     },
@@ -8868,6 +8867,22 @@
     }
   ],
   "feed": [
+    {
+      "date": "2026-11-27",
+      "icon": "✨",
+      "title": "最全API中转站导航",
+      "url": "https://www.zuiquanapi.com/",
+      "desc": "不求最专业，但求最全\n可以让你用上各种各样的模型，包括国外的顶尖模型",
+      "tags": []
+    },
+    {
+      "date": "2026-11-27",
+      "icon": "✨",
+      "title": "Filee",
+      "url": "https://filee.sh/zh-cn/",
+      "desc": "图片、PDF、Word/Excel/PowerPoint、视频、音乐、电子书、压缩包……都能直接在你的电脑上转换\n按住一个键拖动文件，放到想要的格式上即可\n适用于 Windows、macOS、Linux 的免费文件转换器\n无需上传、无需注册，免费开源",
+      "tags": []
+    },
     {
       "date": "2026-11-26",
       "icon": "✨",
