@@ -3222,10 +3222,43 @@
     if (state.route === 'note' && window.XYNote) window.XYNote.bind(app);
     if (state.route === 'todo' && window.XYTodo) window.XYTodo.bind(app);
     if (state.route === 'admin' && window.XY_ADMIN) window.XY_ADMIN.bind(app);
+    paintDraftBar();
     if (resetScroll) scrollTop(false);
   }
   /* 原地更新：不跳顶、不重播动画 */
   function softRender() { render({ animate: false, resetScroll: false }); }
+
+  /* ---------- 本地预览：草稿提示条 ----------
+     预览环境下前台读的是草稿（见 config.js 的 previewOrigin），所以后台一改就能看见。
+     好处是「改完立刻能看」，代价是容易误以为「已经发出去了」—— 顶上挂一条说清楚，
+     点「去发布」直接落到后台的发布面板。线上域名下永远不会出现这条。 */
+  var draftBar = null;
+  function paintDraftBar() {
+    var live = !!(window.XYStore && window.XYStore.draftLive && window.XYStore.draftLive());
+    if (!live) {
+      if (draftBar && draftBar.parentNode) draftBar.parentNode.removeChild(draftBar);
+      draftBar = null;
+      return;
+    }
+    if (!draftBar) {
+      draftBar = document.createElement('div');
+      draftBar.className = 'xy-draftbar';
+      draftBar.innerHTML =
+        '<span class="xy-draftbar__dot"></span>' +
+        '<b>草稿预览</b><em data-draft-text></em>' +
+        '<a href="#/admin" data-draft-go>去发布</a>';
+      document.body.appendChild(draftBar);
+    }
+    var info = (window.XYStore.draftInfo && window.XYStore.draftInfo()) || { text: '' };
+    var t = $('[data-draft-text]', draftBar);
+    if (t) t.textContent = info.text ? '· ' + info.text : '· 这些改动还没发布';
+  }
+
+  /* 后台在另一个标签页改的时候，这边自动跟着重画（同标签页切页本来就会重画） */
+  window.addEventListener('storage', function (e) {
+    if (!e.key || e.key.indexOf('xingyu.draft') !== 0) return;
+    render({ animate: false, resetScroll: false });
+  });
 
   function bindRouteFx() { /* 预留：页面级动效钩子 */ }
 

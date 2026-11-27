@@ -735,20 +735,43 @@
        前台**不读**它，所以不会出现「本机一套、线上一套」的错觉。
        改完点「⬇ 导出 site.json」→ 覆盖 content/site.json（或拖到桌面脚本）→ 同步。 ---------- */
     draft: function () {
+      /* 解析结果按原文缓存：草稿 400 KB 上下，前台每次渲染都会问一遍，
+         每次都 JSON.parse 太浪费；原文一变（draftSet / 别的标签页改了）就重解析。 */
+      var raw = null;
+      try { raw = localStorage.getItem(DRAFT_KEY); } catch (e) {}
+      if (!raw) { Store._draftRaw = null; Store._draftVal = null; return null; }
+      if (Store._draftRaw === raw) return Store._draftVal;
       var v = null;
-      try { v = JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null'); } catch (e) {}
-      return (v && typeof v === 'object') ? v : null;
+      try { v = JSON.parse(raw); } catch (e) {}
+      Store._draftRaw = raw;
+      Store._draftVal = (v && typeof v === 'object') ? v : null;
+      return Store._draftVal;
     },
     draftSet: function (part) {
       var d = Store.draft() || {};
+      if (!d.base) d.base = {};
       Object.keys(part).forEach(function (k) {
-        if (part[k] == null) delete d[k]; else d[k] = part[k];
+        if (part[k] == null) { delete d[k]; delete d.base[k]; return; }
+        /* 这一块第一次进草稿时记下「当时线上有多少条」。
+           草稿存的是整份数组，不是补丁 —— 如果之后仓库又补了内容（比如导入了
+           壹号讯息那批），老草稿导出就会把新增的整段覆盖掉。2026-11-27 真丢过 50 条。 */
+        if (d.base[k] == null) d.base[k] = Store.baseCount(k);
+        d[k] = part[k];
       });
       d.at = Date.now();
       try { localStorage.setItem(DRAFT_KEY, JSON.stringify(d)); }
       catch (e) { Store.saveFailed = true; return false; }
       Store.saveFailed = false;
       return d;
+    },
+    /* 线上（site-data.js）某一块现在有多少条 —— 草稿的「基数」拿它来比 */
+    baseCount: function (part) {
+      var S = window.SITE_DATA || {};
+      if (part === 'nav') return ((S.categories || []).reduce(function (n, c) {
+        return n + ((c && c.links) ? c.links.length : 0); }, 0));
+      if (part === 'feed') return (S.feed || []).length;
+      if (part === 'posts') return (S.posts || []).length;
+      return 0;
     },
     draftClear: function () {
       try { localStorage.removeItem(DRAFT_KEY); } catch (e) {}
@@ -770,7 +793,32 @@
       if (d.posts) bits.push('文章 ' + out.posts + ' 篇');
       out.any = bits.length > 0;
       out.text = bits.join(' · ');
+      /* 草稿的基数比现在的线上数据旧 = 导出会盖掉别人后来补的内容 */
+      out.stale = [];
+      var LABEL = { nav: ['条链接', '导航'], feed: ['条分享', '分享'], posts: ['篇文章', '文章'] };
+      ['nav', 'feed', 'posts'].forEach(function (k) {
+        if (!Array.isArray(d[k]) || !d.base || d.base[k] == null) return;
+        var cur = Store.baseCount(k);
+        var diff = cur - d.base[k];
+        if (diff > 0) out.stale.push({ part: k, name: LABEL[k][1], unit: LABEL[k][0], n: diff });
+      });
       return out;
+    },
+
+    /* ---------- 本地预览：前台也读草稿 ----------
+       为什么要有：后台改完得先导出 site.json、再烘、再推，才能在本机看一眼，
+       这一步「看不到」每年都要问一次。既然预览服务本身就是在本机跑，
+       干脆让 127.0.0.1 / localhost 下的前台直接读草稿 —— 后台改完切过去就是最新的。
+       线上（任何真实域名）始终只读 site-data.js，绝不出现「本机一套、线上一套」。 */
+    previewOrigin: function () {
+      var h = String(location.hostname || '');
+      return h === '127.0.0.1' || h === 'localhost' || h === '::1' || h === '[::1]';
+    },
+    /* 预览环境下有没有草稿在用（顶部那条提示、后台文案都看它） */
+    draftLive: function () {
+      if (!Store.previewOrigin()) return false;
+      var d = Store.draft();
+      return !!(d && (Array.isArray(d.nav) || Array.isArray(d.feed) || Array.isArray(d.posts)));
     },
 
     /* ---------- 站点数据（分类 / 站点 —— 导航页与全站搜索的数据源） ---------- */
@@ -780,8 +828,12 @@
       if (d && Array.isArray(d.nav)) return clone(d.nav);
       return clone((window.SITE_DATA && window.SITE_DATA.categories) || []);
     },
-    /* 前台只读：只认 site-data.js，直接返回原数组引用，零开销 */
+    /* 前台：线上只认 site-data.js；本地预览时草稿优先（改完立刻能看） */
     dataCategories: function () {
+      if (Store.previewOrigin()) {
+        var d = Store.draft();
+        if (d && Array.isArray(d.nav)) return d.nav;
+      }
       return (window.SITE_DATA && window.SITE_DATA.categories) || [];
     },
     dataIsCustom: function () {
@@ -824,8 +876,12 @@
       if (d && Array.isArray(d.posts)) return clone(d.posts);
       return clone((window.SITE_DATA && window.SITE_DATA.posts) || []);
     },
-    /* 前台只读 */
+    /* 前台（线上只读 site-data.js；本地预览时草稿优先） */
     posts: function () {
+      if (Store.previewOrigin()) {
+        var d = Store.draft();
+        if (d && Array.isArray(d.posts)) return d.posts;
+      }
       return (window.SITE_DATA && window.SITE_DATA.posts) || [];
     },
     postsIsCustom: function () {
@@ -865,8 +921,12 @@
       if (d && Array.isArray(d.feed)) return clone(d.feed);
       return clone((window.SITE_DATA && window.SITE_DATA.feed) || []);
     },
-    /* 前台只读 */
+    /* 前台（线上只读 site-data.js；本地预览时草稿优先） */
     feed: function () {
+      if (Store.previewOrigin()) {
+        var d = Store.draft();
+        if (d && Array.isArray(d.feed)) return d.feed;
+      }
       return (window.SITE_DATA && window.SITE_DATA.feed) || [];
     },
     feedIsCustom: function () {

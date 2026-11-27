@@ -3988,6 +3988,18 @@ html[data-theme="light"] .card-menu__i.is-later{ color:var(--ink-a1); }
 .admin-head__draft b{ font-weight:600; }
 .admin-head__draft .btn{ margin-left:auto; flex:none; font-size:12px; padding:5px 11px; }
 
+/* 草稿比线上旧：比上面那条更重的警示（红一点），因为导出会真的盖掉内容 */
+.admin-head__stale{
+  margin-top:10px; padding:9px 12px; border-radius:12px;
+  display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+  background:color-mix(in srgb, #ff5c73 13%, transparent);
+  border:1px solid color-mix(in srgb, #ff5c73 36%, transparent);
+  font-size:12.4px; line-height:1.6;
+}
+.admin-head__stale b{ flex:none; font-weight:600; color:color-mix(in srgb, #ff5c73 72%, var(--text)); }
+.admin-head__stale span{ flex:1 1 220px; min-width:0; color:var(--text-dim); }
+.admin-head__stale .btn{ margin-left:auto; flex:none; font-size:12px; padding:5px 11px; }
+
 /* 手机上十颗面板按钮是一条横向滚动的胶囊条，最右边那颗会被切掉 ——
    用一层渐隐告诉人「还能往右滑」。（只在真的放不下时才需要，所以放媒体查询里） */
 @media (max-width:960px){
@@ -4378,6 +4390,48 @@ body.no-scroll .mu-mini{ opacity:0; visibility:hidden; }
   .mu-mini{
     left:12px; right:12px; width:auto;
     bottom:calc(82px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* ---------- 本地预览：草稿提示条（只在 127.0.0.1 / localhost 出现） ----------
+   预览时前台读草稿，改完立刻能看见；这条负责说明「看到的还不是线上」。
+   放左下角，跟右下角的迷你播放条错开，两者同时出现也不打架。 */
+.xy-draftbar{
+  position:fixed; z-index:85;
+  left:calc(22px + env(safe-area-inset-left, 0px));
+  bottom:calc(22px + env(safe-area-inset-bottom, 0px));
+  display:flex; align-items:center; gap:7px;
+  max-width:calc(100vw - 44px);
+  padding:7px 8px 7px 12px; border-radius:99px;
+  background:color-mix(in srgb, var(--bg-soft) 92%, transparent);
+  backdrop-filter:blur(20px) saturate(150%);
+  -webkit-backdrop-filter:blur(20px) saturate(150%);
+  box-shadow:0 16px 34px -22px rgba(0,0,0,.55);
+  font-size:11.5px; line-height:1.35; color:var(--text-mute);
+  animation:xyDraftIn .3s var(--ease);
+}
+@keyframes xyDraftIn{ from{ opacity:0; transform:translateY(8px); } to{ opacity:1; transform:none; } }
+.xy-draftbar__dot{
+  flex:0 0 auto; width:7px; height:7px; border-radius:50%;
+  background:var(--a1);
+  box-shadow:0 0 0 3px color-mix(in srgb, var(--a1) 26%, transparent);
+}
+.xy-draftbar b{ flex:0 0 auto; color:var(--text); font-weight:600; }
+.xy-draftbar em{
+  font-style:normal; min-width:0;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.xy-draftbar a{
+  flex:0 0 auto; color:var(--ink-a1); text-decoration:none; font-weight:600;
+  padding:3px 9px; border-radius:99px; background:var(--glass-hi);
+  transition:background .18s var(--ease);
+}
+.xy-draftbar a:hover{ background:var(--glass-2); }
+@media (max-width:640px){
+  /* 手机上让到迷你播放条上面一格，别跟它叠在一起 */
+  .xy-draftbar{
+    left:12px; right:12px; bottom:calc(140px + env(safe-area-inset-bottom, 0px));
+    max-width:none; justify-content:center;
   }
 }
 

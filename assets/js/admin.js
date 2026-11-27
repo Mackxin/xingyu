@@ -220,19 +220,34 @@
     var draft = Store.draftInfo();
     /* 这一句始终在场 —— 「改的东西还在本机」是后台最容易忘的一件事。
        内容面板改的是草稿（前台完全不变），外观面板是实时生效但只在这台机器。 */
+    var inPreview = !!(Store.previewOrigin && Store.previewOrigin());
     var note = isContent
-      ? '这里改的存成<b>草稿</b>：前台和线上都还是旧的。要上线 → 导出 <code>site.json</code> → ' +
-        '拖到桌面「壹号栈 · 拖文件上传」。'
+      ? (inPreview
+          ? '这里改的存成<b>草稿</b>。你现在是<b>在本地预览里</b>打开的，所以切到前台<b>立刻能看见</b>；' +
+            '要上线 → 导出 <code>site.json</code> → 拖到桌面「壹号栈 · 拖文件上传」。'
+          : '这里改的存成<b>草稿</b>：前台和线上都还是旧的。要上线 → 导出 <code>site.json</code> → ' +
+            '拖到桌面「壹号栈 · 拖文件上传」。')
       : '这里的改动<b>实时生效</b>，但只存在这台设备的浏览器里；要让所有人看到，' +
         '同样得导出 <code>site.json</code> 再同步。';
     var bar = draft.any
       ? '<div class="admin-head__draft"><b>草稿里还有没发布的改动：' + esc(draft.text) + '</b>' +
         '<button class="btn btn--ghost" type="button" data-export-site>⬇ 导出 site.json</button></div>'
       : '';
+    /* 草稿是基于旧内容做的：导出会把后来补进去的那批整段覆盖掉。
+       这不是假想的风险 —— 2026-11-27 就这样丢了 50 条导入的分享。 */
+    var stale = (draft.stale && draft.stale.length)
+      ? '<div class="admin-head__stale">' +
+          '<b>⚠ 这份草稿比线上旧</b>' +
+          '<span>你开始改的时候线上还没有后来补的 ' +
+            esc(draft.stale.map(function (s) { return s.n + ' ' + s.unit; }).join('、')) +
+            '。现在导出会<b>把它们覆盖掉</b>。</span>' +
+          '<button class="btn btn--ghost" type="button" data-drop-draft>丢弃草稿，载入线上最新</button>' +
+        '</div>'
+      : '';
     return '<span class="eyebrow">Admin · 后台</span>' +
       '<h1>' + esc(meta.icon) + ' ' + esc(meta.label) + '</h1>' +
       '<p>' + esc(meta.hint || '') + '</p>' +
-      '<p class="admin-head__note">' + note + '</p>' + bar;
+      '<p class="admin-head__note">' + note + '</p>' + stale + bar;
   }
 
   /* 左侧导航栏（v142：按「内容 / 外观 / 系统」分组，10 项一排到底太长了） */
@@ -339,7 +354,7 @@
           '<button class="btn btn--danger" type="button" id="adminResetData"' + (Store.dataIsCustom() ? '' : ' disabled') + '>恢复默认数据</button>' +
         '</div>' +
         '<input type="file" id="bmFile" accept=".html,.htm,text/html" hidden />' +
-        '<p class="admin-tip">数据来自 <code>assets/js/data.js</code>；在这里改动会覆盖它（只影响本机）。点「恢复默认数据」即可还原。展开分类后会<b>独占一整行</b>，站点很多时列表内部滚动，不会把页面撑长。<br>' +
+        '<p class="admin-tip">数据来自 <code>content/site.json</code>（烘成 <code>site-data.js</code> 给前台读）；在这里改动只进草稿、只影响本机。点「恢复默认数据」即可还原。展开分类后会<b>独占一整行</b>，站点很多时列表内部滚动，不会把页面撑长。<br>' +
           '每行右侧两颗小钮：<b>📌</b> 置顶（排到分类最前）、<b>📱</b> 在 App 里打开这条链接时是否留着底栏（默认开；点成灰的就是整屏看，不带底栏）。</p>' +
       '</div>' +
       '<div class="admin-cats" id="adminCats" data-drag-box="cat" data-drag-grid="1">' + catsListHtml() + '</div>';
@@ -1096,7 +1111,7 @@
           '<code>tags</code> 支持 <code>[随笔, 建站]</code> 这种写法。' +
         '</p>' +
         '<p class="admin-tip">文章和别的后台数据一样只存在<b>这台浏览器</b>里。想让所有访客都看到，' +
-          '到「备份」页导出，或者把内容写进 <code>assets/js/data.js</code> 的 <code>posts</code>。</p>' +
+          '到「发布上线」页导出 <code>site.json</code> 再同步，或者直接改 <code>content/site.json</code> 的 <code>posts</code>。</p>' +
       '</div>';
   }
 
@@ -1526,7 +1541,7 @@
           '站内链接不会新开窗口。<b>标签</b>用逗号分隔，会变成分享页顶部的筛选胶囊。' +
         '</p>' +
         '<p class="admin-tip">分享条目和别的后台数据一样只存在<b>这台浏览器</b>里。想让所有访客都看到，' +
-          '到「备份」页导出，或者把内容写进 <code>assets/js/data.js</code> 的 <code>feed</code>。</p>' +
+          '到「发布上线」页导出 <code>site.json</code> 再同步，或者直接改 <code>content/site.json</code> 的 <code>feed</code>。</p>' +
       '</div>';
   }
 
@@ -3022,6 +3037,15 @@
      一个文件装全部内容：{ _note, site, nav, feed, entries, posts }。
      导出即交棒：草稿当场清掉，免得下次改动跟这一份混在一起分不清。 */
   function exportSiteFile() {
+    /* 草稿基于旧内容时先拦一下：草稿存的是整份数组，导出会把线上后来补的那批盖掉 */
+    var info = Store.draftInfo();
+    if (info.stale && info.stale.length) {
+      var what = info.stale.map(function (s) { return s.n + ' ' + s.unit; }).join('、');
+      if (!confirm('这份草稿比你开始改的时候旧了：线上后来又多了 ' + what + '。\n\n' +
+                   '继续导出会用草稿里的旧内容覆盖掉这些新增。\n' +
+                   '建议先点「丢弃草稿，载入线上最新」，重新改一遍。\n\n' +
+                   '确定还是要导出吗？')) return;
+    }
     var data = Store.exportSite();
     var links = (data.nav || []).reduce(function (n, c) {
       return n + ((c && c.links) ? c.links.length : 0); }, 0);
@@ -3036,10 +3060,21 @@
     if (bindExportDelegates.done) return;
     bindExportDelegates.done = true;
     document.addEventListener('click', function (e) {
-      var t = e.target && e.target.closest ? e.target.closest('[data-export-site]') : null;
-      if (!t) return;
-      e.preventDefault();
-      exportSiteFile();
+      if (!e.target || !e.target.closest) return;
+      var t = e.target.closest('[data-export-site]');
+      if (t) {
+        e.preventDefault();
+        exportSiteFile();
+        return;
+      }
+      var d = e.target.closest('[data-drop-draft]');
+      if (d) {
+        e.preventDefault();
+        if (!confirm('丢掉这份草稿？后台里还没发布的改动会全部消失，内容回到线上最新那一版。')) return;
+        Store.draftClear();
+        toast('草稿已清空，现在是线上最新内容。');
+        if (app().rerender) app().rerender();
+      }
     });
   }
 
@@ -3133,6 +3168,9 @@
                 '不提交、不推送、不传镜像。看完不满意就接着改。</p>' +
               '<p class="admin-tip">已经覆盖进 <code>content/site.json</code> 了？双击「本地预览」就行，' +
                 '不用再拖一次。</p>' +
+              '<p class="admin-tip"><b>更省事的办法：在本地预览那个地址（127.0.0.1）上打开这一页后台改。</b>' +
+                '预览环境里前台直接读草稿 —— 你在这边改，切过去就是最新的，<b>连导出都不用</b>，' +
+                '顶上会挂一条「草稿预览」提醒你「这还不是线上」。看着满意了，再回来点导出、拖去上传。</p>' +
             '</div>' +
           '</div>' +
           '<div class="pub-step">' +
@@ -3466,8 +3504,8 @@
           '<button class="btn btn--ghost" type="button" id="bkCopyData">复制站点数据</button>' +
           '<button class="btn btn--ghost" type="button" id="bkCopyCfg">复制站点设置</button>' +
         '</div>' +
-        '<p class="admin-tip">站点数据 → <code>assets/js/data.js</code> 的 <code>categories</code>；' +
-        '站点设置 → <code>index.html</code> 里 <code>config.js</code> 之前。</p>' +
+        '<p class="admin-tip">站点数据 → <code>content/site.json</code> 的 <code>nav</code>；' +
+        '站点设置 → 同一个文件的 <code>site</code>。</p>' +
       '</details>';
   }
 
@@ -3934,7 +3972,7 @@
       kv('图标', '内联 SVG / emoji，零图片请求（Logo 与分享图除外）'),
       kv('离线', 'Service Worker 预缓存整站，Cache-first，版本号变了才换新缓存'),
       kv('搜索', '自己建索引：页面 / 分类 / 站点 / 分享 / 文章，纯内存匹配，无后端'),
-      kv('数据来源', '<code>assets/js/data.js</code>（内置）+ <code>assets/js/feed-import.js</code>（导入的那批分享）；后台导出后由 <code>assets/js/site-data.js</code> 整体接管'),
+      kv('数据来源', '<code>content/site.json</code> → 烘成 <code>assets/js/site-data.js</code>，运行时只读它；<code>data.js</code> / <code>feed-import.js</code> 只在 site-data 缺失时兜底'),
       kv('后端', '无。所有数据在浏览器本地，没有账号、没有服务端'),
       kv('第三方', '没有任何 CDN / 统计 / 广告脚本')
     ].join('');
@@ -3943,8 +3981,8 @@
       ['<code>index.html</code>', '唯一入口：骨架、顶栏、搜索面板、脚本引入（<code>?v=</code> 就是缓存版本）'],
       ['<code>assets/css/style.css</code>', '全部样式：设计变量在顶部 <code>:root</code>，之后是各页面与后台'],
       ['<code>assets/js/config.js</code>', '配置层 + <code>XYStore</code>：默认值、规范化、localStorage 读写'],
-      ['<code>assets/js/data.js</code>', '内置的分类 / 站点 / 分享 / 文章数据'],
-      ['<code>assets/js/feed-import.js</code>', '导入的那批分享，单独一个文件，不想要就删掉 index.html 里那行 script'],
+      ['<code>assets/js/data.js</code>', '兜底数据（只有 site-data.js 不存在时才用，平时不生效）'],
+      ['<code>assets/js/feed-import.js</code>', '同上的兜底分享（同上，平时不生效）'],
       ['<code>assets/js/app.js</code>', '路由、渲染、搜索、手势、主题、文章阅读'],
       ['<code>assets/js/admin.js</code>', '这一整套后台面板'],
       ['<code>assets/js/md.js</code>', 'Markdown 渲染 + 代码高亮'],
