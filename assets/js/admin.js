@@ -1428,7 +1428,6 @@
     return '<div class="post-admin-row" data-fidx="' + i + '">' +
         '<div class="post-admin-row__main">' +
           '<div class="post-admin-row__title">' +
-            '<i>' + esc(f.icon || '✨') + '</i>' +
             '<span>' + esc(f.title) + '</span>' +
             (inner ? '<span class="post-admin-row__badge">站内</span>' : '') +
           '</div>' +
@@ -1486,7 +1485,7 @@
   /* 编辑表单：原来是一张独立的卡片（点了「编辑」要跑到页面顶上去），
      v129 起就长在那一行里面 —— 就地展开、就地收起。 */
   function feedFormHtml(f, isNew) {
-    if (!f) f = { date: todayStr(), icon: '✨', title: '', url: '', desc: '', tags: [] };
+    if (!f) f = { date: todayStr(), title: '', url: '', desc: '', tags: [] };
     return '<div class="feed-form">' +
         '<div class="feed-form__head">' +
           '<b>' + (isNew ? '＋ 新增分享' : '✎ 正在编辑') + '</b>' +
@@ -1508,11 +1507,6 @@
             '<div>' +
               '<label class="admin-field"><span class="admin-field__label">日期</span>' +
                 '<input type="date" data-ff="date" value="' + esc(f.date) + '" /></label>' +
-              '<label class="admin-field"><span class="admin-field__label">图标<em>卡片上不显示了，用在今日精选和搜索结果里</em></span>' +
-                '<span class="alink-icon">' +
-                  '<input data-ff="icon" value="' + esc(f.icon) + '" maxlength="4" placeholder="✨" aria-label="图标" />' +
-                  '<button class="alink-icon__pick" type="button" id="feedEmoji" title="挑一个 emoji" aria-label="挑选图标">🙂</button>' +
-                '</span></label>' +
               '<label class="admin-field"><span class="admin-field__label">标签<em>逗号分隔</em></span>' +
                 '<input type="text" data-ff="tags" value="' + esc((f.tags || []).join(', ')) +
                   '" placeholder="工具, 设计" /></label>' +
@@ -1567,7 +1561,6 @@
       .filter(Boolean);
     return {
       date: g('date') || todayStr(),
-      icon: g('icon').trim().slice(0, 4) || '✨',
       title: g('title').trim(),
       url: g('url').trim(),
       desc: g('desc').trim(),
@@ -1668,8 +1661,6 @@
     var saveBtn = body.querySelector('#feedSave');
     if (!saveBtn) return;
     var pvBox = body.querySelector('#feedPreview');
-    var iconInput = body.querySelector('[data-ff="icon"]');
-    var pickBtn = body.querySelector('#feedEmoji');
 
     /* 边打字边更新预览 */
     var repaint = debounce(function () {
@@ -1678,13 +1669,6 @@
     body.querySelectorAll('[data-ff]').forEach(function (el) {
       el.addEventListener('input', repaint);
       el.addEventListener('change', repaint);
-    });
-
-    if (pickBtn && iconInput) pickBtn.addEventListener('click', function () {
-      openEmoji(pickBtn, function (em) {
-        iconInput.value = em;
-        repaint();
-      });
     });
 
     saveBtn.addEventListener('click', function () { saveFeed(root, body); });
@@ -2358,7 +2342,6 @@
       return '<label class="pick-row' + (on ? ' is-on' : '') + '">' +
           '<input type="checkbox" data-pick="' + esc(key) + '"' + (on ? ' checked' : '') +
             ((!on && full) ? ' disabled' : '') + ' />' +
-          '<i class="pick-row__icon">' + esc(f.icon || '✨') + '</i>' +
           '<span class="pick-row__title">' + esc(f.title) + '</span>' +
           '<span class="pick-row__date">' + esc(f.date || '—') + '</span>' +
         '</label>';
@@ -3107,6 +3090,187 @@
     XYD.resolve = null;
   }
 
+  /* ============ 「本次改了什么」 ============
+     发布前最想确认的是「这一版多了什么」，可三个大数字永远是 2081 / 729 / 5 ——
+     说得出总量，说不出增量。所以这里把「准备发的这一份」和「线上正在跑的」
+     逐块比一遍，把新加的名字点出来。
+     基准刻意用 site-data.js 与 XY_CONFIG（线上真在用的那份产物），不是草稿里记的
+     base：base 只记条数，说不出是哪几条。 */
+  var PUB_SITE_GROUPS = [
+    ['站名标语', ['siteName', 'siteLatin', 'tagline']],
+    ['首页文案', ['home.eyebrow', 'home.titleTop', 'home.titleMain', 'home.descBefore',
+                  'home.descAfter', 'home.rotator', 'home.cta1Text', 'home.cta1Url',
+                  'home.cta2Text', 'home.badge', 'home.stats',
+                  'home.featuredTitle', 'home.featuredDesc',
+                  'home.sponsorOn', 'home.sponsorTitle', 'home.sponsorDesc',
+                  'home.sponsorNote', 'home.sponsorCodes', 'home.sponsorLink']],
+    ['首页大图', ['home.image', 'home.imageFit', 'home.imageShape', 'home.imageLink',
+                  'logoImage', 'favicon']],
+    ['关于页', ['about']],
+    ['外观配色', ['theme', 'themeDefault', 'cardDensity', 'showSearch', 'showTopBrand',
+                  'showTopLinks', 'showTopSaved', 'showTopTheme', 'showTopFilter',
+                  'showIcons', 'showDesc', 'showCatIcon', 'showCatCount']],
+    ['阅读设置', ['read']],
+    ['自定义链接', ['customLinks']],
+    ['统计与日期', ['startDate', 'topDate']]
+  ];
+
+  /* 按 a.b.c 取一串字段，拼成一个字符串用来比 —— 省得为每块写一遍深比较 */
+  function digSig(o, paths) {
+    var out = [];
+    (paths || []).forEach(function (p) {
+      var v = o, seg = p.split('.'), i;
+      for (i = 0; i < seg.length && v != null; i++) v = v[seg[i]];
+      out.push(p + '=' + JSON.stringify(v === undefined ? null : v));
+    });
+    return out.join('\u0001');
+  }
+
+  /* 名字列表：前 3 个 + 「等 N 个」，全空的给个兜底，免得出现空括号 */
+  function nameList(names, cap) {
+    cap = cap || 3;
+    var clean = (names || []).filter(Boolean);
+    if (!clean.length) return '';
+    return clean.slice(0, cap).join('、') + (clean.length > cap ? ' 等 ' + clean.length + ' 个' : '');
+  }
+
+  /* 返回 [{ tag, head, more }]，tag 是左边那个小标签，head 一句话，more 是名字明细 */
+  function pubDiff(data) {
+    var S = window.SITE_DATA || {};
+    var cfg = window.XY_CONFIG || {};
+    var site = (data && data.site) || {};
+    var rows = [];
+
+    /* ---- 导航：分类按 id 认，链接按「分类 id + 网址」认 ---- */
+    var oldLinks = {}, oldCatName = {}, newLinks = {}, newCatName = {};
+    var scan = function (list, links, names) {
+      (list || []).forEach(function (c) {
+        if (!c) return;
+        names[c.id] = c.name || '';
+        (c.links || []).forEach(function (l) {
+          if (!l || !l.u) return;
+          links[c.id + '\u0002' + l.u] = l;
+        });
+      });
+    };
+    scan(S.categories, oldLinks, oldCatName);
+    scan(data.nav, newLinks, newCatName);
+
+    var addL = [], delL = [], renL = [];
+    Object.keys(newLinks).forEach(function (k) {
+      if (!oldLinks[k]) addL.push(newLinks[k].n || newLinks[k].u);
+      else if ((oldLinks[k].n || '') !== (newLinks[k].n || '')) renL.push(newLinks[k].n || newLinks[k].u);
+    });
+    Object.keys(oldLinks).forEach(function (k) {
+      if (!newLinks[k]) delL.push(oldLinks[k].n || oldLinks[k].u);
+    });
+    var addC = [], delC = [], renC = [];
+    Object.keys(newCatName).forEach(function (id) {
+      if (!(id in oldCatName)) addC.push(newCatName[id]);
+      else if (oldCatName[id] !== newCatName[id]) renC.push(newCatName[id]);
+    });
+    Object.keys(oldCatName).forEach(function (id) {
+      if (!(id in newCatName)) delC.push(oldCatName[id]);
+    });
+    var navBits = [], navNames = [];
+    if (addL.length) { navBits.push('新增 ' + addL.length + ' 条链接'); navNames = navNames.concat(addL); }
+    if (delL.length) navBits.push('删掉 ' + delL.length + ' 条');
+    if (renL.length) navBits.push('改名 ' + renL.length + ' 条');
+    if (addC.length) { navBits.push('新增分类「' + nameList(addC, 2) + '」'); }
+    if (delC.length) navBits.push('删掉分类 ' + delC.length + ' 个');
+    if (renC.length) navBits.push('分类改名 ' + renC.length + ' 个');
+    if (navBits.length) {
+      rows.push({ tag: '导航', head: navBits.join(' · '), more: navNames.length ? '新加：' + nameList(navNames, 4) : '' });
+    }
+
+    /* ---- 分享：按网址认（没网址的按标题），改名单独算 ---- */
+    var oldF = {}, newF = {};
+    (S.feed || []).forEach(function (f) { if (f) oldF[f.url || ('t:' + f.title)] = f; });
+    (data.feed || []).forEach(function (f) { if (f) newF[f.url || ('t:' + f.title)] = f; });
+    var addF = [], delF = [], renF = 0;
+    Object.keys(newF).forEach(function (k) {
+      if (!oldF[k]) addF.push(newF[k].title);
+      else if ((oldF[k].title || '') !== (newF[k].title || '')) renF++;
+    });
+    Object.keys(oldF).forEach(function (k) { if (!newF[k]) delF.push(oldF[k].title); });
+    var feedBits = [];
+    if (addF.length) feedBits.push('新增 ' + addF.length + ' 条');
+    if (delF.length) feedBits.push('删掉 ' + delF.length + ' 条');
+    if (renF) feedBits.push('改标题 ' + renF + ' 条');
+    if (feedBits.length) {
+      rows.push({
+        tag: '分享',
+        head: feedBits.join(' · '),
+        more: addF.length ? '新加：' + nameList(addF, 4) : (delF.length ? '删掉：' + nameList(delF, 4) : '')
+      });
+    }
+
+    /* ---- 文章：按 id 认 ---- */
+    var oldP = {}, newP = {};
+    (S.posts || []).forEach(function (p) { if (p) oldP[p.id] = p; });
+    (data.posts || []).forEach(function (p) { if (p) newP[p.id] = p; });
+    var addP = [], delP = [], editP = 0;
+    Object.keys(newP).forEach(function (id) {
+      if (!oldP[id]) addP.push(newP[id].title);
+      else if (JSON.stringify(oldP[id]) !== JSON.stringify(newP[id])) editP++;
+    });
+    Object.keys(oldP).forEach(function (id) { if (!newP[id]) delP.push(oldP[id].title); });
+    var postBits = [];
+    if (addP.length) postBits.push('新增 ' + addP.length + ' 篇');
+    if (delP.length) postBits.push('删掉 ' + delP.length + ' 篇');
+    if (editP) postBits.push('改了 ' + editP + ' 篇');
+    if (postBits.length) {
+      rows.push({
+        tag: '文章',
+        head: postBits.join(' · '),
+        more: addP.length ? '新加：' + nameList(addP, 4) : (delP.length ? '删掉：' + nameList(delP, 4) : '')
+      });
+    }
+
+    /* ---- 首页卡片：数一数换了几张（比顺序，不猜内容） ---- */
+    var oldE = (cfg.home && cfg.home.entries) || [];
+    var newE = (site.home && site.home.entries) || [];
+    var eKey = function (e) { return (e && (e.route || '')) + '\u0002' + (e && e.title || ''); };
+    var oldES = oldE.map(eKey).join('\u0001');
+    var newES = newE.map(eKey).join('\u0001');
+    if (oldES !== newES) {
+      var eAdd = newE.filter(function (e) { return oldE.map(eKey).indexOf(eKey(e)) < 0; });
+      rows.push({
+        tag: '首页卡片',
+        head: oldE.length === newE.length ? '换了顺序 / 内容' : oldE.length + ' 张 → ' + newE.length + ' 张',
+        more: eAdd.length ? '新加：' + nameList(eAdd.map(function (e) { return e.title; }), 3) : ''
+      });
+    }
+
+    /* ---- site 段其余几块：整块比，只说「哪块变了」 ---- */
+    PUB_SITE_GROUPS.forEach(function (g) {
+      if (digSig(site, g[1]) !== digSig(cfg, g[1])) {
+        rows.push({ tag: g[0], head: '有改动', more: '' });
+      }
+    });
+
+    return rows;
+  }
+
+  function xydDiff(rows) {
+    if (!rows) return '';
+    if (!rows.length) {
+      return '<div class="xyd__diff">' +
+          '<p class="xyd__diff-none">内容跟线上<b>一模一样</b> —— 这次只会把文件重传一遍。</p>' +
+        '</div>';
+    }
+    return '<div class="xyd__diff">' +
+        '<p class="xyd__diff-h">本次改动<em>对比线上正在跑的版本</em></p>' +
+        '<ul class="xyd__diff-list">' + rows.map(function (r) {
+          return '<li>' +
+              '<span class="xyd__diff-tag">' + esc(r.tag) + '</span>' +
+              '<span class="xyd__diff-body">' + esc(r.head) +
+                (r.more ? '<em>' + esc(r.more) + '</em>' : '') + '</span>' +
+            '</li>';
+        }).join('') + '</ul>' +
+      '</div>';
+  }
+
   function xydStats(list) {
     if (!list || !list.length) return '';
     return '<div class="xyd__stats">' + list.map(function (s) {
@@ -3129,6 +3293,7 @@
           '</div>' +
         '</div>' +
         xydStats(o.stats) +
+        xydDiff(o.diff) +
         (o.note ? '<p class="xyd__note">' + o.note + '</p>' : '') +
         (o.tips && o.tips.length
           ? '<ul class="xyd__tips">' + o.tips.map(function (t) { return '<li>' + t + '</li>'; }).join('') + '</ul>'
@@ -3344,11 +3509,15 @@
       { n: (data.feed || []).length, unit: '条分享' },
       { n: (data.posts || []).length, unit: '篇文章' }
     ];
+    /* 和线上一版逐块比一次 —— 确认框里「本次改动」那几行就是它的结果 */
+    var diff = [];
+    try { diff = pubDiff(data); } catch (e) { diff = []; }
     var go2 = await xydConfirm(dry ? {
       icon: '🧪',
       title: '先试跑一遍？',
       sub: '只校验，不碰远端',
       stats: stats,
+      diff: diff,
       note: '它会校验内容、烘好产物，然后<b>把仓库里的文件原样还原</b> —— 不提交、不推送、不传镜像。',
       okText: '开始试跑',
       cancelText: '不用了'
@@ -3357,6 +3526,7 @@
       title: '把这一版发到线上？',
       sub: '只在这台电脑上能发',
       stats: stats,
+      diff: diff,
       note: '它会连着推 GitHub 和国内镜像，网页和 App 一起更新。',
       tips: [
         '传镜像慢，一般 <b>3–5 分钟</b>，中途别关预览窗口',

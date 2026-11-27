@@ -2094,7 +2094,6 @@ body.is-dragging-row, body.is-dragging-row *{ cursor:grabbing !important; }
   accent-color:#7c9cff;
 }
 .pick-row input:disabled{ cursor:not-allowed; opacity:.35; }
-.pick-row__icon{ font-style:normal; font-size:15px; line-height:1; flex-shrink:0; }
 .pick-row__title{ flex:1 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .pick-row__date{ flex-shrink:0; font-size:12px; color:var(--text-mute); font-variant-numeric:tabular-nums; }
 .pick-more{ margin:6px 4px 2px; font-size:12px; color:var(--text-mute); text-align:center; }
@@ -2335,6 +2334,41 @@ body.is-dragging-row, body.is-dragging-row *{ cursor:grabbing !important; }
   font-variant-numeric:tabular-nums; letter-spacing:-.01em; color:var(--text);
 }
 .xyd__stat span{ display:block; margin-top:3px; font-size:11px; color:var(--text-mute); }
+
+/* 「本次改动」小清单：左边一个标签，右边一句话 + 名字明细。
+   条数多的时候整块自己滚，别把确认卡片撑到屏幕外面去。 */
+.xyd__diff{ margin:16px 0 0; }
+.xyd__diff-h{
+  display:flex; align-items:baseline; gap:8px; margin:0 0 8px;
+  font-size:11.5px; font-weight:600; letter-spacing:.06em; color:var(--text-mute);
+}
+.xyd__diff-h em{
+  font-style:normal; font-weight:400; font-size:11px;
+  letter-spacing:0; color:var(--text-mute); opacity:.72;
+}
+.xyd__diff-list{
+  display:flex; flex-direction:column; gap:7px;
+  margin:0; padding:10px 12px; list-style:none; max-height:190px; overflow:auto;
+  border-radius:14px; background:var(--glass);
+  border:1px solid color-mix(in srgb, var(--text-mute) 12%, transparent);
+}
+.xyd__diff-list > li{ display:flex; align-items:baseline; gap:9px; font-size:12.4px; line-height:1.6; }
+.xyd__diff-tag{
+  flex:0 0 auto; min-width:56px; padding:1px 7px; border-radius:7px;
+  font-size:11px; text-align:center; white-space:nowrap; color:var(--text-dim);
+  background:color-mix(in srgb, var(--a1) 13%, transparent);
+}
+.xyd__diff-body{ flex:1 1 auto; min-width:0; color:var(--text); }
+.xyd__diff-body em{
+  display:block; margin-top:1px; font-style:normal; font-size:11.4px; color:var(--text-mute);
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.xyd__diff-none{
+  margin:0; padding:10px 12px; border-radius:14px;
+  font-size:12.4px; line-height:1.7; color:var(--text-dim); background:var(--glass);
+  border:1px solid color-mix(in srgb, var(--text-mute) 12%, transparent);
+}
+.xyd__diff-none b{ color:var(--text); font-weight:600; }
 
 .xyd__note{
   margin:16px 0 0; font-size:12.8px; line-height:1.75; color:var(--text-dim);

@@ -784,8 +784,7 @@
     var featuredHtml = featuredList.map(function (f) {
       var isHash = f.url.charAt(0) === '#';
       return '<a class="card card--hover feature-card" href="' + hrefOf(f.url) + '"' + (isHash ? '' : ' target="_blank" rel="noopener"') + '>' +
-        '<span class="feature-card__top"><span class="glyph glyph--sm" style="background:linear-gradient(135deg,rgba(124,156,255,.35),rgba(180,124,255,.3))">' + esc(f.icon) + '</span>' +
-        '<h4>' + esc(f.title) + '</h4></span>' +
+        '<span class="feature-card__top"><h4>' + esc(f.title) + '</h4></span>' +
         '<p>' + esc(f.desc) + '</p>' +
         '<span class="feature-card__meta">📅 ' + esc(f.date) + '</span>' +
         '</a>';
@@ -1287,7 +1286,7 @@
       if (h.f) {
         var ext = String(h.f.url || '').charAt(0) !== '#';
         return '<a class="otd-card" href="' + hrefOf(h.f.url) + '"' + (ext ? ' target="_blank" rel="noopener"' : '') + '>' +
-            yr + '<span class="otd-card__t">' + esc(h.f.icon || '') + ' ' + esc(h.f.title) + '</span>' +
+            yr + '<span class="otd-card__t">' + esc(h.f.title) + '</span>' +
             '<em class="otd-card__d">' + esc(otdExcerpt(h.f.desc, 64)) + '</em>' +
           '</a>';
       }
@@ -3971,7 +3970,7 @@
       list.push({ type: '站点', name: l.n, sub: l.cat + ' · ' + (l.d || hostOf(l.u)), url: l.u, icon: l.icon, external: true });
     });
     FEED.forEach(function (f) {
-      list.push({ type: '分享', name: f.title, sub: f.date + ' · ' + (f.tags || []).join(' '), url: f.url, icon: f.icon, external: f.url.charAt(0) !== '#' });
+      list.push({ type: '分享', name: f.title, sub: f.date + ' · ' + (f.tags || []).join(' '), url: f.url, icon: '📰', external: f.url.charAt(0) !== '#' });
     });
     POSTS.filter(function (p) { return p && !p.draft; }).forEach(function (p) {
       var st = MD.stats(p.body || '');

@@ -412,7 +412,8 @@
     };
   }
 
-  /* 一条分享：日期、图标、标题、链接、描述、标签 */
+  /* 一条分享：日期、标题、链接、描述、标签
+     （v178 起去掉了 icon 字段 —— 卡片和列表都不显示 emoji 了，留着只会让每条都多一个 ✨） */
   function normFeed(f) {
     f = f || {};
     var tags = Array.isArray(f.tags) ? f.tags : [];
@@ -423,7 +424,6 @@
     if (/^(javascript|data|vbscript|file):/i.test(url)) url = '';
     return {
       date: normDate(f.date, '') || '',
-      icon: String(f.icon == null ? '' : f.icon).slice(0, 4).trim() || '✨',
       title: String(f.title == null ? '' : f.title).slice(0, 120).trim() || '未命名分享',
       url: url,
       desc: String(f.desc == null ? '' : f.desc).slice(0, 800),
