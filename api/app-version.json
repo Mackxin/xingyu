@@ -1,8 +1,8 @@
 {
-  "versionCode": 46,
-  "versionName": "2.9.5",
-  "size": 1689333,
-  "sha256": "b65b6699f7a6f05675cdbe95564001283c41a70857eae1b7dc80c9f9b57313f2",
-  "notes": "修更新下载「解析包错误」；顶栏加刷新键、自定义链接单独一行",
+  "versionCode": 47,
+  "versionName": "2.9.6",
+  "size": 1914612,
+  "sha256": "a85b206168af22c8007612e3f40d04c5297aeff6640f24fe58c73fd8ab90b1ac",
+  "notes": "导航「万物归一」四条改原生；孕期全程管理原生化",
   "updated": "2026-11-28"
 }
