@@ -346,10 +346,16 @@ def commit_push(content_changed, dry, custom_msg=''):
         env = {k: v for k, v in os.environ.items() if 'proxy' not in k.lower()}
         good, out2 = push_once(env)
         if not good:
-            bad('推送还是失败。仓库里已经提交好了，回头网络好了再 push 一次不会丢东西。')
+            bad('推送还是失败，这里就停 —— 镜像那一段不跑了。')
             for line in (out2 or out).splitlines()[-6:]:
                 print('      ' + line)
-            return before, []
+            print('')
+            print('   为什么不接着往下走：镜像传的是本地这份代码，GitHub 没推上去，')
+            print('   两边就会一个旧一个新。以前这里只是「记一笔就继续」，日志最后照样写')
+            print('   「同步完成」，而线上其实还是上一版 —— 2026-11-28 真踩过一次「发布成功')
+            print('   但远端没反应」。宁可停在这里说清楚。')
+            print('   仓库里已经提交好了，网络恢复后重跑 python3 tools/sync.py 不会丢东西。')
+            sys.exit(1)
 
     ok('已推送，GitHub Pages 开始重建（一般 20 秒 ~ 4 分钟）')
 

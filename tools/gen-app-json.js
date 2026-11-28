@@ -167,7 +167,19 @@ function buildRaw(src) {
           label: String(c.label || ''),
           link: String(c.link || '')
         }))
-        .filter(c => c.src && c.src.length <= 150000)
+        .filter(c => c.src && c.src.length <= 150000),
+      /* 首页大图（后台「首页内容 → 大图」）。2.9.4 起 App 首屏也画这张。
+         网页端那份可能是后台上传的 data URL；App 这边只带「够用的地址」：
+         相对路径就保持相对，App 自己拼 site.url（走镜像，比 GitHub Pages 快得多）；
+         data URL 小于 150KB 才原样带，别让 app.json 背一张超大的图。 */
+      hero: (function () {
+        const im = String(home.image || '').trim();
+        if (!im) return '';
+        if (/^data:/i.test(im)) return im.length <= 150000 ? im : '';
+        return im.replace(/^\.?\//, '');
+      })(),
+      /* 跟网页端 imageFit 同一个意思：cover 铺满裁边 / contain 整张留白 */
+      heroFit: home.imageFit === 'cover' ? 'cover' : 'contain'
     },
     /* 阅读偏好（后台「阅读体验」）：App 拿它当默认值，用户在自己手机上改过就听用户的 */
     read: {
