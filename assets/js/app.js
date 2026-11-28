@@ -4709,6 +4709,18 @@
     /* v139：顶栏的时钟 = 稍后读入口（未读条数挂在角标上） */
     var laterBtn = $('#laterBtn');
     if (laterBtn) laterBtn.addEventListener('click', function () { navigate('later'); });
+
+    /* 刷新键（v182）：点一下重新拉一遍。
+       静态站的内容全在 site-data.js 里，SW 对它走「网络优先」，所以 reload 就能拿到最新；
+       顺手把 HTML / CSS / JS 也过一遍。先让图标转起来再刷，免得点了看着没反应。 */
+    var refreshBtn = $('#headerRefresh');
+    if (refreshBtn) {
+      refreshBtn.addEventListener('click', function () {
+        if (refreshBtn.classList.contains('is-busy')) return;
+        refreshBtn.classList.add('is-busy');
+        setTimeout(function () { location.reload(); }, 150);
+      });
+    }
     var randomBtn = $('#randomBtn');
     if (randomBtn) randomBtn.addEventListener('click', randomLink);
     /* v139：页脚的「足迹」入口 */

@@ -15,6 +15,7 @@
  */
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const { execFileSync } = require('child_process');
 
 const ROOT = path.resolve(__dirname, '..');
@@ -60,13 +61,18 @@ function main() {
   fs.copyFileSync(apk, OUT_APK);
 
   const size = fs.statSync(OUT_APK).size;
+  /* 2.9.5 起带上 sha256：App 下完拿它核一遍内容。
+     只比大小拦不住「跨版本拼接」——那种坏包大小正好对，安装器却报「解析包错误」。 */
+  const sha256 = crypto.createHash('sha256').update(fs.readFileSync(OUT_APK)).digest('hex');
   const notes = arg('notes', '');
 
-  /* 字段说明：App 侧只认 versionCode（比大小最可靠）；url/size 给下载进度用 */
+  /* 字段说明：App 侧只认 versionCode（比大小最可靠）；url/size 给下载进度用；
+     sha256 用来验内容（老版本 App 不认识这个字段，忽略掉就行） */
   const info = {
     versionCode,
     versionName,
     size,
+    sha256,
     notes,
     updated: new Date().toISOString().slice(0, 10)
   };

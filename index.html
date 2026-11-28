@@ -92,7 +92,7 @@
 <meta name="mobile-web-app-capable" content="yes" />
 <!-- 订阅源：分享页的更新 -->
 <link rel="alternate" type="application/rss+xml" title="壹号栈 · 灵感与文章" href="feed.xml" />
-<link rel="stylesheet" href="assets/css/style.css?v=181" />
+<link rel="stylesheet" href="assets/css/style.css?v=182" />
 </head>
 <body>
 
@@ -138,6 +138,13 @@
         <!-- 全站搜索结果浮层（输入时展开，分组列页面 / 分类 / 站点 / 分享 / 文章） -->
         <div class="hdr-hits" id="hdrHits" hidden aria-label="全站搜索结果"></div>
       </div>
+
+      <!-- 刷新（v182）：点一下重新拉一次内容。
+           手机上以前只能靠浏览器自带的下拉刷新，页面里没入口；
+           浏览器自带的那个下拉在部分安卓机上又会被系统手势抢走。 -->
+      <button class="hrefresh" id="headerRefresh" type="button" aria-label="刷新内容" title="刷新">
+        <svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.35-5.65"/><path d="M20 4.6V10h-5.4"/></svg>
+      </button>
 
       <!-- 手机 / 平板：分类折叠按钮（导航页置顶显示，点开是分类选择面板） -->
       <button class="hcat" id="headerCat" type="button" aria-haspopup="dialog" aria-expanded="false" title="切换分类">
@@ -264,19 +271,19 @@
      别手改这个文件 —— 内容在后台改，导出 site.json 再同步（拖动桌面图标就一条链）。
      故意不带 ?v= 版本号 —— 换内容只换这一个文件，不想因为版本号没改被浏览器缓存住。 -->
 <script src="assets/js/site-data.js"></script>
-<script src="assets/js/config.js?v=181"></script>
+<script src="assets/js/config.js?v=182"></script>
 <!-- 以前这里还挂着 bookmarks.js(151KB) + feed-import.js(266KB) + data.js(25KB) 三份
      「site-data.js 为空才用」的出厂兜底。它们平时一次都用不上，却是每个人的首屏流量，
      v180 起改成「真出事才拉」：site-data.js 没到的时候 app.js 自己去取这三份再启动。
      别把这三行加回来 —— 加了就是白白多下载 443KB。 -->
-<script src="assets/js/md.js?v=181"></script>
+<script src="assets/js/md.js?v=182"></script>
 <!-- 本地音乐页（#/music）：必须在 app.js 之前，routeHtml 里要用 window.XYMusic -->
-<script src="assets/js/music.js?v=181"></script>
+<script src="assets/js/music.js?v=182"></script>
 <!-- 随手记：#/note 里挂一个铺满的 iframe，本体在 assets/note/index.html（换肤版） -->
-<script src="assets/js/note.js?v=181"></script>
+<script src="assets/js/note.js?v=182"></script>
 <!-- 待办清单（#/todo）：同 music/note 的规矩，必须在 app.js 之前 -->
-<script src="assets/js/todo.js?v=181"></script>
-<script src="assets/js/app.js?v=181"></script>
+<script src="assets/js/todo.js?v=182"></script>
+<script src="assets/js/app.js?v=182"></script>
 <!-- 后台（admin.js，290 KB）不在这里加载：它由 app.js 在进入 #/admin 时才按需拉，
      省掉每个访客的这份流量。版本号它自己从 app.js 的 ?v= 里抄，不用在这里同步。 -->
 </body>

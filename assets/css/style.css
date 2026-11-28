@@ -331,6 +331,26 @@ html[data-theme="light"] .hdr-hits{ box-shadow:none; }
 /* 搜索框 + 「分类」按钮同一行的容器；宽屏时 display:contents，两者仍是顶栏的直接子项 */
 .header__row{ display:contents; }
 
+/* 刷新键（v182）：搜索框右侧那颗圆角方键，点一下重新拉内容。
+   跟搜索框同高 40px；刷新时图标自己转圈。手机上原来没有页面内的刷新入口，
+   只能靠浏览器自带的下拉——那个在很多安卓机里会被系统手势抢走。 */
+.hrefresh{
+  display:inline-flex; align-items:center; justify-content:center;
+  width:40px; height:40px; flex-shrink:0;
+  border-radius:13px; border:1px solid transparent;
+  background:var(--glass); color:var(--text-dim);
+  cursor:pointer;
+  transition:background .28s var(--ease), color .28s var(--ease), transform .3s var(--ease);
+}
+.hrefresh:hover{ background:var(--glass-2); color:var(--text); }
+.hrefresh:active{ transform:scale(.94); }
+.hrefresh svg{
+  fill:none; stroke:currentColor; stroke-width:1.9;
+  stroke-linecap:round; stroke-linejoin:round;
+}
+.hrefresh.is-busy svg{ animation:xy-spin .8s linear infinite; }
+@keyframes xy-spin{ to{ transform:rotate(360deg); } }
+
 /* 顶栏「分类」按钮：导航页置顶显示（宽度 ≤960 才出现，宽屏用侧栏的分类列表） */
 .hcat{
   display:none; align-items:center; gap:7px; flex-shrink:0;
@@ -1555,7 +1575,12 @@ html[data-theme="light"] .tl-date{ box-shadow:none; }
   .header__inner{ flex-wrap:wrap; border-radius:var(--r-lg); }
   /* 搜索框与「分类」按钮共用一整行 */
   .header__row{ flex:1 1 100%; order:9; }
-  .header__links{ flex:1 1 100%; justify-content:center; margin-top:8px; order:10; }
+  /* v182：自定义链接独占一行、均分宽度（一行最多 5 个），不再靠横滑才看得全。
+     max-width 是给「只配了一两条」的情况兜底 —— 否则一条会被 flex 拉成整行那么长。
+     名字在手机上也显示（≤1500px 本来是隐藏的），不然一排图标认不出哪个是哪个。 */
+  .header__links{ flex:1 1 100%; justify-content:flex-start; gap:6px; margin-top:8px; order:10; }
+  .header__links .hlink{ flex:1 1 0; min-width:0; max-width:96px; justify-content:center; padding:0 6px; }
+  .header__links .hlink__name{ display:inline; font-size:11.5px; max-width:52px; }
   /* 手机端：主题（白天 / 暗黑）按钮靠到第一行最右边，别紧贴 logo */
   .header__actions{ margin-left:auto; }
 }
@@ -1583,19 +1608,10 @@ html[data-theme="light"] .tl-date{ box-shadow:none; }
   .nav{ padding:3px; }
   .nav__item{ padding:7px 12px; font-size:13.5px; }
   .hcat__name{ max-width:86px; }
-  /* 自定义链接：手机端放进顶栏第一行右侧（右上角），跟主题按钮一起，
-     不再单独占一整行；链接多了就横向滑动，不会把顶栏撑出屏幕 */
-  .header__links{
-    order:0; flex:1 1 0; min-width:0; margin:0;
-    justify-content:flex-start;
-    overflow-x:auto; overflow-y:hidden;
-    scrollbar-width:none; -ms-overflow-style:none;
-    -webkit-overflow-scrolling:touch;
-  }
-  /* 放得下时整组靠右贴住主题按钮；放不下时从左侧开始，可横向滑动查看 */
-  .header__links::before{ content:''; margin-left:auto; }
-  .header__links::-webkit-scrollbar{ display:none; }
-  .header__links .hlink{ flex-shrink:0; }
+  /* v182：手机上自定义链接也不回第一行了 —— 留在搜索框下面那一行，均分宽度、
+     最多 5 个，一屏看全。（以前这里把它塞回右上角跟主题按钮并排，放不下就横滑，
+     等于「有几个链接」这件事在手机上是看不见的。） */
+  .header__links{ padding:0 2px; }
   /* 主导航胶囊：手机端从顶栏移到屏幕底部居中（见 index.html 的 .dock） */
   .header .nav{ display:none; }
   .dock{
