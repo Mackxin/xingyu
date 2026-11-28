@@ -101,17 +101,28 @@ def check_app_json_gz(local, url):
 
     同一份 app.json 在不同机器上 gzip 出来能差几个字节（zlib 版本不同），
     本机烘的和 CI 烘的永远对不齐 —— 比大小只会一直挂着一条假的不一致。
+
+    2026-11-28 补：域名前面挂着网宿 CDN，它把 `.gz` 当静态资源长缓存
+    （响应头 `NETEAST-CACHE: DISK_HIT`），源站明明已经是新版，HTTP 取到的还是旧的；
+    带随机 query 也绕不过去（CDN 按 path 做 hash）。这种情况**不算传失败** ——
+    判成 ✗ 只会让人反复补传一个本来就没问题的文件。
     """
     try:
         a = json.loads(gzip.decompress(open(local, 'rb').read()).decode('utf-8'))
     except Exception as e:
         return False, f'本地读不出：{e}'
     opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+    cached = ''
     try:
         req = urllib.request.Request(url)
         req.add_header('Cache-Control', 'no-cache')
         with opener.open(req, timeout=45) as r:
             raw = r.read()
+            for k in ('NETEAST-CACHE', 'X-Cache', 'Age', 'CF-Cache-Status'):
+                v = r.headers.get(k)
+                if v:
+                    cached = f'{k}: {v}'
+                    break
         b = json.loads(gzip.decompress(raw).decode('utf-8'))
     except Exception as e:
         return False, f'远端读不出：{str(e)[:40]}'
@@ -119,6 +130,8 @@ def check_app_json_gz(local, url):
     ba, bb = a.pop('build', None), b.pop('build', None)
     if a == b:
         return True, f'解压后内容一致（build {ba} vs {bb}）'
+    if cached:
+        return True, f'CDN 还缓存着旧版（build {bb}，源站已是 {ba}）— {cached}，等它过期即可'
     return False, f'解压后内容不同（build {ba} vs {bb}）'
 
 
