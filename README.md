@@ -80,8 +80,8 @@ git checkout -- . # 放弃还没提交的改动
 ├── feed.xml                # RSS 订阅源（由 tools/gen-feed.js 生成，别手改）
 ├── tools/gen-feed.js       # 改完「分享」或「文章」后跑一下，重新生成 feed.xml
 ├── tools/import-naver.py   # 把「壹号导航」naver.html 里的书签抽成 bookmarks.js（见下文「搬老书签进来」）
-├── tools/check-links.py    # 并发探测全部链接死活（直连 + 代理复验），输出死链清单
-├── tools/dead-links.txt    # 死链清单（check-links.py 生成，import-naver.py 生成时会跳过）
+├── tools/check-links.py    # 并发探测全部链接死活（直连 + 代理复验），默认读 content/site.json
+├── tools/dead-links.txt    # 死链清单（check-links.py 生成，已进 .gitignore 不入库）
 ├── docs/screenshots/       # README 里的界面预览图（网页端用 tools/shot-readme.js 重拍，App 端用 adb screencap）
 └── assets
     ├── og-cover.png        # 分享卡片封面（1200×630，微信/微博/iMessage 抓这张）
@@ -149,9 +149,11 @@ git checkout -- . # 放弃还没提交的改动
 > 上传的图片会被**自动压缩**（长边缩到 1100px、转成 JPEG）后再存进浏览器，
 > 所以不用担心手机拍的大图拖慢打开速度。图片是存在本机的，想换电脑就把它一起放进备份文件里（备份会自动包含图片）。
 
-> 站点数据全部来自 `assets/js/bookmarks.js`（50 个分类 / 2078 个站点，由 `tools/import-naver.py` 生成），
-> `data.js` 只负责把它接起来；在后台改过之后就会以你的版本为准（存在本机），
-> 点「恢复默认数据」即可还原成 `bookmarks.js` 里的内容（会先弹确认框）。
+> 站点内容全部来自 `content/site.json`（50 个分类 / 2081 个站点 / 730 条分享 / 5 篇文章），
+> 由 `tools/build-content.js` 烘成 `assets/js/site-data.js` 给网页读、`tools/gen-app-json.js`
+> 烘成 `api/app.json` 给 App 读。`bookmarks.js` / `feed-import.js` / `data.js` 这三份是
+> **出厂兜底**，只在 site-data.js 加载失败时才会被按需拉下来（v180 起不再进首屏）。
+> 在后台改过之后以你的版本为准（存在本机）；点「恢复默认数据」即可还原成出厂那份（会先弹确认框）。
 >
 > **备份页怎么用**：点「⬇ 下载备份文件」得到一个 `xingyu-backup-日期.json`；
 > 换电脑或想还原时点「📂 选择备份文件」选中它，确认一下就恢复了。
@@ -208,7 +210,9 @@ python3 tools/sync.py            # 常规：校验 + 构建 + 推到全端
 python3 tools/sync.py --all      # 这次改了代码：整站重传镜像（默认只传变了的文件）
 python3 tools/sync.py --no-ftp   # 只推 GitHub，不动镜像
 python3 tools/sync.py --dry      # 只说要做什么，什么都不动
+python3 tools/sync.py --check-links   # 顺手把 2000 多条外链探一次活（多花 2 分钟）
 node tools/build-content.js      # 只构建；加 --check 只校验不写
+python3 tools/check-links.py     # 单独跑链接巡检，清单落到 tools/dead-links.txt
 python3 tools/upload-files.py 文件   # 补传单个文件（镜像掉了东西时）
 ```
 

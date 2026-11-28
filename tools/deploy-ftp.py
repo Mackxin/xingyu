@@ -294,7 +294,14 @@ def main():
         for local, rel, name in pending:
             rdir = root + ('/' + only if only else '') + ('/' + rel if rel else '')
             label = ((rel + "/") if rel else "") + name
-            err = put(local, rdir, name)
+            # .gz 跟 web.config 一个毛病：STOR 回「成功」，服务器上还是旧的那一份 ——
+            # 2026-11-28 就卡在这：本地 gz 是 build 202611280836，HTTP 取到的永远是
+            # 202611280053，带随机参数绕缓存也还是旧的，说明源站文件根本没换。
+            # 这两个后缀统一走「传 .txt + 服务器改名」。
+            if name.endswith(('.config', '.gz')):
+                err = put_renamed(local, rdir, name)
+            else:
+                err = put(local, rdir, name)
             if err is None:
                 ok += 1
                 print(f'[{ok:>2}/{len(files)}] ✓ {label}')

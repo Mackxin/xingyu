@@ -1,7 +1,7 @@
 {
-  "versionCode": 44,
-  "versionName": "2.9.3",
-  "size": 1686289,
-  "notes": "导航里那几个站内入口现在跟拉数据走同一条路：配了镜像就走镜像，不再绕 GitHub Pages 转圈；孕期全程管理、电池跑单这类工具页以前在 App 里打不开，现在正常了；灵感随记、关于点开是 App 自己的页面。",
-  "updated": "2026-11-25"
+  "versionCode": 45,
+  "versionName": "2.9.4",
+  "size": 1688125,
+  "notes": "首页加了站点大图；镜像数据改读 app.json 本体（.gz 被 CDN 缓存住，会一直读到上一版）",
+  "updated": "2026-11-28"
 }
