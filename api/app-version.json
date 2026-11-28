@@ -1,7 +1,8 @@
 {
-  "versionCode": 45,
-  "versionName": "2.9.4",
-  "size": 1688125,
-  "notes": "首页加了站点大图；镜像数据改读 app.json 本体（.gz 被 CDN 缓存住，会一直读到上一版）",
+  "versionCode": 46,
+  "versionName": "2.9.5",
+  "size": 1689333,
+  "sha256": "b65b6699f7a6f05675cdbe95564001283c41a70857eae1b7dc80c9f9b57313f2",
+  "notes": "修更新下载「解析包错误」；顶栏加刷新键、自定义链接单独一行",
   "updated": "2026-11-28"
 }
