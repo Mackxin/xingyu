@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>星屿 · 灵感与文章</title>
+    <title>壹号栈 · 灵感与文章</title>
     <link>https://mackxin.github.io/xingyu/</link>
-    <description>以星为图，以屿为家 —— 每天一小条，记录遇见的工具、灵感与小发现，也写点长一点的文章。</description>
+    <description>壹号为栈，随处可归 —— 每天一小条，记录遇见的工具、灵感与小发现，也写点长一点的文章。</description>
     <language>zh-cn</language>
     <lastBuildDate>Sat, 28 Nov 2026 09:00:00 GMT</lastBuildDate>
-    <generator>XINGYU gen-feed</generator>
+    <generator>YIHAOZHAN gen-feed</generator>
     <atom:link href="https://mackxin.github.io/xingyu/feed.xml" rel="self" type="application/rss+xml" />
   <item>
     <title>洛雪TV</title>
