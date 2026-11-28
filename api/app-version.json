@@ -1,8 +1,8 @@
 {
-  "versionCode": 47,
-  "versionName": "2.9.6",
-  "size": 1914612,
-  "sha256": "a85b206168af22c8007612e3f40d04c5297aeff6640f24fe58c73fd8ab90b1ac",
-  "notes": "导航「万物归一」四条改原生；孕期全程管理原生化",
+  "versionCode": 48,
+  "versionName": "2.9.7",
+  "size": 1914788,
+  "sha256": "fccce9e30f375b6ca2285f7241b97e914f9cfffb9cb723968a5870db95638f47",
+  "notes": "2.9.7（code 48）：导航「电池跑单」不再开网页，直接跳到原生 App「骑手跑单」（装了直接进，没装帮你打开下载）；补上 Android 11+ 的包可见性声明",
   "updated": "2026-11-28"
 }
