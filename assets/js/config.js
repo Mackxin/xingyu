@@ -29,18 +29,18 @@
      升级默认值时做一次性迁移（见 Store.get）。改默认值才需要 +1。
      v4：顶栏品牌（左上角那个「栈 壹号栈」）默认改成不显示。
      v5：又改回默认显示 —— App 端要靠它当「到底 / 回顶」的开关，藏了就点不到了。
-     v6：站名默认值跟上改名（壹号栈 → 星屿），老配置里固化的旧名字丢掉。 */
-  var CFG_VER = 6;
+     v6：站名默认值跟上改名（壹号栈 → 星屿），老配置里固化的旧名字丢掉。
+     v7：站名又定回「壹号栈」（v181），同样把老配置里固化的「星屿」丢掉。 */
+  var CFG_VER = 7;
 
   var DEFAULTS = {
-    /* v180：站名默认值跟上 v177 的改名（原来还写着「壹号栈」）。
-       这一行只在**没有 site-data.js、也没有本地设置**时才会露出来 ——
-       也就是兜底路径。以前那种情况页面标题会突然变回「壹号栈」，
-       看着像站点自己回滚了。注意：localStorage 的 key 仍然叫 xingyu.*，
+    /* v181：站名定回「壹号栈」—— v177 曾短暂改成「星屿」，现在全站统一回壹号栈。
+       这一行只在**没有 site-data.js、也没有本地设置**时才会露出来 ——也就是兜底路径。
+       注意：localStorage 的 key 仍然叫 xingyu.*、GitHub Pages 路径还是 /xingyu/，
        那是老访客和旧 APK 认路用的，不许跟着改。 */
-    siteName: '星屿',
-    siteLatin: 'XINGYU',
-    tagline: '以星为图，以屿为家',
+    siteName: '壹号栈',
+    siteLatin: 'YIHAOZHAN',
+    tagline: '壹号为栈，随处可归',
     themeDefault: 'dark',      // dark | light
     showSearch: true,          // 顶栏是否显示搜索框
     /* ---- 顶栏各块的显示开关（后台「站点信息 → 顶栏显示」）。
@@ -90,9 +90,9 @@
     home: {
       eyebrow: '探索 · 发现 · 记录',
       titleTop: '欢迎来到',
-      titleMain: '星屿',
+      titleMain: '壹号栈',
       descBefore: '一座悬浮在夜色里的',
-      descAfter: '。把散落的网址、遇见的工具与闪过的念头，都收进同一处岛屿——以星为图，以屿为家。',
+      descAfter: '。把散落的网址、遇见的工具与闪过的念头，都收进同一间栈房——壹号为栈，随处可归。',
       rotator: ['数字花园', '灵感客栈', '资源航图', '私人书房'],
       cta1Text: '开始探索',
       cta1Url: '#/nav',
@@ -546,13 +546,19 @@
            藏起来就点不到了）。v4 那次把老配置里的键删过一次，所以这版同样
            把键丢掉，让新默认（显示）生效；真不想看的去后台关一次。 */
         if (!ls._ver || Number(ls._ver) < 5) delete ls.showTopBrand;
-        /* v5 → v6：站名从「壹号栈」换成「星屿」（v177 改的）。后台只要存过一次设置，
-           当时的站名就被固化进 localStorage，v177 改的默认值进不来 —— 这台设备会
-           一直显示旧站名。这里只丢**恰好等于旧默认值**的那一份：你要是自己起过名字，
-           一个字都不动。 */
-        if (ls.siteName === '壹号栈') delete ls.siteName;
-        if (ls.siteLatin === 'YIHAOZHAN') delete ls.siteLatin;
-        if (ls.tagline === '壹号为栈，随处可归') delete ls.tagline;
+        /* v6 → v7：站名从「星屿」定回「壹号栈」（v181 全站统一）。后台只要存过一次设置，
+           「星屿 / XINGYU / 以星为图，以屿为家」就被固化进 localStorage —— 这份本机设置
+           会一直盖住新默认值：页面标题、顶栏、页脚都还写着星屿。这里只丢**恰好等于
+           v6 默认值**的那几份，你自己起过名字、改过首页文案的一个字都不动。 */
+        if (!ls._ver || Number(ls._ver) < 7) {
+          if (ls.siteName === '星屿') delete ls.siteName;
+          if (ls.siteLatin === 'XINGYU') delete ls.siteLatin;
+          if (ls.tagline === '以星为图，以屿为家') delete ls.tagline;
+          /* home 是整份归一化后替换的（pick 里走 normHome），删子键没用，只能整份丢掉 ——
+             前提是它确实还停在改名那版，否则会把你自己写的首页文案一起清掉。 */
+          if (ls.home && ls.home.titleMain === '星屿') delete ls.home;
+          if (ls.about && ls.about.title === '关于星屿') delete ls.about;
+        }
         out = pick(out, ls);
       }
       return out;

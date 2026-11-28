@@ -6,7 +6,7 @@
  *   Release 的二进制落在 objects.githubusercontent.com，国内经常连不上；
  *   而 api/app.json 本来就是同一个域（mackxin.github.io），能拉到内容就一定拉得到安装包。
  *
- * 用法（在星屿站点仓库根目录）：
+ * 用法（在站点仓库根目录）：
  *   node tools/publish-app.js                    # 打包 + 复制 + 写版本号
  *   node tools/publish-app.js --apk <路径>        # 用现成的 apk，不重新打包
  *   node tools/publish-app.js --notes "..."      # 更新说明

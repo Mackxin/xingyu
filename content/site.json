@@ -1,9 +1,9 @@
 {
   "_note": "壹号栈的全部内容。后台改完点「导出 site.json」覆盖这个文件，或者直接拖到桌面「壹号栈 · 拖文件上传」。别手动删键。",
   "site": {
-    "siteName": "星屿",
-    "siteLatin": "XINGYU",
-    "tagline": "以星为图，以屿为家",
+    "siteName": "壹号栈",
+    "siteLatin": "YIHAOZHAN",
+    "tagline": "壹号为栈，随处可归",
     "themeDefault": "light",
     "showSearch": true,
     "showTopBrand": true,
@@ -49,12 +49,12 @@
     "home": {
       "eyebrow": "探索 · 发现 · 记录",
       "titleTop": "欢迎来到",
-      "titleMain": "星屿",
+      "titleMain": "壹号栈",
       "descBefore": "一座悬浮在夜色里的",
-      "descAfter": "。把散落的网址、遇见的工具与闪过的念头，安放在同一片星空下——以星为图，以屿为家。",
+      "descAfter": "。把散落的网址、遇见的工具与闪过的念头，都收进同一间栈房——壹号为栈，随处可归。",
       "rotator": [
         "数字花园",
-        "灵感岛屿",
+        "灵感客栈",
         "资源航图",
         "私人书房"
       ],
@@ -70,7 +70,7 @@
         {
           "auto": "cats",
           "n": "",
-          "s": "主题岛屿"
+          "s": "主题分类"
         },
         {
           "auto": "links",
@@ -91,8 +91,8 @@
       "entries": [
         {
           "icon": "🧭",
-          "title": "星屿导航",
-          "desc": "十二座主题岛屿，收拢全网精选站点，随时一键盘点。",
+          "title": "壹号栈导航",
+          "desc": "按主题归好类，收拢全网精选站点，随时一键盘点。",
           "route": "#/nav",
           "spark": true,
           "wide": false
@@ -107,8 +107,8 @@
         },
         {
           "icon": "🌌",
-          "title": "关于星屿",
-          "desc": "一座以星为图、以屿为家的个人数字花园，慢慢生长。",
+          "title": "关于壹号栈",
+          "desc": "壹号为栈，随处可归的个人数字花园，慢慢生长。",
           "route": "#/about",
           "spark": false,
           "wide": false
@@ -139,10 +139,10 @@
     },
     "about": {
       "eyebrow": "About · 关于",
-      "title": "关于星屿",
-      "lede": "一座悬在夜色里的岛：收着链接、念头和写了一半的字。没有广告，没有推荐算法，也没有人催更——灯亮着，随时靠岸。",
+      "title": "关于壹号栈",
+      "lede": "一个普通人开的一间小栈：收着链接、想法和一点点文字。没有广告，没有推荐算法，也没有人催更——门开着，随时来坐。",
       "updated": "2026-11-28",
-      "md": "我大概攒了十年的书签。\n\n最早的收藏夹里横七竖八躺着几百个链接，标题还是网页自带的「XXX - 首页」，过半年再打开，连自己当初为什么要存它都想不起来。后来换浏览器、换电脑、换手机，书签跟着搬来搬去，越搬越乱，最后干脆谁也不看——**存了等于没存**。\n\n这片岛，是想把这件事重新点亮：让散落的链接各自归位，抬头看得见整张夜空，低头也知道自己踩在哪一块礁石上。\n\n## 名字的来由\n\n关掉灯以后，屏幕是屋里唯一亮着的东西。地图上的一个点是我，周围一片暗；再放大，暗里慢慢浮出别的点，一个一个，都是这些年存下来的东西。\n\n所以这里是「星」与「屿」：\n\n- **星** 是那些单独的东西——一个站点、一句想法、一篇写了一半的笔记。它自己会亮，但孤零零一颗，看起来只是个小点。\n- **屿** 是把同类的东西拢到一起的那块陆地。星落成图，图连成屿；一块一块连起来，才认得出形状。\n\n不是一整块大陆，是一座座岛。岛与岛之间隔着水，得自己划过去——也正因为隔着水，每一座才看得清楚。\n\n## 岛上有什么\n\n五块地方，各有各的用处：\n\n- **导航** —— 攒了这些年的站点按主题分到几十座岛上，一页装完。想找什么直接搜名字，中文、英文、拼音首字母都认（输 `txsp` 能搜到「腾讯视频」）。\n- **分享** —— 像刷动态一样的时间线，记的是这段时间遇见的工具、读到的文章、突然想通的一点小事。都是短条目，看完就能走。\n- **灵感随记** —— 想到一句就写一句的地方。正文里打 `#标签` 会自动归类，写完可以导出成图片或 JSON。它只存在你自己的浏览器里，别人看不见。\n- **文章** —— 写得长一点的东西：折腾记录、读书笔记，以及那些需要慢慢想清楚的念头。\n- **关于** —— 就是这一页。\n\n## 怎么逛更顺手\n\n| 想干的事 | 怎么做 |\n| --- | --- |\n| 快速跳到某个页面 | `⌘K` / `Ctrl + K` 打开命令面板 |\n| 找站点 | 顶栏搜索框：中文、英文、拼音首字母都认 |\n| 只看某几类 | 导航页分类栏右上角「只看」，勾几个就只留那几个 |\n| 随手收藏 | 鼠标移到站点卡片上，点那颗小星星 |\n| 想随手记点什么 | 进「灵感随记」直接写，正文里打 `#标签` 会自动归类 |\n| 不知道看什么 | 首页的「随机漫游」，随机开一个站点 |\n\n手机上一样能用：分类和标签会收进底部弹层，点顶栏的按钮就能展开。\n\n## 关于我\n\n白天是普通上班族，晚上喜欢折腾点小东西。\n\n这里的技术栈朴素到有点复古：**没有框架、没有构建、没有一个第三方依赖**，就是 HTML + CSS + 原生 JS，丢在虚拟主机上就能跑。写得慢一点，但每一行都看得懂，也改得动。\n\n如果这片岛有什么主张，大概是这几句：\n\n> 工具越少，越自由。\n>\n> 收藏不是囤积，是为了有一天真的会打开它。\n>\n> 记录的意义不在于好看，在于半年后你还能认出当时的自己。\n\n## 想聊两句\n\n- 看到错链、想推荐好站点，或者只是想说句话，都欢迎。\n- 这个站没有广告、没有统计脚本，也不追踪你。灯还亮着，随时靠岸。\n\n---\n\n*以星为图，以屿为家。*\n"
+      "md": "我大概攒了十年的书签。\n\n最早的收藏夹里横七竖八躺着几百个链接，标题还是网页自带的「XXX - 首页」，过半年再打开，连自己当初为什么要存它都想不起来。后来换浏览器、换电脑、换手机，书签跟着搬来搬去，越搬越乱，最后干脆谁也不看——**存了等于没存**。\n\n开这间栈，是想把这件事收拾一下：让收藏重新变成一件可以回头翻的事。\n\n## 名字的来由\n\n「栈」是个老词：客栈供人歇脚，货栈替人存货，栈桥让人从岸上走到水里去。三个意思这里都沾一点——它既是存东西的地方，也是想歇一会儿时能坐下的地方。\n\n我攒的那些链接，说到底就是一堆行李——散在各台设备、各个浏览器里，谁也认不得谁，搬一次丢一半。总要有个地方先替你收着，想起来了再回来取。这间栈房管的就是这件事：**存得下，也找得回**。\n\n那为什么是「壹号」？因为它是第一间。先把自己散落的东西收拢好，才谈得上招待别人；以后也许有贰号、叁号，也许就这一间，开很久。\n\n所以这里叫壹号栈：**壹号为栈，随处可归。**\n\n## 栈里有什么\n\n五块地方，各有各的用处：\n\n- **导航** —— 攒了这些年的书签按主题归好类，一页装完。想找什么直接搜站点名，连拼音首字母都认（输 `txsp` 能搜到「腾讯视频」）。\n- **分享** —— 像刷动态一样的时间线，记的是这段时间遇见的工具、读到的文章、突然想通的一点小事。都是短条目，看完就能走。\n- **灵感随记** —— 想到一句就写一句的地方。正文里打 `#标签` 会自动归类，写完可以导出成图片或 JSON。它只存在你自己的浏览器里，别人看不见。\n- **文章** —— 写得长一点的东西：折腾记录、读书笔记，以及那些需要慢慢想清楚的念头。\n- **关于** —— 就是这一页。\n\n## 怎么逛更顺手\n\n| 想干的事 | 怎么做 |\n| --- | --- |\n| 快速跳到某个页面 | `⌘K` / `Ctrl + K` 打开命令面板 |\n| 找站点 | 顶栏搜索框：中文、英文、拼音首字母都认 |\n| 只看某几类 | 导航页分类栏右上角「只看」，勾几个就只留那几个 |\n| 随手收藏 | 鼠标移到站点卡片上，点那颗小星星 |\n| 想随手记点什么 | 进「灵感随记」直接写，正文里打 `#标签` 会自动归类 |\n| 不知道看什么 | 首页的「随机漫游」，随机开一个站点 |\n\n手机上一样能用：分类和标签会收进底部弹层，点顶栏的按钮就能展开。\n\n## 关于我\n\n白天是普通上班族，晚上喜欢折腾点小东西。\n\n这里的技术栈朴素到有点复古：**没有框架、没有构建、没有一个第三方依赖**，就是 HTML + CSS + 原生 JS，丢在虚拟主机上就能跑。写得慢一点，但每一行都看得懂，也改得动。\n\n如果说这间栈有什么主张，大概是这几句：\n\n> 工具越少，越自由。\n>\n> 收藏不是囤积，是为了有一天真的会打开它。\n>\n> 记录的意义不在于好看，在于半年后你还能认出当时的自己。\n\n## 想聊两句\n\n- 看到错链、想推荐好站点，或者只是想说句话，都欢迎。\n- 这个站没有广告、没有统计脚本，也不追踪你。它只是我开的一间栈，门常开着，进来坐坐就好。\n\n---\n\n*门常开，慢慢添置。*"
     }
   },
   "nav": [
@@ -580,10 +580,6 @@
           "u": "https://newshub.shenzjd.com/"
         },
         {
-          "n": "OfferNow",
-          "u": "https://offernow.cn/"
-        },
-        {
           "n": "新博客",
           "u": "https://www.yysuni.com/"
         },
@@ -712,10 +708,6 @@
           "u": "https://jandan.net/"
         },
         {
-          "n": "软鸭资源库",
-          "u": "https://www.57cool.cool/"
-        },
-        {
           "n": "资源收藏夹",
           "u": "https://zyscj.com/"
         },
@@ -730,10 +722,6 @@
         {
           "n": "技术周刊精选推荐",
           "u": "https://www.fre123.com/weekly/"
-        },
-        {
-          "n": "小棉袄的百味人生",
-          "u": "https://haikuoshijie.cn/"
         },
         {
           "n": "有趣网址之家",
@@ -764,10 +752,6 @@
       "desc": "全国标准信息公共服务 · 全国企业信用信息公示…",
       "links": [
         {
-          "n": "全国标准信息公共服务",
-          "u": "http://www.std.gov.cn/"
-        },
-        {
           "n": "全国企业信用信息公示",
           "u": "http://www.gsxt.gov.cn/index.html"
         },
@@ -780,20 +764,8 @@
           "u": "http://wenshu.court.gov.cn/"
         },
         {
-          "n": "国家标准全文公开",
-          "u": "http://www.gb688.cn/bzgk/gb/index"
-        },
-        {
-          "n": "广州社保",
-          "u": "http://gzlss.hrssgz.gov.cn/gzlss_web/"
-        },
-        {
           "n": "社会保险网上查询系统",
           "u": "http://si.12333.gov.cn/index.jhtml"
-        },
-        {
-          "n": "广州学驾",
-          "u": "http://www.gzxjpt.com/"
         },
         {
           "n": "广州学驾理论培训",
@@ -836,20 +808,12 @@
           "u": "https://www.anjuke.com/"
         },
         {
-          "n": "投诉运营商",
-          "u": "http://www.chinatcc.gov.cn/"
-        },
-        {
           "n": "投诉快递",
           "u": "http://sswz.spb.gov.cn"
         },
         {
           "n": "投诉电商",
           "u": "http://www.12315.cn"
-        },
-        {
-          "n": "广东专业技术人员",
-          "u": "http://ggfw.gdhrss.gov.cn/zjjyweb/"
         },
         {
           "n": "广东出入境",
@@ -870,10 +834,6 @@
         {
           "n": "广州市人民政府",
           "u": "http://www.gz.gov.cn/"
-        },
-        {
-          "n": "东方法律宝典",
-          "u": "http://www.dffy.org/"
         },
         {
           "n": "广东省人社网上服务",
@@ -1112,10 +1072,6 @@
           "u": "https://www.domys.cc/"
         },
         {
-          "n": "P站镜像",
-          "u": "https://www.vilipix.com/"
-        },
-        {
           "n": "稀饭动漫",
           "u": "https://dick.xfani.com/"
         },
@@ -1160,10 +1116,6 @@
           "u": "https://yuc.wiki/"
         },
         {
-          "n": "Moefun",
-          "u": "https://www.moefun.net/"
-        },
-        {
           "n": "包子漫画",
           "u": "https://cn.baozimh.com/"
         },
@@ -1182,14 +1134,6 @@
         {
           "n": "Mangabz",
           "u": "https://www.mangabz.com/"
-        },
-        {
-          "n": "AnFuns动漫",
-          "u": "https://www.anfuns.cc/"
-        },
-        {
-          "n": "咕咕番",
-          "u": "https://www.gugufan.com/"
         },
         {
           "n": "ACG导航",
@@ -1222,10 +1166,6 @@
         {
           "n": "路漫漫",
           "u": "https://www.lmm55.com/"
-        },
-        {
-          "n": "麻雀视频",
-          "u": "https://mqtv.cc/"
         },
         {
           "n": "萌番动漫",
@@ -1376,10 +1316,6 @@
           "u": "https://note.youdao.com/web/"
         },
         {
-          "n": "看云",
-          "u": "http://www.kancloud.cn/"
-        },
-        {
           "n": "中国数字科学馆",
           "u": "https://www.cdstm.cn/"
         },
@@ -1528,16 +1464,8 @@
           "u": "http://www.gmzm.org/"
         },
         {
-          "n": "书问",
-          "u": "http://www.bookask.com/"
-        },
-        {
           "n": "书格",
           "u": "https://new.shuge.org/"
-        },
-        {
-          "n": "书栈网",
-          "u": "https://www.bookstack.cn/"
         },
         {
           "n": "精品电子书",
@@ -1550,10 +1478,6 @@
         {
           "n": "期刊杂志",
           "u": "http://qikan.lifves.com/"
-        },
-        {
-          "n": "偶书",
-          "u": "https://obook.cc/"
         },
         {
           "n": "静思书屋",
@@ -1580,10 +1504,6 @@
           "u": "https://windowsfront.com/"
         },
         {
-          "n": "藏书馆",
-          "u": "http://www.geeboo.com/"
-        },
-        {
           "n": "书荒部落",
           "u": "http://noveless.com/"
         },
@@ -1602,10 +1522,6 @@
         {
           "n": "优书网",
           "u": "https://www.yousuu.com/"
-        },
-        {
-          "n": "幻听网",
-          "u": "http://www.ting89.com/"
         },
         {
           "n": "维京小屋",
@@ -1718,10 +1634,6 @@
         {
           "n": "专注于Win10",
           "u": "http://iwin10.net/"
-        },
-        {
-          "n": "小笨软件",
-          "u": "http://www.zhouxiaoben.info/"
         },
         {
           "n": "反斗软件",
@@ -1878,10 +1790,6 @@
         {
           "n": "Gitbook",
           "u": "https://www.gitbook.com/"
-        },
-        {
-          "n": "Verification",
-          "u": "http://live.myss.co/"
         },
         {
           "n": "surge",
@@ -2100,10 +2008,6 @@
           "u": "https://wpxz.pro/"
         },
         {
-          "n": "皮卡搜索",
-          "u": "https://www.pikaso.top/"
-        },
-        {
           "n": "PanSearch",
           "u": "https://www.pansearch.me/"
         },
@@ -2162,10 +2066,6 @@
         {
           "n": "哎呦喂啊",
           "u": "https://www.aiyoweia.com/"
-        },
-        {
-          "n": "玩偶哥哥",
-          "u": "https://www.wogg.xyz/"
         },
         {
           "n": "学外漫画",
@@ -2228,10 +2128,6 @@
           "u": "http://www.15um.com/tools/weixin_v.php"
         },
         {
-          "n": "咕噜管家微信活码",
-          "u": "http://www.gulugj.com/"
-        },
-        {
           "n": "微小宝",
           "u": "https://www.wxb.com/"
         },
@@ -2242,10 +2138,6 @@
         {
           "n": "微信实用小工具",
           "u": "https://www.xsbbs.org/"
-        },
-        {
-          "n": "公众号排版Md2All",
-          "u": "http://md.aclickall.com/"
         },
         {
           "n": "公众号格式化工具",
@@ -2488,10 +2380,6 @@
           "u": "https://justyy.com/tools/chinese-converter/"
         },
         {
-          "n": "OKTools",
-          "u": "https://oktools.net/"
-        },
-        {
           "n": "五笔输入法训练",
           "u": "https://werneror.github.io/FingerMemory/"
         },
@@ -2576,10 +2464,6 @@
           "u": "https://www.drugfuture.com/cnpat/cn_patent.asp"
         },
         {
-          "n": "课兔录音机",
-          "u": "http://recpage.applinzi.com/"
-        },
-        {
           "n": "在线超级转换工具",
           "u": "https://www.wdku.net/"
         },
@@ -2652,20 +2536,12 @@
           "u": "https://www.keybr.com/zh-hans/index"
         },
         {
-          "n": "跟哈工具",
-          "u": "https://www.genha.com/"
-        },
-        {
           "n": "文件转换工具",
           "u": "https://cdkm.com/cn/toolbox"
         },
         {
           "n": "打字Monkeytype",
           "u": "https://monkeytype.com/"
-        },
-        {
-          "n": "GIF Kit",
-          "u": "https://gifkit.com/zh/"
         },
         {
           "n": "IP地址查询工具",
@@ -2858,10 +2734,6 @@
         {
           "n": "免费音乐库",
           "u": "https://cchound.com/"
-        },
-        {
-          "n": "追音小匠",
-          "u": "http://zhuiyin.sinaapp.com/"
         },
         {
           "n": "BENSOUND",
@@ -3440,10 +3312,6 @@
           "u": "https://dnote.net/"
         },
         {
-          "n": "零宽字符隐藏加密",
-          "u": "http://morse.rovelast.com/"
-        },
-        {
           "n": "隐秘术师",
           "u": "https://neatnik.net/steganographr/"
         },
@@ -3470,14 +3338,6 @@
         {
           "n": "Note.ms",
           "u": "https://note.ms/"
-        },
-        {
-          "n": "文件加密网站yose",
-          "u": "https://yose.fun/"
-        },
-        {
-          "n": "发送自毁消息",
-          "u": "https://burn.link/"
         },
         {
           "n": "在线加密解密",
@@ -3544,10 +3404,6 @@
           "u": "https://enclosed.cc/"
         },
         {
-          "n": "阅后即焚-飞鸽传书",
-          "u": "http://bao.5364.cn/msg/"
-        },
-        {
           "n": "在线记事本",
           "u": "https://anonlinenotepad.com/"
         },
@@ -3598,10 +3454,6 @@
         {
           "n": "电子工厂专辑",
           "u": "http://www.eet-china.com/"
-        },
-        {
-          "n": "数码多",
-          "u": "http://www.soomal.com/doc/index101000_0001_00.htm"
         },
         {
           "n": "果壳网",
@@ -3728,14 +3580,6 @@
           "u": "http://www.cnplugins.com/"
         },
         {
-          "n": "CRX离线安装包",
-          "u": "http://yurl.sinaapp.com/crx.php"
-        },
-        {
-          "n": "Chrome插件",
-          "u": "https://chromecj.com/"
-        },
-        {
           "n": "Crx4Chrome",
           "u": "https://www.crx4chrome.com/"
         },
@@ -3750,10 +3594,6 @@
         {
           "n": "开发者专用Chrome",
           "u": "https://www.google.com/intl/zh-CN/chrome/dev/"
-        },
-        {
-          "n": "视频下载扩展程序",
-          "u": "https://videodownloaderpro.net/"
         },
         {
           "n": "chrome-Edge",
@@ -3850,10 +3690,6 @@
         {
           "n": "西瓜视频解析下载",
           "u": "http://toutiao.iiilab.com/"
-        },
-        {
-          "n": "小视频下载",
-          "u": "http://www.downfi.com/video/"
         },
         {
           "n": "免费在线视频下载",
@@ -4246,10 +4082,6 @@
         {
           "n": "Akspic壁纸",
           "u": "https://wallspic.com/cn"
-        },
-        {
-          "n": "3G壁纸",
-          "u": "https://www.3gbizhi.com/"
         },
         {
           "n": "轻壁纸",
@@ -4660,10 +4492,6 @@
           "u": "https://shortcuts.sspai.com/#/main/workflow"
         },
         {
-          "n": "越狱Ignition",
-          "u": "http://ignition.fun/"
-        },
-        {
           "n": "iMyFone软体",
           "u": "https://tw.imyfone.com/"
         },
@@ -4788,10 +4616,6 @@
           "u": "https://apkhome.net/"
         },
         {
-          "n": "安卓源码镜像",
-          "u": "http://aospxref.com/"
-        },
-        {
           "n": "PixelExperience",
           "u": "https://download.pixelexperience.org/"
         },
@@ -4828,10 +4652,6 @@
           "u": "https://wetv.vip/zh-cn"
         },
         {
-          "n": "VideoCool",
-          "u": "http://videocool.net/"
-        },
-        {
           "n": "BL解析系统",
           "u": "https://vip.bljiex.com/"
         },
@@ -4858,10 +4678,6 @@
         {
           "n": "磁力熊",
           "u": "https://www.cilixiong.com/"
-        },
-        {
-          "n": "东京不够热",
-          "u": "https://www.tokyonothot.com/"
         },
         {
           "n": "下片片",
@@ -4892,10 +4708,6 @@
           "u": "https://www.breakvip.club/"
         },
         {
-          "n": "rarbt",
-          "u": "http://www.rarbt.fun/"
-        },
-        {
           "n": "流真岁月",
           "u": "https://www.thhtyh.com/"
         },
@@ -4914,10 +4726,6 @@
         {
           "n": "稀饭影视",
           "u": "https://www.xifanys.com/"
-        },
-        {
-          "n": "宝片视频",
-          "u": "https://ibaopian.com/"
         },
         {
           "n": "三集电影",
@@ -4976,10 +4784,6 @@
           "u": "https://www.4kvm.net/"
         },
         {
-          "n": "Moovie",
-          "u": "https://moovie.c2v2.com/"
-        },
-        {
           "n": "子子影视",
           "u": "https://ziziys.org/"
         }
@@ -5030,10 +4834,6 @@
         {
           "n": "24小时临时邮箱",
           "u": "http://24mail.chacuo.net/"
-        },
-        {
-          "n": "临时邮箱100",
-          "u": "https://tempmail100.com/zh-cn/"
         },
         {
           "n": "临时邮箱so",
@@ -5402,10 +5202,6 @@
         {
           "n": "CSS平滑阴影生成器",
           "u": "https://brumm.af/shadows"
-        },
-        {
-          "n": "繁体字转换器",
-          "u": "http://www.fantiz5.com/"
         },
         {
           "n": "举牌小人生成器",
@@ -5884,10 +5680,6 @@
           "u": "https://md.hi-dhl.com/"
         },
         {
-          "n": "故障文本生成器",
-          "u": "https://photobackgroundchange.net/zh"
-        },
-        {
           "n": "超萌二维码生成器",
           "u": "https://www.codebox.club/zh"
         },
@@ -6008,20 +5800,12 @@
           "u": "https://stars.chromeexperiments.com/"
         },
         {
-          "n": "趣站地图",
-          "u": "http://www.sitemap.fun/"
-        },
-        {
           "n": "渣男说话的艺术",
           "u": "https://lovelive.tools/"
         },
         {
           "n": "产品搜寻",
           "u": "https://www.producthunt.com/"
-        },
-        {
-          "n": "工资条",
-          "u": "http://hello.izenuo.com/"
         },
         {
           "n": "能不能好好说话",
@@ -6216,10 +6000,6 @@
           "u": "https://fuun.fun/"
         },
         {
-          "n": "PCB制造和组装",
-          "u": "https://pcbhubs.com/"
-        },
-        {
           "n": "仿手写流程图",
           "u": "https://excalidraw.com/"
         },
@@ -6396,10 +6176,6 @@
           "u": "https://time.fyi/"
         },
         {
-          "n": "奇葩商店",
-          "u": "https://qipa.store/"
-        },
-        {
           "n": "中国农历新年",
           "u": "https://chinesenewyear.net/"
         },
@@ -6452,10 +6228,6 @@
           "u": "https://www.templatemaker.nl/zh/"
         },
         {
-          "n": "实时金价",
-          "u": "https://goldprice.fun/"
-        },
-        {
           "n": "无限投稿",
           "u": "https://gua.niucodata.com/"
         },
@@ -6492,16 +6264,8 @@
           "u": "https://1000userguide.com/"
         },
         {
-          "n": "AMZ123跨境",
-          "u": "https://www.amz123.com/"
-        },
-        {
           "n": "龙轩导航",
           "u": "http://www.ilxdh.com/"
-        },
-        {
-          "n": "五花八门",
-          "u": "http://lxqnsys.com/d/"
         },
         {
           "n": "设计导航",
@@ -6510,10 +6274,6 @@
         {
           "n": "设计师导航",
           "u": "http://hao.uisdc.com/"
-        },
-        {
-          "n": "设计师网址导航",
-          "u": "http://www.userinterface.com.cn/"
         },
         {
           "n": "产品经理导航",
@@ -6606,10 +6366,6 @@
         {
           "n": "电报群组大全",
           "u": "https://www.dianbaoqun.net/"
-        },
-        {
-          "n": "图床导航",
-          "u": "http://imgdh.com/"
         },
         {
           "n": "黑洞导航",
@@ -6832,10 +6588,6 @@
           "u": "https://www.neat-reader.cn/downloads/converter"
         },
         {
-          "n": "在线PDF提取器",
-          "u": "https://www.extractpdf.com/zh.html"
-        },
-        {
           "n": "江下科技",
           "u": "https://www.onlinedo.cn/"
         },
@@ -6924,10 +6676,6 @@
           "u": "https://www.maoziyun.com/"
         },
         {
-          "n": "新鸟云",
-          "u": "https://www.xinniaoyun.com/"
-        },
-        {
           "n": "热铁盒",
           "u": "https://www.retiehe.com/"
         },
@@ -7004,10 +6752,6 @@
           "u": "http://ef.zhiweidata.com/"
         },
         {
-          "n": "闲鱼转转二手搜",
-          "u": "http://2.liukai.tech/"
-        },
-        {
           "n": "eHow",
           "u": "https://www.ehow.com/"
         },
@@ -7064,10 +6808,6 @@
           "u": "https://wordart.com/"
         },
         {
-          "n": "FreeGet",
-          "u": "http://www.freeget.vip/"
-        },
-        {
           "n": "在线沙盒",
           "u": "https://codesandbox.io/s/"
         },
@@ -7080,10 +6820,6 @@
           "u": "https://scratch.mit.edu/projects/editor/"
         },
         {
-          "n": "盒子学术",
-          "u": "http://scholar.hezibuluo.com/"
-        },
-        {
           "n": "HelloGithub",
           "u": "https://hellogithub.com/"
         },
@@ -7094,14 +6830,6 @@
         {
           "n": "showdoc",
           "u": "https://www.showdoc.cc/"
-        },
-        {
-          "n": "远鉴字幕组网盘",
-          "u": "https://yj.apkgm.top/"
-        },
-        {
-          "n": "攀登读书会",
-          "u": "http://od.xxorg.com/%E6%A8%8A%E7%99%BB%E8%AF%BB%E4%B9%A6%E4%BC%9A/"
         },
         {
           "n": "GGBases",
@@ -7130,10 +6858,6 @@
         {
           "n": "豆丁文档解析工具",
           "u": "https://www.docin365.com/"
-        },
-        {
-          "n": "南瓜文档解析抓取工具",
-          "u": "http://bdwk.588230.com/"
         }
       ]
     },
@@ -7308,10 +7032,6 @@
           "u": "http://www.coolsite360.com/"
         },
         {
-          "n": "人人秀",
-          "u": "https://www.rrxiu.net/"
-        },
-        {
           "n": "微页",
           "u": "http://www.zhichiwangluo.com"
         },
@@ -7356,18 +7076,6 @@
           "u": "http://index.baidu.com/"
         },
         {
-          "n": "微博热搜榜",
-          "u": "http://s.weibo.com/"
-        },
-        {
-          "n": "百度搜索风云榜",
-          "u": "http://top.baidu.com/"
-        },
-        {
-          "n": "腾讯TBI指数",
-          "u": "http://tbi.tencent.com/"
-        },
-        {
           "n": "阿里指数",
           "u": "http://index.1688.com/"
         },
@@ -7396,10 +7104,6 @@
           "u": "https://www.jiguang.cn/"
         },
         {
-          "n": "猎豹大数据",
-          "u": "http://cn.data.cmcm.com/"
-        },
-        {
           "n": "易观千帆",
           "u": "https://qianfan.analysys.cn/"
         },
@@ -7418,10 +7122,6 @@
         {
           "n": "199IT",
           "u": "http://www.199it.com/"
-        },
-        {
-          "n": "大数据观察",
-          "u": "http://www.shuju.net/"
         },
         {
           "n": "大数据导航",
@@ -7884,10 +7584,6 @@
           "u": "https://minghuaji.dpm.org.cn/"
         },
         {
-          "n": "中国美术馆",
-          "u": "http://www.namoc.org/"
-        },
-        {
           "n": "绘画和画家",
           "u": "https://gallerix.asia/"
         },
@@ -7910,10 +7606,6 @@
         {
           "n": "中国古籍馆",
           "u": "https://www.gujiguan.com/"
-        },
-        {
-          "n": "北京大学图书馆",
-          "u": "https://www.lib.pku.edu.cn/portal/"
         },
         {
           "n": "大英图书馆",
@@ -7958,10 +7650,6 @@
         {
           "n": "网商园",
           "u": "https://www.wsy.com/"
-        },
-        {
-          "n": "17网(服装货源)",
-          "u": "https://www.17zwd.com/"
         },
         {
           "n": "义乌购(小商品)",
@@ -8026,10 +7714,6 @@
         {
           "n": "闲管家",
           "u": "https://www.goofish.pro/"
-        },
-        {
-          "n": "欧洲跨境之旅",
-          "u": "https://01234567.feishu.cn/wiki/AjBqwyp5yisP60kvNGAchQtSn7b"
         }
       ]
     },
@@ -8039,10 +7723,6 @@
       "icon": "🔨",
       "desc": "酷家乐3D云设计 · 建筑学长…",
       "links": [
-        {
-          "n": "酷家乐3D云设计",
-          "u": "https://www.kujiale.com/"
-        },
         {
           "n": "建筑学长",
           "u": "https://www.jianzhuxuezhang.com/"
@@ -8088,10 +7768,6 @@
           "u": "http://202.96.31.36:8888/"
         },
         {
-          "n": "喵老师绘本故事",
-          "u": "http://www.html-js.com/music"
-        },
-        {
           "n": "二一组卷",
           "u": "https://zujuan.21cnjy.com/"
         },
@@ -8130,10 +7806,6 @@
         {
           "n": "读典籍",
           "u": "https://dudianji.com/"
-        },
-        {
-          "n": "好学电子课本网",
-          "u": "http://www.5haoxue.net/"
         },
         {
           "n": "鸡娃宝",
@@ -8480,24 +8152,12 @@
           "u": "https://ai.xiabb.chat/home"
         },
         {
-          "n": "AIGC导航",
-          "u": "https://nav.aiwave.cc/"
-        },
-        {
           "n": "鱼聪明AI",
           "u": "https://www.yucongming.com/"
         },
         {
-          "n": "XCole-千言万象",
-          "u": "https://www.xcole.cn/"
-        },
-        {
           "n": "Ai卜力脑库",
           "u": "https://aipre.cn/"
-        },
-        {
-          "n": "一起用AI",
-          "u": "https://17yongai.com/"
         },
         {
           "n": "FlowGPT",
@@ -8514,10 +8174,6 @@
         {
           "n": "笔灵AI",
           "u": "https://ibiling.cn/"
-        },
-        {
-          "n": "追梦AIGC",
-          "u": "http://www.net27.top"
         },
         {
           "n": "ChatGPT123",
@@ -8768,10 +8424,6 @@
           "u": "https://www.machub.cn/"
         },
         {
-          "n": "XMac",
-          "u": "https://xmac.app/"
-        },
-        {
           "n": "苹果软件盒子",
           "u": "https://www.macappbox.com/"
         },
@@ -8786,10 +8438,6 @@
         {
           "n": "mac良选",
           "u": "https://www.maclx.com/"
-        },
-        {
-          "n": "小怪兽mac分享屋",
-          "u": "https://macbv.com/"
         },
         {
           "n": "macked",
@@ -8846,10 +8494,6 @@
         {
           "n": "appstorrent",
           "u": "https://appstorrent.ru/"
-        },
-        {
-          "n": "Mac的分享中心",
-          "u": "https://my.feishu.cn/wiki/WntSwDldZiyOIRkz1trc0xfNnSb"
         },
         {
           "n": "佛系软件",
@@ -15270,8 +14914,8 @@
   "entries": [
     {
       "icon": "🧭",
-      "title": "星屿导航",
-      "desc": "十二座主题岛屿，收拢全网精选站点，随时一键盘点。",
+      "title": "壹号栈导航",
+      "desc": "按主题归好类，收拢全网精选站点，随时一键盘点。",
       "route": "#/nav",
       "spark": true,
       "wide": false
@@ -15286,8 +14930,8 @@
     },
     {
       "icon": "🌌",
-      "title": "关于星屿",
-      "desc": "一座以星为图、以屿为家的个人数字花园，慢慢生长。",
+      "title": "关于壹号栈",
+      "desc": "壹号为栈，随处可归的个人数字花园，慢慢生长。",
       "route": "#/about",
       "spark": false,
       "wide": false

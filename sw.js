@@ -11,7 +11,7 @@
 
    ⚠️ 发布新版本时，把 VERSION 和 index.html 里的 ?v= 一起改。
    ========================================================================= */
-var VERSION = 'v180';
+var VERSION = 'v181';
 
 /* 本地预览（127.0.0.1 / localhost）不该有缓存。预览要的是「刚改完的那份」，
    可要是以前在同一个端口注册过 SW，刷新拿到的会是旧文件 —— 那就成了假的「没生效」。
@@ -39,7 +39,7 @@ var BASE = new URL('./', self.location.href).pathname;
 /* 只管自己的路径。
    域名根下面还躺着别的站（daohang.html、qiantai.html、dianchipaodan.html、img/、baoju/ …），
    SW 的 scope 一旦是 '/' 就会把它们的请求也一起接走：静态资源走的是「缓存优先」，
-   那些站的 JS/CSS 改了就永远看到旧版；断网时页面导航还会被兜底成星屿的首页。
+   那些站的 JS/CSS 改了就永远看到旧版；断网时页面导航还会被兜底成壹号栈的首页。
    所以这里按白名单放行 —— 不认识的一律不拦截。 */
 var OWN_DIRS = ['assets/', 'api/', 'data/'];
 
@@ -111,7 +111,7 @@ self.addEventListener('fetch', function (e) {
       }).catch(function () {
         return caches.match('./index.html').then(function (hit) {
           return hit || caches.match('./') || new Response(
-            '<h1>星屿暂时离线</h1><p>请连上网络后再试。</p>',
+            '<h1>壹号栈暂时离线</h1><p>请连上网络后再试。</p>',
             { headers: { 'Content-Type': 'text/html; charset=utf-8' } }
           );
         });
