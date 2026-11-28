@@ -9,6 +9,17 @@
     <generator>YIHAOZHAN gen-feed</generator>
     <atom:link href="https://mackxin.github.io/xingyu/feed.xml" rel="self" type="application/rss+xml" />
   <item>
+    <title>CoCo Music</title>
+    <link>https://cocomusic.cn/</link>
+    <guid isPermaLink="true">https://cocomusic.cn/</guid>
+    <pubDate>Sat, 28 Nov 2026 09:00:00 GMT</pubDate>
+    <description>一个开源的多平台桌面音乐播放器
+网易云音乐、QQ 音乐、酷狗音乐与酷狗概念版，汇聚于一个安静、好看的窗口</description>
+    <category>开源</category>
+    <category>音乐</category>
+    <category>github</category>
+  </item>
+  <item>
     <title>洛雪TV</title>
     <link>https://tv.lxyy.club/</link>
     <guid isPermaLink="true">https://tv.lxyy.club/</guid>
@@ -170,13 +181,6 @@ Video DownloadHelper 和 4K Video Downloader 的开源替代品
     <pubDate>Sat, 14 Nov 2026 09:00:00 GMT</pubDate>
     <description>把视频定格成 GIF、实况与原图 · 抖音、小红书、快手、YouTube、X里复制的整段分享文字直接贴进来就行 · 视频没有水印，图片是原图</description>
     <category>视频</category>
-  </item>
-  <item>
-    <title>中小学·高中知识图谱</title>
-    <link>https://math.pansgo.com/</link>
-    <guid isPermaLink="true">https://math.pansgo.com/</guid>
-    <pubDate>Sat, 14 Nov 2026 09:00:00 GMT</pubDate>
-    <description>数学（小学到高中）、英语（三年级到高中）、初中物理的知识图谱 · 1644 个知识点、2403 条先修边、6723 道题，对齐课标，附自适应前置诊断</description>
   </item>
   </channel>
 </rss>
