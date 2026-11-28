@@ -3172,10 +3172,15 @@
      版本号从 app.js 自己的 ?v= 里抄，省得再多一处「升版本忘了改」。 */
   var adminLoad = { busy: false, failed: false };
 
-  function adminScriptUrl() {
+  /* 版本号统一从 app.js 自己的 ?v= 里抄，省得再多一处「升版本忘了改」 */
+  function versionQuery() {
     var s = document.querySelector('script[src*="assets/js/app.js?v="]');
     var m = s && /[?&]v=[\w.]+/.exec(s.getAttribute('src') || '');
-    return 'assets/js/admin.js' + (m ? m[0] : '');
+    return m ? m[0] : '';
+  }
+
+  function adminScriptUrl() {
+    return 'assets/js/admin.js' + versionQuery();
   }
 
   function loadAdmin() {
@@ -5107,7 +5112,36 @@
   }
 
   /* ---------- 启动 ---------- */
+  /* v180：三份出厂兜底（bookmarks / feed-import / data，合计 443KB）不再跟着
+     index.html 一起下载，改成「site-data.js 真的没到才拉」。
+     顺序不能乱：data.js 里是 `window.SITE_DATA = window.SITE_DATA || (…)`，
+     它要读 bookmarks.js 的 SITE_BOOKMARKS 和 feed-import.js 的 XY_FEED_IMPORT，
+     所以必须一条接一条地串行拉，最后再启动。
+     这是异常路径（网络抽风 / 镜像上传半截 / 老 SW 缓存），慢一点没关系，别白屏。 */
+  function ensureData(done) {
+    if (window.SITE_DATA) { done(); return; }
+    var files = ['assets/js/bookmarks.js', 'assets/js/feed-import.js', 'assets/js/data.js'];
+    var q = versionQuery();
+    var i = 0;
+    (function next() {
+      if (i >= files.length) {
+        if (window.SITE_DATA) { DATA = window.SITE_DATA; ENTRIES = DATA.entries; }
+        done();
+        return;
+      }
+      var el = document.createElement('script');
+      el.src = files[i++] + q;
+      el.onload = next;
+      el.onerror = next;   // 一份拉不到也接着走，页面至少还有骨架
+      document.head.appendChild(el);
+    })();
+  }
+
   function init() {
+    ensureData(boot);
+  }
+
+  function boot() {
     // SPA 自己管滚动位置：关掉浏览器的“刷新后恢复滚动”，
     // 否则刷新/前进后退时页面会停在中途，顶栏压住正文标题
     try { if ('scrollRestoration' in history) history.scrollRestoration = 'manual'; } catch (e) {}

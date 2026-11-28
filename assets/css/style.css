@@ -2568,6 +2568,17 @@ body.is-dragging-row, body.is-dragging-row *{ cursor:grabbing !important; }
 .admin-adv > p.admin-tip{ margin-top:12px !important; }
 .admin-adv > .admin-actions{ margin:14px 0 18px; }
 
+/* --- 发布历史（后台「发布上线」里的折叠区，只记在本机浏览器） --- */
+.pub-hist__list{ list-style:none; margin:0; padding:0; }
+.pub-hist__row{ padding:12px 0; border-top:1px solid rgba(124,156,255,.12); }
+.pub-hist__row:first-child{ border-top:0; padding-top:4px; }
+.pub-hist__top{ display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; }
+.pub-hist__top b{ font-size:13px; font-weight:600; color:var(--text); }
+.pub-hist__meta{ font-size:11.5px; color:var(--text-mute); }
+.pub-hist__what{ margin:5px 0 0 !important; font-size:12.5px !important; line-height:1.75; color:var(--text-dim) !important; }
+.pub-hist__what--same{ color:var(--text-mute) !important; }
+.pub-hist__warn{ margin:4px 0 0 !important; font-size:12px !important; color:var(--star) !important; }
+
 /* --- 确认弹窗 --- */
 .confirm-mask{
   position:fixed; inset:0; z-index:9999; padding:24px;

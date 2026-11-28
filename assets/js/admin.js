@@ -3487,7 +3487,7 @@
     }
   }
 
-  var PUB_STATE = { id: '', timer: 0, from: 0, dry: false, all: [] };
+  var PUB_STATE = { id: '', timer: 0, from: 0, dry: false, all: [], diff: [], counts: null };
 
   function pubLogBox() { return document.getElementById('pubLog'); }
 
@@ -3542,6 +3542,10 @@
     /* 和线上一版逐块比一次 —— 确认框里「本次改动」那几行就是它的结果 */
     var diff = [];
     try { diff = pubDiff(data); } catch (e) { diff = []; }
+    /* 存一份给 finishPublish —— 发布成功后要把它写进「最近发布」，
+       那时 data 已经不在这条调用栈上了。 */
+    PUB_STATE.diff = diff;
+    PUB_STATE.counts = { links: links, feed: (data.feed || []).length, posts: (data.posts || []).length };
     /* 「站点设置」那几块（站名 / 关于页 / 首页大图与卡片 / 外观）整份存在这台浏览器里，
        线上改过之后不会自己同步。发布时要是连它们也一起变了，多半不是你要改的，
        而是本机那份旧副本在盖线上 —— 单独提一句，并指路那颗「⟲ 用线上设置覆盖本机」。 */
@@ -3659,6 +3663,17 @@
       return;
     }
     Store.draftClear();
+    /* 写一条「最近发布」：时间 / 条数 / 这次改了什么 / 用时 / 还有几处待补。
+       只落在这台浏览器里，不碰仓库也不上传。 */
+    pubHistAdd({
+      t: Date.now(),
+      secs: secs,
+      counts: PUB_STATE.counts || null,
+      diff: (PUB_STATE.diff || []).map(function (d) {
+        return { tag: d.tag, head: d.head, more: d.more || '' };
+      }),
+      warn: j.warn || 0
+    });
     pubLog('');
     pubLog('✅ 上线完成' + (j.warn ? '（' + j.warn + ' 处待补，见上面 ✗ 那几行）' : '，核对全过。'),
            'good');
@@ -3736,11 +3751,94 @@
         });
         return;
       }
+      var hc = e.target.closest('[data-hist-clear]');
+      if (hc) {
+        e.preventDefault();
+        xydConfirm({
+          icon: '🕘',
+          title: '清空这份发布记录？',
+          sub: '只是这台浏览器里的备忘',
+          note: '它不参与发布，清掉也不会影响线上任何东西。' +
+                '只是「我上次发了什么」就没得翻了 —— 提交信息里那句「后台一键发布：…」还在。',
+          okText: '清掉',
+          cancelText: '留着'
+        }).then(function (ok) {
+          if (!ok) return;
+          try { localStorage.removeItem(HIST_PUB); } catch (err) {}
+          toast('发布记录清空了');
+          if (app().rerender) app().rerender();
+        });
+        return;
+      }
     });
   }
 
   /* 本机仓库位置：「复制同步命令」按钮用。换电脑、换目录就改这一行。 */
   var LOCAL_REPO = '/Volumes/1T宝盘/workbuddy/星屿';
+
+  /* ---------------- 发布历史 ----------------
+     只记在这台电脑的浏览器里（localStorage），不写进仓库、不碰产物、不上传。
+     它回答的是「我这几天发过什么、每次多了什么」，不是审计日志 ——
+     换台电脑或者清了缓存就没了，这本来就是它该有的样子。 */
+  var HIST_PUB = 'xingyu.pubhist.v1';
+  var HIST_PUB_MAX = 30;
+
+  function pubHistGet() {
+    try {
+      var a = JSON.parse(localStorage.getItem(HIST_PUB) || '[]');
+      return Array.isArray(a) ? a : [];
+    } catch (e) { return []; }
+  }
+
+  function pubHistAdd(rec) {
+    try {
+      var a = pubHistGet();
+      a.unshift(rec);
+      localStorage.setItem(HIST_PUB, JSON.stringify(a.slice(0, HIST_PUB_MAX)));
+    } catch (e) {}
+  }
+
+  function pubHistWhen(t) {
+    var d = new Date(t);
+    if (isNaN(d.getTime())) return '';
+    var p = function (n) { return (n < 10 ? '0' : '') + n; };
+    return (d.getMonth() + 1) + '月' + p(d.getDate()) + '日 ' + p(d.getHours()) + ':' + p(d.getMinutes());
+  }
+
+  function pubHistHtml() {
+    var a = pubHistGet();
+    if (!a.length) return '';
+    var rows = a.slice(0, 8).map(function (r) {
+      var c = r.counts || {};
+      var bits = (r.diff || []).map(function (d) {
+        return d.tag + ' ' + (d.head || '') + (d.more ? '（' + d.more + '）' : '');
+      });
+      var mins = r.secs ? Math.max(1, Math.round(r.secs / 60)) : 0;
+      return '<li class="pub-hist__row">' +
+          '<div class="pub-hist__top">' +
+            '<b>' + esc(pubHistWhen(r.t)) + '</b>' +
+            '<span class="pub-hist__meta">' + (c.links || 0) + ' 链接 · ' + (c.feed || 0) + ' 分享 · ' +
+              (c.posts || 0) + ' 文章' + (mins ? ' · 约 ' + mins + ' 分钟' : '') + '</span>' +
+          '</div>' +
+          (bits.length
+            ? '<p class="pub-hist__what">' + esc(bits.join('；')) + '</p>'
+            : '<p class="pub-hist__what pub-hist__what--same">内容没变，这次只把文件重传了一遍</p>') +
+          (r.warn ? '<p class="pub-hist__warn">上线时还有 ' + r.warn + ' 处待补</p>' : '') +
+        '</li>';
+    }).join('');
+    return '<details class="admin-adv pub-hist" id="pubHist">' +
+        '<summary>🕘 最近发布 · 这台电脑记了 ' + a.length + ' 次</summary>' +
+        '<div class="admin-adv__body">' +
+          '<ul class="pub-hist__list">' + rows + '</ul>' +
+          (a.length > 8 ? '<p class="admin-tip">只列最近 8 次，一共存 ' + HIST_PUB_MAX + ' 次。</p>' : '') +
+          '<div class="admin-actions">' +
+            '<button class="btn btn--ghost" type="button" data-hist-clear>清空这份记录</button>' +
+          '</div>' +
+          '<p class="admin-tip">记的是这台浏览器里点过的发布，换台电脑或者清了缓存就没了。' +
+            '它不参与发布，也不会上传 —— 想留正式记录的话，提交信息里那句「后台一键发布：…」就是。</p>' +
+        '</div>' +
+      '</details>';
+  }
 
   function staticCard() {
     /* v169：回到「后台改 → 导出 site.json → 同步」，
@@ -3835,6 +3933,7 @@
 
         draftBar +
         liveCard +
+        pubHistHtml() +
 
         '<div class="pub-flow">' +
           '<div class="pub-step">' +

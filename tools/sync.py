@@ -21,6 +21,7 @@
 import gzip
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -511,6 +512,36 @@ def verify_mirror(dry, no_ftp):
     print('   一直是同一个文件的话，多半是主机那边的文件锁没松（等一分钟再补一次就好）。')
 
 
+def link_sweep(dry):
+    """--check-links：把导航里两千多条外链挨个探一次活。
+
+    默认不开 —— 全量探活要几分钟，而绝大多数发布跟链接死活无关。
+    只报告、不拦发布：死链是内容维护的事，不该卡住上线。
+    结论落在 tools/dead-links.txt（已进 .gitignore），import-naver.py 会读它跳过死链。
+    """
+    step(8, '外链巡检（--check-links，比较慢）')
+    if dry:
+        info('（--dry：跳过）')
+        return
+    r = subprocess.run([sys.executable, 'tools/check-links.py'],
+                       cwd=REPO, capture_output=True, text=True)
+    out = (r.stdout or '').strip().splitlines()
+    for line in out[-14:]:
+        print('   ' + line)
+    if r.returncode != 0:
+        info('巡检没跑起来：' + ((r.stderr or '').strip().splitlines() or [''])[-1][:160])
+        return
+    dead = 0
+    for line in out:
+        m = re.search(r'死链 (\d+) 条', line)
+        if m:
+            dead = int(m.group(1))
+    if dead:
+        bad('有 %d 条外链打不开，清单在 tools/dead-links.txt' % dead)
+    else:
+        ok('没有发现死链')
+
+
 def verify(dry):
     step(6, '核对三端到底同步了没')
     local = ''
@@ -563,6 +594,7 @@ def main():
     dry = '--dry' in rest
     force_all = '--all' in rest or '--code' in rest
     no_ftp = '--no-ftp' in rest
+    check_links = '--check-links' in rest
     explicit = next((a for a in rest if not a.startswith('-')), None)
 
     print('壹号栈 · 全端同步')
@@ -590,6 +622,8 @@ def main():
     purge(changed, dry)
     verify(dry)
     verify_mirror(dry, no_ftp)
+    if check_links:
+        link_sweep(dry)
 
     print('\n' + '=' * 46)
     print('做完。手机 / App 上看到旧内容的话：')

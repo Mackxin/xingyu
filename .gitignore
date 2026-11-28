@@ -13,3 +13,6 @@
 # Python 编译产物（tools 下跑过就冒出来）
 __pycache__/
 *.pyc
+
+# 链接巡检的产物（tools/check-links.py 每次跑都会重写，别进仓库）
+tools/dead-links.txt
